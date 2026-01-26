@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Gifty AI - Найди идеальный подарок</title>
+    <meta name="description" content="ИИ-помощник по подбору подарков. Быстро, весело и просто." />
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Manrope', 'sans-serif'],
+            },
+            colors: {
+              brand: {
+                // Valentine Global Overrides
+                blue: '#FF4D6D',   // Was Blue -> Main Pink
+                purple: '#C9184A', // Was Purple -> Deep Rose
+                dark: '#2A0A18',   // Was Dark Blue -> Dark Burgundy
+                
+                // Explicit Palette
+                pink: '#FF4D6D',
+                rose: '#FF8FA3',
+                love: '#C9184A',
+              },
+              surface: '#FFFFFF',
+            },
+            animation: {
+              'float': 'float 3s ease-in-out infinite',
+              'pop': 'pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+              'blob': 'blob 7s infinite',
+              'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'wave': 'wave 2s infinite linear',
+              'snow': 'snow 10s linear infinite',
+              'hearts': 'hearts 15s linear infinite',
+              'twinkle': 'twinkle 2s ease-in-out infinite',
+              'scroll': 'scroll 40s linear infinite',
+              'swing': 'swing 6s ease-in-out infinite',
+            },
+            keyframes: {
+              float: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-10px)' },
+              },
+              pop: {
+                '0%': { transform: 'scale(0.9)', opacity: 0 },
+                '100%': { transform: 'scale(1)', opacity: 1 },
+              },
+              blob: {
+                '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                '100%': { transform: 'translate(0px, 0px) scale(1)' },
+              },
+              wave: {
+                '0%, 100%': { transform: 'rotate(0deg)' },
+                '25%': { transform: 'rotate(-10deg)' },
+                '75%': { transform: 'rotate(10deg)' },
+              },
+              snow: {
+                '0%': { transform: 'translate3d(0, -10vh, 0)', opacity: 0 },
+                '10%': { opacity: 1 },
+                '100%': { transform: 'translate3d(20px, 110vh, 0)', opacity: 0 },
+              },
+              hearts: {
+                '0%': { transform: 'translateY(110vh) scale(0.5)', opacity: 0 },
+                '10%': { opacity: 0.8 },
+                '100%': { transform: 'translateY(-10vh) scale(1.2)', opacity: 0 },
+              },
+              twinkle: {
+                '0%, 100%': { opacity: 1, transform: 'scale(1)' },
+                '50%': { opacity: 0.5, transform: 'scale(0.8)' },
+              },
+              scroll: {
+                '0%': { transform: 'translateX(0)' },
+                '100%': { transform: 'translateX(-50%)' },
+              },
+              swing: {
+                '0%, 100%': { transform: 'rotate(-5deg)' },
+                '50%': { transform: 'rotate(5deg)' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        -webkit-tap-highlight-color: transparent;
+        overscroll-behavior-y: none;
+        /* Valentine Gradient */
+        background: linear-gradient(180deg, #FF758F 0%, #FF4D6D 30%, #C9184A 60%, #800F2F 100%);
+        background-attachment: fixed;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+      }
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      .animate-cursor::after {
+        content: '|';
+        animation: cursor .75s step-end infinite;
+      }
+      @keyframes cursor {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
+      }
+      .mask-gradient-right {
+        mask-image: linear-gradient(to right, black 85%, transparent 100%);
+        -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+      }
+      .mask-gradient-x {
+        mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
+        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
+      }
+      .hover-pause:hover, .hover-pause:active, .hover-pause:focus-within {
+        animation-play-state: paused !important;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.10.1",
+    "react-dom": "https://esm.sh/react-dom@^19.2.3"
+  }
+}
+</script>
+</head>
+  <body class="min-h-screen text-slate-800 antialiased selection:bg-brand-pink selection:text-white">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
