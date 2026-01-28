@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { Mascot } from '../components/Mascot';
@@ -12,7 +12,7 @@ import { useAuth } from '../components/AuthContext';
 
 // --- Decorative Components ---
 
-const ValentineGarland: React.FC = () => (
+const ValentineGarland: React.FC = React.memo(() => (
   <div className="fixed top-0 left-0 right-0 h-16 z-40 pointer-events-none flex justify-around overflow-visible">
      <div className="absolute top-[-20px] left-[-5%] right-[-5%] h-12 border-b-2 border-white/40 rounded-[100%]"></div>
      {Array.from({ length: 8 }).map((_, i) => (
@@ -39,20 +39,28 @@ const ValentineGarland: React.FC = () => (
          </div>
      ))}
   </div>
-);
+));
 
-const FloatingHearts: React.FC = () => {
+const FloatingHearts: React.FC = React.memo(() => {
+  const hearts = useMemo(() => Array.from({ length: 15 }).map((_, i) => ({
+    id: i,
+    left: Math.random() * 100,
+    delay: Math.random() * 10,
+    duration: 10 + Math.random() * 10,
+    size: 20 + Math.random() * 40
+  })), []);
+
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden select-none">
-       {Array.from({ length: 15 }).map((_, i) => (
+       {hearts.map((heart) => (
           <div 
-            key={i}
+            key={heart.id}
             className="absolute text-brand-pink/20 animate-hearts"
             style={{
-                left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 10}s`,
-                animationDuration: `${10 + Math.random() * 10}s`,
-                fontSize: `${20 + Math.random() * 40}px`
+                left: `${heart.left}%`,
+                animationDelay: `${heart.delay}s`,
+                animationDuration: `${heart.duration}s`,
+                fontSize: `${heart.size}px`
             }}
           >
              ♥
@@ -62,7 +70,7 @@ const FloatingHearts: React.FC = () => {
        <div className="absolute bottom-[-10%] right-[-10%] w-[45vw] h-[45vw] bg-pink-500/20 rounded-full blur-[140px] mix-blend-screen animate-pulse-slow" style={{animationDelay: '2s'}}></div>
     </div>
   );
-};
+});
 
 const CupidSearchBar: React.FC<{ onClick: () => void }> = ({ onClick }) => (
   <div className="w-full max-w-2xl mx-auto px-4 mb-10 relative z-20">
@@ -218,7 +226,11 @@ export const Home: React.FC = () => {
       <ValentineGarland />
       
       {/* Header */}
-      <div className="fixed top-6 left-6 z-50"><Logo variant="white" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})} /></div>
+      <div className="fixed top-6 left-6 z-50">
+          <div className="bg-white/95 backdrop-blur-xl border border-white/50 rounded-2xl px-4 py-2 shadow-md hover:scale-105 transition-transform cursor-pointer">
+            <Logo onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})} />
+          </div>
+      </div>
       <div className="fixed top-6 right-6 z-50">
          {user ? (
              <Link to="/profile" className="bg-white/20 backdrop-blur-md border border-white/30 px-4 py-2 rounded-full text-white font-bold text-sm hover:bg-white/30 transition-colors">Профиль</Link>
@@ -232,7 +244,6 @@ export const Home: React.FC = () => {
         {/* HERO SECTION */}
         <div className="text-center mb-10 px-4">
             <div className="relative inline-block">
-                <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-white/40 text-sm tracking-widest font-mono">----------&gt;</div>
                 <Mascot 
                     className="w-40 h-40 mx-auto mb-4 drop-shadow-2xl" 
                     eyesX={eyes.x} 

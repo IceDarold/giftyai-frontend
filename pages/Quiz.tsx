@@ -317,18 +317,13 @@ export const Quiz: React.FC = () => {
   const location = useLocation();
   const [step, setStep] = useState(0);
   
+  // Initialize from props OR default (NO persistence loading)
   const [answers, setAnswers] = useState<QuizAnswers>(() => {
     if (location.state) {
         const { name, relationship } = location.state as { name: string, relationship: string };
         return { ...INITIAL_ANSWERS, name: name || '', relationship: relationship || '' };
     }
-    try {
-        const saved = localStorage.getItem('gifty_draft');
-        // Merge with INITIAL_ANSWERS to ensure no keys are missing
-        return saved ? { ...INITIAL_ANSWERS, ...JSON.parse(saved) } : INITIAL_ANSWERS;
-    } catch (e) {
-        return INITIAL_ANSWERS;
-    }
+    return INITIAL_ANSWERS;
   });
 
   // Force dark background on body to prevent white/purple leaks on overscroll
@@ -345,6 +340,11 @@ export const Quiz: React.FC = () => {
     };
   }, []);
 
+  // Clear any existing draft on mount to ensure clean slate
+  useEffect(() => {
+      localStorage.removeItem('gifty_draft');
+  }, []);
+
   // Custom inputs state
   const [customOccasion, setCustomOccasion] = useState('');
   const [isCustomOccasion, setIsCustomOccasion] = useState(false);
@@ -358,10 +358,6 @@ export const Quiz: React.FC = () => {
 
   const inputRef = useRef<HTMLInputElement>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    localStorage.setItem('gifty_draft', JSON.stringify(answers));
-  }, [answers]);
 
   const updateAnswer = (field: keyof QuizAnswers, value: any) => {
     setAnswers(prev => ({ ...prev, [field]: value }));
@@ -385,6 +381,7 @@ export const Quiz: React.FC = () => {
       // Ensure budget is clean number
       finalAnswers.budget = (finalAnswers.budget || '').replace(/\D/g, '');
       
+      // Save result for Results page, but we don't save 'gifty_draft'
       localStorage.setItem('gifty_answers', JSON.stringify(finalAnswers));
       navigate('/results');
     } else {
