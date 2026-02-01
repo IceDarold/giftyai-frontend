@@ -2,6 +2,7 @@ import { QuizAnswers, Gift, UserProfile, CalendarEvent, User, RecommendationsRes
 import { mapGiftDTOToGift, mapRecommendationsResponse } from '../mappers/gift';
 import { MockServer } from './mock/server';
 import { GiftDTO } from './dto/types';
+import { analytics } from '../utils/analytics';
 
 const API_BASE = 'https://gifty-backend-lg4a.onrender.com';
 
@@ -57,6 +58,8 @@ export const apiFetch = async (endpoint: string, options: ApiFetchOptions = {}) 
     if (!response.ok) {
         if (!options.skipErrorLog) {
              console.warn(`❌ [API Error] ${response.status} ${endpoint}`, data);
+             // Track error in analytics
+             analytics.error(new Error(`API Error ${response.status}: ${JSON.stringify(data)}`), endpoint);
         }
         // Extract useful error message if possible
         const msg = data?.error?.message || data?.detail || (data?.error ? JSON.stringify(data.error) : `API Error: ${response.statusText}`);
@@ -74,6 +77,7 @@ export const apiFetch = async (endpoint: string, options: ApiFetchOptions = {}) 
   } catch (error) {
     if (!options.skipErrorLog) {
         console.warn(`⚠️ [Network] ${endpoint} unreachable`, error);
+        analytics.error(error, endpoint);
     }
     throw error;
   }

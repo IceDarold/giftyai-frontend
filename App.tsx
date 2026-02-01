@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Home } from './pages/Home';
@@ -16,6 +16,31 @@ import { DevModeProvider } from './components/DevModeContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Collections } from './pages/Collections';
 import { WishlistProvider } from './components/WishlistContext';
+import { analytics } from './utils/analytics';
+
+// Component to track page views
+const PageTracker = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    // Extract page name from path
+    let pageName = 'home';
+    const path = location.pathname;
+    
+    if (path === '/') pageName = 'home';
+    else if (path.startsWith('/quiz')) pageName = 'quiz';
+    else if (path.startsWith('/results')) pageName = 'results';
+    else if (path.startsWith('/blog')) pageName = 'blog';
+    else if (path.startsWith('/wishlist')) pageName = 'wishlist';
+    else if (path.startsWith('/profile')) pageName = 'profile';
+    else if (path.startsWith('/login')) pageName = 'login';
+    else pageName = path.substring(1);
+
+    analytics.pageView(pageName, window.location.href);
+  }, [location]);
+
+  return null;
+};
 
 const AppRoutes = () => {
     const location = useLocation();
@@ -33,6 +58,7 @@ const AppRoutes = () => {
 
     return (
         <Layout showNav={showNav} showFooter={showFooter}>
+            <PageTracker />
             <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Gift, QuizAnswers } from '../domain/types';
 import { api } from '../api';
 import { isInWishlist, addToWishlist, removeFromWishlist } from '../utils/storage'; 
-import { track } from '../utils/analytics';
+import { track, analytics } from '../utils/analytics';
 import { Button } from './Button';
 import { ReviewsSection } from './ReviewsSection';
 import { useDevMode } from './DevModeContext';
@@ -76,7 +76,8 @@ export const GiftDetailsModal: React.FC<Props> = ({ gift: initialGift, answers, 
   };
 
   const handleBuyClick = () => {
-      track('click_buy', { id: gift.id, merchant: gift.merchant });
+      // Monetization analytics
+      analytics.giftClicked(gift, 0, 'modal_buy');
       window.open(gift.productUrl, '_blank', 'noopener,noreferrer');
   };
 

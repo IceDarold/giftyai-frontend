@@ -3,8 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { Mascot } from '../components/Mascot';
 import { RELATIONSHIPS } from '../constants';
-import { QuizAnswers } from '../domain/types';
-import { track } from '../utils/analytics';
+import { QuizAnswers, StepId } from '../domain/types';
+import { analytics } from '../utils/analytics';
 import { inclineName } from '../utils/stringUtils';
 
 // --- Icons ---
@@ -109,6 +109,12 @@ const INTEREST_TAGS = [
 const EXCLUDE_TAGS = [
   'Одежда', 'Косметика', 'Алкоголь', '18+', 'Сувениры', 
   'Еда', 'Сладости', 'Сертификаты', 'Деньги', 'Книги'
+];
+
+// Map steps to question IDs for analytics
+const STEP_IDS: StepId[] = [
+  'name', 'age', 'gender', 'occasion', 'relationship', 'vibe', 'city', 
+  'roles', 'archetype', 'topics', 'pain', 'interests', 'exclude' as any, 'budget'
 ];
 
 // --- Components ---
@@ -365,6 +371,10 @@ export const Quiz: React.FC = () => {
   const location = useLocation();
   const [step, setStep] = useState(0);
   
+  // Analytics Timer
+  const stepStartTimeRef = useRef<number>(Date.now());
+  const quizStartTimeRef = useRef<number>(Date.now());
+
   // Initialize from props OR default (NO persistence loading)
   const [answers, setAnswers] = useState<QuizAnswers>(() => {
     if (location.state) {
@@ -391,6 +401,11 @@ export const Quiz: React.FC = () => {
   // Clear any existing draft on mount to ensure clean slate
   useEffect(() => {
       localStorage.removeItem('gifty_draft');
+      // If we didn't come from Home via CTA, we should track start here or just let it handle on the first step action?
+      // Best to rely on the Home CTA for 'quiz_started', but if direct load, we might miss it.
+      // For now, assume flow starts at Home.
+      stepStartTimeRef.current = Date.now();
+      quizStartTimeRef.current = Date.now();
   }, []);
 
   // Custom inputs state
@@ -411,8 +426,21 @@ export const Quiz: React.FC = () => {
     setAnswers(prev => ({ ...prev, [field]: value }));
   };
 
+  const getAnswerForAnalytics = (currentStep: number) => {
+      const stepId = STEP_IDS[currentStep];
+      if (!stepId) return null;
+      return (answers as any)[stepId];
+  };
+
   const nextStep = () => {
-    track('quiz_step', { step: step + 1 });
+    // 1. Capture Analytics for completed step
+    const timeSpent = (Date.now() - stepStartTimeRef.current) / 1000;
+    const questionId = STEP_IDS[step] || `step_${step}`;
+    const answer = getAnswerForAnalytics(step);
+    
+    analytics.quizStepCompleted(step + 1, questionId, answer, timeSpent);
+    stepStartTimeRef.current = Date.now(); // Reset timer for next step
+
     // Total steps increased to 13 (0-13)
     if (step === 13) { 
       const finalAnswers = { ...answers };
@@ -430,6 +458,10 @@ export const Quiz: React.FC = () => {
       // Ensure budget is clean number
       finalAnswers.budget = (finalAnswers.budget || '').replace(/\D/g, '');
       
+      // Final Analytics
+      const totalDuration = (Date.now() - quizStartTimeRef.current) / 1000;
+      analytics.quizCompleted(14, totalDuration);
+
       // Save result for Results page, but we don't save 'gifty_draft'
       localStorage.setItem('gifty_answers', JSON.stringify(finalAnswers));
       navigate('/results');
@@ -442,6 +474,7 @@ export const Quiz: React.FC = () => {
   const prevStep = () => {
     if (step > 0) {
         setStep(s => s - 1);
+        stepStartTimeRef.current = Date.now(); // Reset timer to avoid skewing
         window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
         navigate('/');

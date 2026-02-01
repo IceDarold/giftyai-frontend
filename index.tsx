@@ -3,20 +3,45 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { PostHogProvider } from 'posthog-js/react';
 
-const options = {
-  api_host: (import.meta as any).env.VITE_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
+// Safely access env variables
+const getEnv = (key: string): string | undefined => {
+  try {
+    return (import.meta as any).env?.[key];
+  } catch (e) {
+    return undefined;
+  }
 };
+
+const posthogKey = getEnv('VITE_PUBLIC_POSTHOG_KEY');
+const posthogHost = getEnv('VITE_PUBLIC_POSTHOG_HOST') || 'https://us.i.posthog.com';
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
+
+const RootComponent = () => {
+  // Only wrap in Provider if we have a key. Otherwise, just render App.
+  if (posthogKey) {
+    return (
+      <PostHogProvider 
+        apiKey={posthogKey}
+        options={{ 
+          api_host: posthogHost,
+          autocapture: false, // Disabled per TZ
+          capture_pageview: false, // We will track manually in App.tsx
+          persistence: 'localStorage'
+        }}
+      >
+        <App />
+      </PostHogProvider>
+    );
+  }
+  
+  return <App />;
+};
+
 root.render(
   <React.StrictMode>
-    <PostHogProvider 
-      apiKey={(import.meta as any).env.VITE_PUBLIC_POSTHOG_KEY || 'phc_6nurpxpK23p0dfHbnM4tyy7HXL7aCxAt5HtwqSZQ20J'}
-      options={options}
-    >
-      <App />
-    </PostHogProvider>
+    <RootComponent />
   </React.StrictMode>
 );

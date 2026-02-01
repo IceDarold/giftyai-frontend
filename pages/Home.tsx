@@ -7,7 +7,7 @@ import { GiftDetailsModal } from '../components/GiftDetailsModal';
 import { Logo } from '../components/Logo';
 import { api } from '../api';
 import { Gift } from '../domain/types';
-import { track } from '../utils/analytics';
+import { analytics } from '../utils/analytics';
 import { useAuth } from '../components/AuthContext';
 
 // --- Decorative Components ---
@@ -168,7 +168,7 @@ const HorizontalSection: React.FC<{
                 key={`${gift.id}-${index}`} 
                 className="w-[180px] md:w-[220px] shrink-0 transform-gpu transition-all duration-500 hover:scale-[1.02] snap-start"
               >
-                 <GiftCard gift={gift} onClick={onGiftClick} />
+                 <GiftCard gift={gift} onClick={onGiftClick} rank={index} />
               </div>
             ))}
          </div>
@@ -200,6 +200,11 @@ export const Home: React.FC = () => {
     };
     fetchData();
   }, []);
+
+  const startQuiz = (entryPoint: string) => {
+    analytics.quizStarted(entryPoint);
+    navigate('/quiz');
+  };
 
   const openGift = (gift: Gift) => {
     setSelectedGift(gift);
@@ -249,8 +254,8 @@ export const Home: React.FC = () => {
                 Найдет путь к сердцу за 30 секунд.
             </p>
             
-            <CupidSearchBar onClick={() => navigate('/quiz')} />
-            <CategoryPills onSelect={() => navigate('/quiz')} />
+            <CupidSearchBar onClick={() => startQuiz('home_hero_search')} />
+            <CategoryPills onSelect={() => startQuiz('home_hero_pills')} />
         </div>
 
         {/* CONTENT SECTIONS */}
@@ -265,7 +270,7 @@ export const Home: React.FC = () => {
             <h2 className="text-3xl font-black text-white tracking-tight mb-8">Вдохновение для свиданий</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {/* Promo Card */}
-                <div onClick={() => navigate('/quiz')} className="col-span-2 relative overflow-hidden rounded-[2.5rem] p-8 min-h-[300px] bg-white cursor-pointer group shadow-2xl flex flex-col justify-center items-center text-center border-4 border-white/50">
+                <div onClick={() => startQuiz('home_promo_card')} className="col-span-2 relative overflow-hidden rounded-[2.5rem] p-8 min-h-[300px] bg-white cursor-pointer group shadow-2xl flex flex-col justify-center items-center text-center border-4 border-white/50">
                     <div className="absolute inset-0 bg-gradient-to-br from-brand-pink to-brand-love opacity-10 group-hover:opacity-20 transition-opacity"></div>
                     <div className="relative z-20">
                         <div className="text-6xl mb-4 group-hover:scale-110 transition-transform duration-500">🔮</div>
@@ -277,7 +282,7 @@ export const Home: React.FC = () => {
                     </div>
                 </div>
                 {/* Gift Grid */}
-                {feedGifts.map(g => <GiftCard key={g.id} gift={g} onClick={openGift} />)}
+                {feedGifts.map((g, i) => <GiftCard key={g.id} gift={g} onClick={openGift} rank={i} />)}
             </div>
         </div>
       </div>

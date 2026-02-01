@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Gift } from '../domain/types';
-import { track } from '../utils/analytics';
+import { track, analytics } from '../utils/analytics';
 import { useWishlist } from './WishlistContext';
 
 interface Props {
@@ -8,9 +8,10 @@ interface Props {
   featured?: boolean;
   onToggleWishlist?: () => void;
   onClick?: (gift: Gift) => void;
+  rank?: number; // Optional rank for analytics
 }
 
-export const GiftCard: React.FC<Props> = ({ gift, featured = false, onToggleWishlist, onClick }) => {
+export const GiftCard: React.FC<Props> = ({ gift, featured = false, onToggleWishlist, onClick, rank = 0 }) => {
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
   const [imgError, setImgError] = useState(false);
   
@@ -29,6 +30,8 @@ export const GiftCard: React.FC<Props> = ({ gift, featured = false, onToggleWish
   };
 
   const handleCardClick = () => {
+    // Monetization tracking
+    analytics.giftClicked(gift, rank, 'card_view');
     if (onClick) onClick(gift);
   };
 
