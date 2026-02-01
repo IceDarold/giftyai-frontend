@@ -180,26 +180,12 @@ const HorizontalSection: React.FC<{
 export const Home: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [eyes, setEyes] = useState({ x: 0, y: 0 });
 
   const [feedGifts, setFeedGifts] = useState<Gift[]>([]);
   const [romanticGifts, setRomanticGifts] = useState<Gift[]>([]);
   
   const [selectedGift, setSelectedGift] = useState<Gift | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  useEffect(() => {
-    const handleMove = (e: MouseEvent) => {
-      const centerX = window.innerWidth / 2;
-      const centerY = 200;
-      setEyes({ 
-        x: (e.clientX - centerX) / 300, 
-        y: (e.clientY - centerY) / 300 
-      });
-    };
-    window.addEventListener('mousemove', handleMove);
-    return () => window.removeEventListener('mousemove', handleMove);
-  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -246,8 +232,8 @@ export const Home: React.FC = () => {
             <div className="relative inline-block">
                 <Mascot 
                     className="w-40 h-40 mx-auto mb-4 drop-shadow-2xl" 
-                    eyesX={eyes.x} 
-                    eyesY={eyes.y} 
+                    eyesX={0} 
+                    eyesY={0} 
                     variant="cupid" 
                     emotion="happy" 
                 />

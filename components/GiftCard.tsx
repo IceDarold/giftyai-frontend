@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Gift } from '../types';
-import { addToWishlist, removeFromWishlist, isInWishlist } from '../utils/storage';
+import { Gift } from '../domain/types';
 import { track } from '../utils/analytics';
+import { useWishlist } from './WishlistContext';
 
 interface Props {
   gift: Gift;
@@ -11,12 +11,10 @@ interface Props {
 }
 
 export const GiftCard: React.FC<Props> = ({ gift, featured = false, onToggleWishlist, onClick }) => {
-  const [saved, setSaved] = useState(isInWishlist(gift.id));
+  const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
   const [imgError, setImgError] = useState(false);
-
-  useEffect(() => {
-    setSaved(isInWishlist(gift.id));
-  }, [gift.id, onToggleWishlist]);
+  
+  const saved = isInWishlist(gift.id);
 
   const handleWishlist = (e: React.MouseEvent | React.KeyboardEvent) => {
     e.stopPropagation();
@@ -27,7 +25,6 @@ export const GiftCard: React.FC<Props> = ({ gift, featured = false, onToggleWish
       addToWishlist(gift.id);
       track('add_wishlist', { id: gift.id });
     }
-    setSaved(!saved);
     if (onToggleWishlist) onToggleWishlist();
   };
 

@@ -15,6 +15,7 @@ import { AuthProvider } from './components/AuthContext';
 import { DevModeProvider } from './components/DevModeContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Collections } from './pages/Collections';
+import { WishlistProvider } from './components/WishlistContext';
 
 const AppRoutes = () => {
     const location = useLocation();
@@ -60,11 +61,13 @@ const App: React.FC = () => {
   return (
     <AuthProvider>
         <DevModeProvider>
-            <SnowProvider>
-                <HashRouter>
-                    <AppRoutes />
-                </HashRouter>
-            </SnowProvider>
+            <WishlistProvider>
+                <SnowProvider>
+                    <HashRouter>
+                        <AppRoutes />
+                    </HashRouter>
+                </SnowProvider>
+            </WishlistProvider>
         </DevModeProvider>
     </AuthProvider>
   );

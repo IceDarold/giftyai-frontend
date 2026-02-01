@@ -245,12 +245,30 @@ export const Partners: React.FC = () => {
                                             className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 font-bold text-brand-dark outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/10 transition-all cursor-pointer text-sm appearance-none"
                                         >
                                             <option value="">Выбрать...</option>
-                                            <option value="home">Дом</option>
-                                            <option value="tech">Гаджеты</option>
-                                            <option value="beauty">Красота</option>
-                                            <option value="food">Еда</option>
-                                            <option value="hobby">Хобби</option>
-                                            <option value="kids">Детям</option>
+                                            <option value="home">Дом и Уют</option>
+                                            <option value="tech">Гаджеты и Электроника</option>
+                                            <option value="beauty">Красота и Уход</option>
+                                            <option value="clothing">Одежда и Аксессуары</option>
+                                            <option value="jewelry">Украшения</option>
+                                            <option value="food">Еда и Напитки</option>
+                                            <option value="hobby">Хобби и Творчество</option>
+                                            <option value="kids">Детские товары</option>
+                                            <option value="sports">Спорт и Отдых</option>
+                                            <option value="flowers">Цветы и Флористика</option>
+                                            <option value="gifts">Подарки и Сувениры</option>
+                                            <option value="board_games">Настольные игры</option>
+                                            <option value="art">Искусство</option>
+                                            <option value="digital">Цифровые товары</option>
+                                            <option value="subscriptions">Подписки</option>
+                                            <option value="events">Мероприятия</option>
+                                            <option value="books">Книги и Канцелярия</option>
+                                            <option value="auto">Автотовары</option>
+                                            <option value="pets">Зоотовары</option>
+                                            <option value="handmade">Ручная работа</option>
+                                            <option value="vintage">Винтаж</option>
+                                            <option value="corporate">Корпоративные</option>
+                                            <option value="experiences">Впечатления</option>
+                                            <option value="other">Другое</option>
                                         </select>
                                     </div>
                                 </div>
@@ -281,8 +299,8 @@ export const Partners: React.FC = () => {
                                         </span>
                                     ) : 'Получить оффер'}
                                 </Button>
-                                <p className="text-[10px] text-gray-400 text-center mt-4 font-medium">
-                                    Нажимая кнопку, вы принимаете условия оферты
+                                <p className="text-[11px] text-gray-400 text-center mt-4 font-medium leading-relaxed">
+                                    Нажимая кнопку, вы принимаете условия оферты и политики конфиденциальности
                                 </p>
                             </div>
                         </form>
