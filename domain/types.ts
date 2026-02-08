@@ -60,12 +60,28 @@ export interface QuizAnswers {
   relationship: string;
   vibe: string;
   city: string;
+  
+  // New Deep Profile Fields
+  roles: string[]; // Top 3 roles
+  roleConfidence: 'sure' | 'guessing';
+  
+  archetype: string;
+  selfWorth: string; // What they value in themselves
+  
+  conversationTopics: string;
+  topicDuration: 'long_term' | 'temporary'; // "It's been a while" vs "New hype"
+  
+  painPoints: string[]; // Daily irritants
+  painStyle: 'endurer' | 'optimizer'; // Tolerates vs Optimizes
+  riskyTopics: boolean; // True if weight/hygiene/order are sensitive topics (Risk Check)
+
+  // Legacy/General
   interests: string;
   budget: string;
   exclude?: string;
 }
 
-export type StepId = 'name' | 'age' | 'gender' | 'occasion' | 'relationship' | 'vibe' | 'city' | 'interests' | 'budget';
+export type StepId = 'name' | 'age' | 'gender' | 'occasion' | 'relationship' | 'vibe' | 'city' | 'roles' | 'archetype' | 'topics' | 'pain' | 'interests' | 'budget';
 
 export interface FilterState {
   budget: string;

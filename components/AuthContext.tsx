@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User } from '../domain/types';
 import { api } from '../api';
+import { analytics } from '../utils/analytics';
 
 interface AuthContextType {
   user: User | null;
@@ -20,6 +21,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const currentUser = await api.auth.getMe();
       setUser(currentUser);
+      
+      // Identify user in analytics if logged in
+      if (currentUser) {
+        analytics.identify(currentUser.id, {
+          email: currentUser.email,
+          name: currentUser.name
+        });
+      }
     } catch (e) {
       setUser(null);
     } finally {
@@ -34,6 +43,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Logout error', e);
     } finally {
       setUser(null);
+      // Reset analytics on logout
+      analytics.reset();
       window.location.href = '/';
     }
   }, []);

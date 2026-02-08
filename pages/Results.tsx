@@ -5,7 +5,7 @@ import { api } from '../api';
 import { Gift, QuizAnswers, RecommendationsResponse } from '../domain/types';
 import { Button } from '../components/Button';
 import { useNavigate } from 'react-router-dom';
-import { track } from '../utils/analytics';
+import { analytics, track } from '../utils/analytics';
 import { Mascot } from '../components/Mascot';
 import { useDevMode } from '../components/DevModeContext';
 import { inclineName } from '../utils/stringUtils';
@@ -108,11 +108,17 @@ const FeaturedCard: React.FC<{
     onToggleWishlist();
   };
 
+  // Click wrapper to track monetization
+  const handleClick = () => {
+    analytics.giftClicked(gift, 0, 'results_featured');
+    onClick(gift);
+  }
+
   const formattedPrice = gift.price ? new Intl.NumberFormat('ru-RU').format(gift.price) + ' ' + (gift.currency === 'USD' ? '$' : '₽') : '---';
 
   return (
     <div 
-        onClick={() => onClick(gift)}
+        onClick={handleClick}
         className="group relative w-full bg-white rounded-[2.5rem] overflow-hidden shadow-xl hover:shadow-[0_0_50px_rgba(124,58,237,0.3)] transition-all duration-500 cursor-pointer border border-white/20 transform hover:-translate-y-1"
     >
         <div className="flex flex-col md:flex-row h-auto md:min-h-[28rem]">
@@ -343,7 +349,8 @@ export const Results: React.FC = () => {
       // Use the new generate endpoint which returns full Gift objects
       const recResponse = await api.recommendations.create(parsedAnswers);
       setResponse(recResponse);
-      track('results_shown', { count: recResponse.gifts.length });
+      
+      analytics.resultsShown(recResponse.gifts.length);
     } catch (err) {
       console.error(err);
       setError("Не удалось подобрать подарки.");
@@ -663,6 +670,7 @@ export const Results: React.FC = () => {
                                 gift={gift} 
                                 onClick={handleGiftClick}
                                 onToggleWishlist={() => setWishlistVersion(v => v + 1)}
+                                rank={idx + 1}
                             />
                         </div>
                     ))}

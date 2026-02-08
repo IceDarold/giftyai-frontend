@@ -1,22 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Gift } from '../types';
-import { addToWishlist, removeFromWishlist, isInWishlist } from '../utils/storage';
-import { track } from '../utils/analytics';
+import { Gift } from '../domain/types';
+import { track, analytics } from '../utils/analytics';
+import { useWishlist } from './WishlistContext';
 
 interface Props {
   gift: Gift;
   featured?: boolean;
   onToggleWishlist?: () => void;
   onClick?: (gift: Gift) => void;
+  rank?: number; // Optional rank for analytics
 }
 
-export const GiftCard: React.FC<Props> = ({ gift, featured = false, onToggleWishlist, onClick }) => {
-  const [saved, setSaved] = useState(isInWishlist(gift.id));
+export const GiftCard: React.FC<Props> = ({ gift, featured = false, onToggleWishlist, onClick, rank = 0 }) => {
+  const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
   const [imgError, setImgError] = useState(false);
-
-  useEffect(() => {
-    setSaved(isInWishlist(gift.id));
-  }, [gift.id, onToggleWishlist]);
+  
+  const saved = isInWishlist(gift.id);
 
   const handleWishlist = (e: React.MouseEvent | React.KeyboardEvent) => {
     e.stopPropagation();
@@ -27,11 +26,12 @@ export const GiftCard: React.FC<Props> = ({ gift, featured = false, onToggleWish
       addToWishlist(gift.id);
       track('add_wishlist', { id: gift.id });
     }
-    setSaved(!saved);
     if (onToggleWishlist) onToggleWishlist();
   };
 
   const handleCardClick = () => {
+    // Monetization tracking
+    analytics.giftClicked(gift, rank, 'card_view');
     if (onClick) onClick(gift);
   };
 

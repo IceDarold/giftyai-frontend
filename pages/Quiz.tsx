@@ -3,8 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { Mascot } from '../components/Mascot';
 import { RELATIONSHIPS } from '../constants';
-import { QuizAnswers } from '../types';
-import { track } from '../utils/analytics';
+import { QuizAnswers, StepId } from '../domain/types';
+import { analytics } from '../utils/analytics';
 import { inclineName } from '../utils/stringUtils';
 
 // --- Icons ---
@@ -39,6 +39,43 @@ const VIBES = [
   { id: 'emotional', label: 'Сентиментальный', desc: 'На память и для души', icon: Icons.Vibes.Emotional },
 ];
 
+// --- New Data Constants ---
+
+const ROLES = [
+    { id: 'esthete', label: '🎨 Эстет', desc: 'Визуал, ценит красоту' },
+    { id: 'techie', label: '💻 Технарь', desc: 'Гаджеты и инновации' },
+    { id: 'foodie', label: '🍔 Гурман', desc: 'Еда как искусство' },
+    { id: 'athlete', label: '🏃 Спортсмен', desc: 'Движение и ЗОЖ' },
+    { id: 'gamer', label: '🎮 Геймер', desc: 'Виртуальные миры' },
+    { id: 'audiophile', label: '🎧 Меломан', desc: 'Живет в наушниках' },
+    { id: 'reader', label: '📚 Читатель', desc: 'Книжный червь' },
+    { id: 'traveler', label: '🌍 Путешественник', desc: 'Не сидит дома' },
+    { id: 'homebody', label: '🏠 Домосед', desc: 'Мой дом - крепость' },
+    { id: 'party', label: '🎉 Тусовщик', desc: 'Душа компании' },
+    { id: 'system', label: '⚙️ Человек-система', desc: 'Порядок во всем' },
+    { id: 'creator', label: '✨ Творец', desc: 'Создает своими руками' },
+    { id: 'collector', label: '💎 Коллекционер', desc: 'Азарт поиска' },
+    { id: 'career', label: '💼 Карьерист', desc: 'Работа - это страсть' },
+];
+
+const ARCHETYPES = [
+    { id: 'explorer', label: 'Исследователь 🔭', desc: 'Ищет новое, любит открытия' },
+    { id: 'creator', label: 'Создатель 🛠', desc: 'Строит, мастерит, придумывает' },
+    { id: 'curator', label: 'Куратор 🧐', desc: 'Отбирает лучшее, ценит качество' },
+    { id: 'perfectionist', label: 'Перфекционист 📏', desc: 'Всё должно быть идеально' },
+    { id: 'protector', label: 'Защитник 🛡', desc: 'Заботится о других, надежный' },
+    { id: 'comedian', label: 'Комик 🤡', desc: 'Смех - лучшее оружие' },
+];
+
+const PAIN_ZONES = [
+    { id: 'cables', label: '🔌 Провода/Зарядка', desc: 'Вечно теряются или путаются' },
+    { id: 'keys', label: '🔑 Ключи/Мелочи', desc: 'Хаос в карманах или сумке' },
+    { id: 'sleep', label: '😴 Сон/Стресс', desc: 'Трудно расслабиться' },
+    { id: 'workspace', label: '🖥 Рабочее место', desc: 'Беспорядок или неудобство' },
+    { id: 'cleaning', label: '🧹 Уборка/Быт', desc: 'Рутина утомляет' },
+    { id: 'health', label: 'back Здоровье/Спина', desc: 'Сидячий образ жизни' },
+];
+
 const INITIAL_ANSWERS: QuizAnswers = {
   name: '',
   ageGroup: '25',
@@ -49,7 +86,18 @@ const INITIAL_ANSWERS: QuizAnswers = {
   city: '',
   interests: '',
   budget: '',
-  exclude: ''
+  exclude: '',
+  
+  // New Fields Defaults
+  roles: [],
+  roleConfidence: 'sure',
+  archetype: '',
+  selfWorth: '',
+  conversationTopics: '',
+  topicDuration: 'long_term',
+  painPoints: [],
+  painStyle: 'endurer',
+  riskyTopics: false,
 };
 
 const INTEREST_TAGS = [
@@ -61,6 +109,12 @@ const INTEREST_TAGS = [
 const EXCLUDE_TAGS = [
   'Одежда', 'Косметика', 'Алкоголь', '18+', 'Сувениры', 
   'Еда', 'Сладости', 'Сертификаты', 'Деньги', 'Книги'
+];
+
+// Map steps to question IDs for analytics
+const STEP_IDS: StepId[] = [
+  'name', 'age', 'gender', 'occasion', 'relationship', 'vibe', 'city', 
+  'roles', 'archetype', 'topics', 'pain', 'interests', 'exclude' as any, 'budget'
 ];
 
 // --- Components ---
@@ -317,6 +371,10 @@ export const Quiz: React.FC = () => {
   const location = useLocation();
   const [step, setStep] = useState(0);
   
+  // Analytics Timer
+  const stepStartTimeRef = useRef<number>(Date.now());
+  const quizStartTimeRef = useRef<number>(Date.now());
+
   // Initialize from props OR default (NO persistence loading)
   const [answers, setAnswers] = useState<QuizAnswers>(() => {
     if (location.state) {
@@ -343,6 +401,11 @@ export const Quiz: React.FC = () => {
   // Clear any existing draft on mount to ensure clean slate
   useEffect(() => {
       localStorage.removeItem('gifty_draft');
+      // If we didn't come from Home via CTA, we should track start here or just let it handle on the first step action?
+      // Best to rely on the Home CTA for 'quiz_started', but if direct load, we might miss it.
+      // For now, assume flow starts at Home.
+      stepStartTimeRef.current = Date.now();
+      quizStartTimeRef.current = Date.now();
   }, []);
 
   // Custom inputs state
@@ -363,9 +426,23 @@ export const Quiz: React.FC = () => {
     setAnswers(prev => ({ ...prev, [field]: value }));
   };
 
+  const getAnswerForAnalytics = (currentStep: number) => {
+      const stepId = STEP_IDS[currentStep];
+      if (!stepId) return null;
+      return (answers as any)[stepId];
+  };
+
   const nextStep = () => {
-    track('quiz_step', { step: step + 1 });
-    if (step === 9) { // Budget is now step 9
+    // 1. Capture Analytics for completed step
+    const timeSpent = (Date.now() - stepStartTimeRef.current) / 1000;
+    const questionId = STEP_IDS[step] || `step_${step}`;
+    const answer = getAnswerForAnalytics(step);
+    
+    analytics.quizStepCompleted(step + 1, questionId, answer, timeSpent);
+    stepStartTimeRef.current = Date.now(); // Reset timer for next step
+
+    // Total steps increased to 13 (0-13)
+    if (step === 13) { 
       const finalAnswers = { ...answers };
       const combinedInterests = [...selectedTags, ...(answers.interests ? [answers.interests] : [])].join(', ');
       finalAnswers.interests = combinedInterests;
@@ -381,6 +458,10 @@ export const Quiz: React.FC = () => {
       // Ensure budget is clean number
       finalAnswers.budget = (finalAnswers.budget || '').replace(/\D/g, '');
       
+      // Final Analytics
+      const totalDuration = (Date.now() - quizStartTimeRef.current) / 1000;
+      analytics.quizCompleted(14, totalDuration);
+
       // Save result for Results page, but we don't save 'gifty_draft'
       localStorage.setItem('gifty_answers', JSON.stringify(finalAnswers));
       navigate('/results');
@@ -393,6 +474,7 @@ export const Quiz: React.FC = () => {
   const prevStep = () => {
     if (step > 0) {
         setStep(s => s - 1);
+        stepStartTimeRef.current = Date.now(); // Reset timer to avoid skewing
         window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
         navigate('/');
@@ -401,7 +483,8 @@ export const Quiz: React.FC = () => {
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     // Prevent Next step on enter for CityAutocomplete as it uses Enter to select
-    if (step === 6) return; 
+    // Step 9 is topics textarea, step 11 is interest textarea - allow enter for newlines
+    if (step === 6 || step === 9 || step === 11) return; 
     if (e.key === 'Enter' && isCurrentStepValid()) nextStep();
   };
 
@@ -414,9 +497,16 @@ export const Quiz: React.FC = () => {
       case 4: return isCustomRelationship ? customRelationship.trim().length > 0 : (answers.relationship || '').length > 0;
       case 5: return isCustomVibe ? customVibe.trim().length > 0 : (answers.vibe || '').length > 0;
       case 6: return (answers.city || '').trim().length > 0;
-      case 7: return ((answers.interests || '').trim().length > 0 || selectedTags.length > 0);
-      case 8: return true; // Exclude is optional
-      case 9: return (answers.budget || '').length > 0 && parseInt(answers.budget) > 0;
+      
+      // New Steps
+      case 7: return answers.roles.length > 0; // Roles
+      case 8: return answers.archetype.length > 0; // Archetype
+      case 9: return answers.conversationTopics.trim().length > 0; // Topics
+      case 10: return true; // Pain Points (Optional)
+      
+      case 11: return ((answers.interests || '').trim().length > 0 || selectedTags.length > 0);
+      case 12: return true; // Exclude is optional
+      case 13: return (answers.budget || '').length > 0 && parseInt(answers.budget) > 0;
       default: return false;
     }
   };
@@ -427,6 +517,29 @@ export const Quiz: React.FC = () => {
 
   const toggleExcludeTag = (tag: string) => {
       setSelectedExcludeTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+  };
+
+  // Toggle for Roles
+  const toggleRole = (roleId: string) => {
+      const current = answers.roles;
+      let nextRoles;
+      if (current.includes(roleId)) {
+          nextRoles = current.filter(r => r !== roleId);
+      } else {
+          // Limit to 3 roles
+          if (current.length >= 3) return;
+          nextRoles = [...current, roleId];
+      }
+      updateAnswer('roles', nextRoles);
+  };
+
+  // Toggle Pain Points
+  const togglePain = (painId: string) => {
+      const current = answers.painPoints;
+      const nextPain = current.includes(painId) 
+        ? current.filter(p => p !== painId) 
+        : [...current, painId];
+      updateAnswer('painPoints', nextPain);
   };
 
   const getGenderLabels = () => {
@@ -663,13 +776,187 @@ export const Quiz: React.FC = () => {
                             onSelect={() => setTimeout(nextStep, 250)}
                         />
                     </div>
-                    {/* Popular cities buttons removed as per request to focus on search */}
                 </>
             )}
 
+            {/* --- NEW STEP 7: Roles --- */}
             {step === 7 && (
                 <>
-                    <StepHeader title="Интересы и хобби" subtitle="Чем подробнее, тем лучше" />
+                    <StepHeader title="Кто он по жизни?" subtitle="Выберите 3 главных роли" />
+                    <div className="flex flex-wrap justify-center gap-2 mb-8">
+                        {ROLES.map(role => (
+                            <button
+                                key={role.id}
+                                onClick={() => toggleRole(role.id)}
+                                className={`px-4 py-3 rounded-2xl font-bold text-sm transition-all border shadow-sm ${
+                                    answers.roles.includes(role.id)
+                                    ? 'bg-white text-brand-dark border-white scale-105 shadow-lg'
+                                    : 'bg-white/10 text-white border-white/10 hover:bg-white/20'
+                                }`}
+                            >
+                                {role.label}
+                            </button>
+                        ))}
+                    </div>
+                    
+                    {answers.roles.length > 0 && (
+                        <div className="flex justify-center animate-fade-in">
+                            <div className="bg-white/10 p-1 rounded-xl flex">
+                                <button 
+                                    onClick={() => updateAnswer('roleConfidence', 'sure')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${answers.roleConfidence === 'sure' ? 'bg-brand-blue text-white shadow' : 'text-white/60 hover:text-white'}`}
+                                >
+                                    Знаю точно
+                                </button>
+                                <button 
+                                    onClick={() => updateAnswer('roleConfidence', 'guessing')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${answers.roleConfidence === 'guessing' ? 'bg-brand-purple text-white shadow' : 'text-white/60 hover:text-white'}`}
+                                >
+                                    Кажется
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </>
+            )}
+
+            {/* --- NEW STEP 8: Archetype --- */}
+            {step === 8 && (
+                <>
+                    <StepHeader title="Внутренний миф" subtitle="Какой он персонаж?" />
+                    
+                    <div className="grid grid-cols-2 gap-3 mb-8">
+                        {ARCHETYPES.map(arch => (
+                            <button
+                                key={arch.id}
+                                onClick={() => updateAnswer('archetype', arch.id)}
+                                className={`p-4 rounded-2xl text-left transition-all border ${
+                                    answers.archetype === arch.id
+                                    ? 'bg-gradient-to-br from-brand-blue to-brand-purple border-white/50 text-white shadow-lg scale-[1.02]'
+                                    : 'bg-white/5 border-white/10 text-white hover:bg-white/10'
+                                }`}
+                            >
+                                <div className="font-bold mb-1">{arch.label}</div>
+                                <div className="text-[10px] opacity-70 leading-tight">{arch.desc}</div>
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
+                        <label className="block text-xs font-bold text-white/50 uppercase tracking-wider mb-2 ml-1">
+                            Суперсила (за что ценит себя?)
+                        </label>
+                        <input
+                            type="text"
+                            placeholder="Например: Умеет решать любые проблемы..."
+                            value={answers.selfWorth}
+                            onChange={(e) => updateAnswer('selfWorth', e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            className="w-full bg-transparent text-white font-medium outline-none placeholder-white/20 border-b border-white/10 focus:border-brand-blue pb-2 transition-all"
+                        />
+                    </div>
+                </>
+            )}
+
+            {/* --- NEW STEP 9: Topics --- */}
+            {step === 9 && (
+                <>
+                    <StepHeader title="Горящие глаза" subtitle="О чем может говорить часами?" />
+                    
+                    <div className="relative mb-8">
+                        <textarea
+                            ref={textAreaRef}
+                            value={answers.conversationTopics}
+                            onChange={(e) => updateAnswer('conversationTopics', e.target.value)}
+                            placeholder="Космос, инвестиции, коты, история Рима, новый стартап..."
+                            className="w-full h-32 bg-white/10 rounded-3xl p-6 text-white placeholder-white/30 font-bold text-xl outline-none border border-white/10 focus:border-brand-purple focus:bg-white/15 transition-all resize-none shadow-inner text-center leading-relaxed"
+                        />
+                    </div>
+
+                    <div className="flex justify-center gap-4">
+                        <button 
+                            onClick={() => updateAnswer('topicDuration', 'long_term')}
+                            className={`px-6 py-3 rounded-2xl border transition-all ${
+                                answers.topicDuration === 'long_term' 
+                                ? 'bg-white text-brand-dark border-white font-bold shadow-lg' 
+                                : 'bg-transparent text-white/60 border-white/20 hover:bg-white/10'
+                            }`}
+                        >
+                            ❤️ Давно любит
+                        </button>
+                        <button 
+                            onClick={() => updateAnswer('topicDuration', 'temporary')}
+                            className={`px-6 py-3 rounded-2xl border transition-all ${
+                                answers.topicDuration === 'temporary' 
+                                ? 'bg-white text-brand-dark border-white font-bold shadow-lg' 
+                                : 'bg-transparent text-white/60 border-white/20 hover:bg-white/10'
+                            }`}
+                        >
+                            🔥 Новый хайп
+                        </button>
+                    </div>
+                </>
+            )}
+
+            {/* --- NEW STEP 10: Pain Points --- */}
+            {step === 10 && (
+                <>
+                    <StepHeader title="Бытовые враги" subtitle="Что портит настроение?" />
+                    
+                    <div className="flex flex-wrap justify-center gap-3 mb-8">
+                        {PAIN_ZONES.map(pain => (
+                            <button
+                                key={pain.id}
+                                onClick={() => togglePain(pain.id)}
+                                className={`px-4 py-3 rounded-xl text-left transition-all border flex flex-col ${
+                                    answers.painPoints.includes(pain.id)
+                                    ? 'bg-red-500/20 border-red-400 text-white shadow-[0_0_15px_rgba(248,113,113,0.3)]'
+                                    : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
+                                }`}
+                            >
+                                <span className="font-bold text-sm">{pain.label}</span>
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-6">
+                        <div className="bg-white/5 p-1 rounded-xl flex">
+                            <button 
+                                onClick={() => updateAnswer('painStyle', 'endurer')}
+                                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${answers.painStyle === 'endurer' ? 'bg-white/20 text-white' : 'text-white/40'}`}
+                            >
+                                🧘‍♂️ Терпит неудобства
+                            </button>
+                            <button 
+                                onClick={() => updateAnswer('painStyle', 'optimizer')}
+                                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${answers.painStyle === 'optimizer' ? 'bg-brand-blue text-white' : 'text-white/40'}`}
+                            >
+                                🚀 Оптимизирует всё
+                            </button>
+                        </div>
+
+                        <label className="flex items-center gap-3 cursor-pointer group bg-white/5 p-4 rounded-2xl border border-white/10 hover:bg-white/10 transition-all">
+                            <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${answers.riskyTopics ? 'bg-red-500 border-red-500' : 'border-white/30'}`}>
+                                {answers.riskyTopics && <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                            </div>
+                            <input 
+                                type="checkbox" 
+                                className="hidden" 
+                                checked={answers.riskyTopics} 
+                                onChange={() => updateAnswer('riskyTopics', !answers.riskyTopics)} 
+                            />
+                            <div className="text-left">
+                                <div className="text-sm font-bold text-white">Risk Check ⚠️</div>
+                                <div className="text-xs text-white/50">Есть табу (вес, гигиена, порядок)?</div>
+                            </div>
+                        </label>
+                    </div>
+                </>
+            )}
+
+            {step === 11 && (
+                <>
+                    <StepHeader title="Хобби и увлечения" subtitle="Конкретика (если есть)" />
                     <div className="flex flex-wrap gap-2 mb-8 justify-center">
                         {INTEREST_TAGS.map(tag => (
                             <button
@@ -690,14 +977,14 @@ export const Quiz: React.FC = () => {
                             ref={textAreaRef}
                             value={answers.interests}
                             onChange={(e) => updateAnswer('interests', e.target.value)}
-                            placeholder="Напишите всё, что знаете: любит Гарри Поттера, мечтает о собаке, пьет много кофе..."
-                            className="w-full h-40 bg-white/10 rounded-3xl p-6 text-white placeholder-white/30 font-medium text-lg outline-none border border-white/10 focus:border-brand-purple focus:bg-white/15 transition-all resize-none shadow-inner"
+                            placeholder="Любит Гарри Поттера, мечтает о корги, фанат Marvel..."
+                            className="w-full h-32 bg-white/10 rounded-3xl p-6 text-white placeholder-white/30 font-medium text-lg outline-none border border-white/10 focus:border-brand-purple focus:bg-white/15 transition-all resize-none shadow-inner"
                         />
                     </div>
                 </>
             )}
 
-            {step === 8 && (
+            {step === 12 && (
                 <>
                     <StepHeader title="Чего точно НЕ дарить?" subtitle="Исключим провальные варианты" />
                     <div className="flex flex-wrap gap-2 mb-6 justify-center">
@@ -731,7 +1018,7 @@ export const Quiz: React.FC = () => {
                 </>
             )}
 
-            {step === 9 && (
+            {step === 13 && (
                 <>
                     <StepHeader title="Бюджет" subtitle="Сколько готовы потратить?" />
                     <div className="relative mb-8">
@@ -784,12 +1071,12 @@ export const Quiz: React.FC = () => {
           </button>
 
           {/* Segmented Progress */}
-          <div className="flex gap-1 absolute left-1/2 -translate-x-1/2">
-              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => (
+          <div className="flex gap-1 absolute left-1/2 -translate-x-1/2 max-w-[200px] flex-wrap justify-center">
+              {Array.from({ length: 14 }).map((_, i) => (
                   <div 
                     key={i} 
                     className={`h-1.5 rounded-full transition-all duration-500 ${
-                        i <= step ? 'w-4 bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]' : 'w-1.5 bg-white/10'
+                        i <= step ? 'w-3 bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]' : 'w-1.5 bg-white/10'
                     }`} 
                   />
               ))}
@@ -805,7 +1092,7 @@ export const Quiz: React.FC = () => {
           <div className="mb-8 transition-transform duration-500 hover:scale-105 cursor-pointer">
              <Mascot 
                 className="w-32 h-32 md:w-40 md:h-40 drop-shadow-2xl" 
-                emotion={step === 0 ? 'happy' : step === 7 ? 'thinking' : step === 8 ? 'cool' : step === 9 ? 'excited' : 'happy'}
+                emotion={step === 0 ? 'happy' : step === 9 ? 'excited' : step === 10 ? 'thinking' : step === 13 ? 'cool' : 'happy'}
                 accessory="santa-hat"
                 variant="cupid"
              />
@@ -830,13 +1117,13 @@ export const Quiz: React.FC = () => {
                 }`}
             >
                 <div className="flex items-center justify-center gap-2">
-                    {step === 9 ? 'Сотворить магию' : 'Далее'}
-                    {isCurrentStepValid() && step !== 9 && (
+                    {step === 13 ? 'Сотворить магию' : 'Далее'}
+                    {isCurrentStepValid() && step !== 13 && (
                         <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="animate-pulse">
                             <path d="M5 12h14M12 5l7 7-7 7"/>
                         </svg>
                     )}
-                    {step === 9 && <span className="text-2xl">💘</span>}
+                    {step === 13 && <span className="text-2xl">💘</span>}
                 </div>
             </Button>
          </div>
