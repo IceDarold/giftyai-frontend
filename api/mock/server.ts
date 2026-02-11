@@ -1,6 +1,6 @@
 import { MOCK_DB_GIFTS } from './data';
 import { GiftDTO, RecommendationResponseDTO } from '../dto/types';
-import { QuizAnswers, Gift, UserProfile, CalendarEvent } from '../../domain/types';
+import { QuizAnswers, Gift, UserProfile, CalendarEvent, TeamMember } from '../../domain/types';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -39,6 +39,38 @@ const DEFAULT_PROFILE: UserProfile = {
   level: 'Новичок',
   events: []
 };
+
+// Mock Team Data with placeholders for public_id
+const MOCK_TEAM: TeamMember[] = [
+    {
+        name: "Alexey",
+        role: "CEO & Product",
+        bio: "Visionary with 10+ years in AI.",
+        linkedin_url: "https://linkedin.com",
+        photo_public_id: null // Will trigger fallback
+    },
+    {
+        name: "Maria",
+        role: "CMO",
+        bio: "Marketing strategist.",
+        linkedin_url: "https://linkedin.com",
+        photo_public_id: null
+    },
+    {
+        name: "Dmitry",
+        role: "CTO",
+        bio: "Tech Lead & Architect.",
+        linkedin_url: null,
+        photo_public_id: null
+    },
+    {
+        name: "Anna",
+        role: "AI Researcher",
+        bio: "LLM tuning specialist.",
+        linkedin_url: null,
+        photo_public_id: null
+    }
+];
 
 export const MockServer = {
   async getGifts(params?: { limit?: number; tag?: string; category?: string }): Promise<GiftDTO[]> {
@@ -167,5 +199,10 @@ export const MockServer = {
     const profile = await this.getUserProfile();
     const updatedEvents = profile.events.filter(e => e.id !== id);
     await this.updateUserProfile({ events: updatedEvents });
+  },
+
+  async getTeam(): Promise<TeamMember[]> {
+      await delay(500);
+      return MOCK_TEAM;
   }
 };

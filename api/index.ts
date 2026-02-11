@@ -1,10 +1,16 @@
-import { QuizAnswers, Gift, UserProfile, CalendarEvent, User, RecommendationsResponse } from '../domain/types';
+import { QuizAnswers, Gift, UserProfile, CalendarEvent, User, RecommendationsResponse, TeamMember } from '../domain/types';
 import { mapGiftDTOToGift, mapRecommendationsResponse } from '../mappers/gift';
 import { MockServer } from './mock/server';
 import { GiftDTO } from './dto/types';
 import { analytics } from '../utils/analytics';
 
-const API_BASE = 'https://gifty-backend-lg4a.onrender.com';
+const API_BASE = (() => {
+    try {
+        return (import.meta as any).env?.VITE_API_BASE || 'https://api.giftyai.ru';
+    } catch {
+        return 'https://api.giftyai.ru';
+    }
+})();
 
 // Add a flag to options to control error logging
 interface ApiFetchOptions extends RequestInit {
@@ -268,6 +274,35 @@ export const api = {
             await apiFetch(`/api/v1/users/me/events/${id}`, { method: 'DELETE', skipErrorLog: true });
         } catch (e) {
             await MockServer.removeEvent(id);
+        }
+    }
+  },
+  public: {
+    team: {
+        list: async (): Promise<TeamMember[]> => {
+            try {
+                return await apiFetch('/api/v1/public/team', { skipErrorLog: true });
+            } catch (e) {
+                return MockServer.getTeam();
+            }
+        }
+    },
+    investorContact: {
+        create: async (data: { name: string; company: string; email: string; linkedin?: string }) => {
+            return await apiFetch('/api/v1/public/investor-contact', {
+                method: 'POST',
+                body: JSON.stringify(data),
+                credentials: 'omit'
+            });
+        }
+    },
+    partnerContact: {
+        create: async (data: { name: string; company?: string; email: string; website?: string; message: string; hp?: string }) => {
+            return await apiFetch('/api/v1/public/partner-contact', {
+                method: 'POST',
+                body: JSON.stringify(data),
+                credentials: 'omit'
+            });
         }
     }
   }

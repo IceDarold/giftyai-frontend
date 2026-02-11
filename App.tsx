@@ -10,6 +10,7 @@ import { Blog } from './pages/Blog';
 import { BlogPost } from './pages/BlogPost';
 import { Login } from './pages/Login';
 import { Partners } from './pages/Partners';
+import { Investors } from './pages/Investors';
 import { SnowProvider } from './components/SnowSystem';
 import { AuthProvider } from './components/AuthContext';
 import { DevModeProvider } from './components/DevModeContext';
@@ -34,6 +35,7 @@ const PageTracker = () => {
     else if (path.startsWith('/wishlist')) pageName = 'wishlist';
     else if (path.startsWith('/profile')) pageName = 'profile';
     else if (path.startsWith('/login')) pageName = 'login';
+    else if (path.startsWith('/investors')) pageName = 'investors';
     else pageName = path.substring(1);
 
     analytics.pageView(pageName, window.location.href);
@@ -49,12 +51,14 @@ const AppRoutes = () => {
     const showNav = location.pathname !== '/quiz' 
                  && location.pathname !== '/login'
                  && location.pathname !== '/partners'
+                 && location.pathname !== '/investors'
                  && !location.pathname.startsWith('/blog/');
     
     // Logic for hiding Footer (Explicitly exclude Quiz and Partners to control footer placement manually)
     const showFooter = !location.pathname.startsWith('/quiz') 
                     && location.pathname !== '/login'
-                    && location.pathname !== '/partners';
+                    && location.pathname !== '/partners'
+                    && location.pathname !== '/investors';
 
     return (
         <Layout showNav={showNav} showFooter={showFooter}>
@@ -67,6 +71,7 @@ const AppRoutes = () => {
                 <Route path="/blog/:id" element={<BlogPost />} />
                 <Route path="/collections" element={<Collections />} />
                 <Route path="/partners" element={<Partners />} />
+                <Route path="/investors" element={<Investors />} />
                 
                 {/* Results are now public for a better UX */}
                 <Route path="/results" element={<Results />} />

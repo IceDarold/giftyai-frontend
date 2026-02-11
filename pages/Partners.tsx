@@ -4,16 +4,19 @@ import { Button } from '../components/Button';
 import { Logo } from '../components/Logo';
 import { Footer } from '../components/Footer';
 import { AmbientSnow } from '../components/SnowSystem';
+import { api } from '../api';
 
 export const Partners: React.FC = () => {
   const navigate = useNavigate();
-  const [formState, setFormState] = useState<'idle' | 'submitting' | 'success'>('idle');
+  const [formState, setFormState] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [formData, setFormData] = useState({
+    name: '',
     brand: '',
     website: '',
     email: '',
     category: '',
-    comment: ''
+    comment: '',
+    hp: '' // Honeypot field
   });
 
   // Animation trigger for numbers
@@ -23,16 +26,32 @@ export const Partners: React.FC = () => {
     window.scrollTo(0, 0);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.brand || !formData.email) return;
+    // Honeypot check
+    if (formData.hp) return;
+
+    if (!formData.name || !formData.email || !formData.comment) return;
     
     setFormState('submitting');
     
-    // Simulate API call
-    setTimeout(() => {
-      setFormState('success');
-    }, 1500);
+    try {
+        // Construct message combining category and comment as the API might expect a single message field or specific structure
+        const fullMessage = `Category: ${formData.category || 'Not specified'}\n\n${formData.comment}`;
+
+        await api.public.partnerContact.create({
+            name: formData.name,
+            company: formData.brand,
+            email: formData.email,
+            website: formData.website,
+            message: fullMessage,
+            hp: formData.hp
+        });
+        setFormState('success');
+    } catch (e) {
+        console.error(e);
+        setFormState('error');
+    }
   };
 
   return (
@@ -193,9 +212,33 @@ export const Partners: React.FC = () => {
                                 Вернуться на главную
                             </Button>
                         </div>
+                    ) : formState === 'error' ? (
+                        <div className="py-20 text-center flex flex-col items-center animate-pop text-brand-dark">
+                            <div className="w-20 h-20 bg-red-100 text-red-500 rounded-full flex items-center justify-center text-4xl mb-6 shadow-lg border-4 border-red-50">
+                                ⚠️
+                            </div>
+                            <h3 className="text-2xl font-black mb-3">Ошибка отправки</h3>
+                            <p className="text-gray-500 font-medium text-sm leading-relaxed max-w-[200px] mx-auto mb-8">
+                                Что-то пошло не так. Пожалуйста, попробуйте позже.
+                            </p>
+                            <Button onClick={() => setFormState('idle')} variant="secondary" className="shadow-lg border border-gray-200">
+                                Попробовать снова
+                            </Button>
+                        </div>
                     ) : (
                         <form onSubmit={handleSubmit} className="text-brand-dark relative z-10">
                             
+                            {/* Honeypot Field */}
+                            <input 
+                                type="text" 
+                                name="hp" 
+                                value={formData.hp} 
+                                onChange={e => setFormData({...formData, hp: e.target.value})} 
+                                className="hidden" 
+                                tabIndex={-1} 
+                                autoComplete="off" 
+                            />
+
                             <div className="mb-8 text-center">
                                 <h3 className="text-2xl font-black tracking-tight mb-1">Стать партнером</h3>
                                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Заполните анкету бренда</p>
@@ -203,9 +246,20 @@ export const Partners: React.FC = () => {
 
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Название бренда</label>
+                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Контактное лицо</label>
                                     <input 
                                         required
+                                        type="text" 
+                                        placeholder="Иван Петров"
+                                        value={formData.name}
+                                        onChange={e => setFormData({...formData, name: e.target.value})}
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 font-bold text-brand-dark outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/10 transition-all placeholder-gray-300 text-sm"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Название бренда</label>
+                                    <input 
                                         type="text" 
                                         placeholder="Например: SuperCandles"
                                         value={formData.brand}
@@ -276,6 +330,7 @@ export const Partners: React.FC = () => {
                                 <div>
                                     <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Комментарий</label>
                                     <textarea 
+                                        required
                                         rows={2}
                                         placeholder="Какой у вас топовый товар?"
                                         value={formData.comment}
