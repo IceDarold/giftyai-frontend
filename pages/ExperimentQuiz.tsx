@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QuizAnswers } from '../domain/types';
@@ -57,6 +58,39 @@ const MATERIAL_ATTITUDES = [
     { id: 'utility', label: '⚙️ Удобство и польза', desc: 'Лишь бы работало и не ломалось' },
     { id: 'aesthetic', label: '🎨 Эстетика', desc: 'Обожает красивые мелочи и декор' },
     { id: 'memory', label: '📸 История и память', desc: 'Ценит смыслы, а не вещи' }
+];
+
+const TEST_PERSONAS = [
+    {
+        label: '🎸 Музыкант',
+        data: {
+            name: 'Алекс', gender: 'male', relationship: 'Друг', occasion: 'ДР',
+            topics: 'Рок, Гитары, Винил', hobbies: 'Играет в группе, коллекционирует пластинки',
+            complaint: 'boredom', weekend: 'party', attitude: 'aesthetic',
+            goal: 'impress', effort: 'medium', budget: '5000', deadline: 'week',
+            interests: 'Музыка'
+        }
+    },
+    {
+        label: '🏃 Спортсмен',
+        data: {
+            name: 'Катя', gender: 'female', relationship: 'Партнер', occasion: 'Годовщина',
+            topics: 'Марафон, ЗОЖ, Триатлон', hobbies: 'Бег, Йога, Смузи',
+            complaint: 'stress', weekend: 'learn', attitude: 'utility',
+            goal: 'care', effort: 'high', budget: '10000', deadline: 'month',
+            interests: 'Спорт'
+        }
+    },
+    {
+        label: '🏡 Домосед',
+        data: {
+            name: 'Мама', gender: 'female', relationship: 'Родитель', occasion: 'Новый год',
+            topics: 'Сад, Рецепты, Внуки', hobbies: 'Вязание, Сериалы, Выпечка',
+            complaint: 'cozy', weekend: 'nesting', attitude: 'memory',
+            goal: 'care', effort: 'lazy', budget: '3000', deadline: 'week',
+            interests: 'Уют'
+        }
+    }
 ];
 
 // --- Components ---
@@ -133,39 +167,46 @@ export const ExperimentQuiz: React.FC = () => {
     const next = () => setStep(s => s + 1);
     const back = () => setStep(s => Math.max(0, s - 1));
 
-    const finish = () => {
+    const finish = (overrideData?: any) => {
+        const data = overrideData || {
+            name, gender, relationship, occasion,
+            topics, hobbies, complaint, weekend, attitude, excludes,
+            goal, effort, budget, deadline
+        };
+
         // Build rich context for the AI
         const richInterests = [
-            topics ? `Темы разговоров: ${topics}` : '',
-            hobbies ? `Увлечения: ${hobbies}` : '',
-            complaint ? `Жалоба (проблема): ${COMPLAINTS.find(c => c.id === complaint)?.label}` : '',
-            weekend ? `Идеальный выходной: ${WEEKENDS.find(w => w.id === weekend)?.label}` : '',
-            attitude ? `Отношение к вещам: ${MATERIAL_ATTITUDES.find(a => a.id === attitude)?.label}` : '',
-            `Цель подарка: ${GOALS.find(g => g.id === goal)?.label}`,
-            `Готовность заморочиться: ${EFFORT_LEVELS.find(e => e.id === effort)?.label}`,
-            `Дедлайн: ${DEADLINES.find(d => d.id === deadline)?.label}`
+            data.topics ? `Темы разговоров: ${data.topics}` : '',
+            data.hobbies ? `Увлечения: ${data.hobbies}` : '',
+            data.interests ? `Интерес: ${data.interests}` : '', // For personas
+            data.complaint ? `Жалоба (проблема): ${COMPLAINTS.find(c => c.id === data.complaint)?.label || data.complaint}` : '',
+            data.weekend ? `Идеальный выходной: ${WEEKENDS.find(w => w.id === data.weekend)?.label || data.weekend}` : '',
+            data.attitude ? `Отношение к вещам: ${MATERIAL_ATTITUDES.find(a => a.id === data.attitude)?.label || data.attitude}` : '',
+            `Цель подарка: ${GOALS.find(g => g.id === data.goal)?.label || data.goal}`,
+            `Готовность заморочиться: ${EFFORT_LEVELS.find(e => e.id === data.effort)?.label || data.effort}`,
+            `Дедлайн: ${DEADLINES.find(d => d.id === data.deadline)?.label || data.deadline}`
         ].filter(Boolean).join('. ');
 
         // Map to standard QuizAnswers
         const standardAnswers: QuizAnswers = {
-            name: name || 'Друг',
+            name: data.name || 'Друг',
             ageGroup: '30',
-            recipientGender: gender,
-            relationship: relationship,
-            occasion: occasion,
-            vibe: goal === 'care' ? 'Уютный' : goal === 'impress' ? 'Вау-эффект' : 'Практичный',
+            recipientGender: data.gender,
+            relationship: data.relationship,
+            occasion: data.occasion,
+            vibe: 'Experimental',
             city: 'Москва',
             interests: richInterests,
-            budget: budget,
-            exclude: excludes,
+            budget: data.budget,
+            exclude: data.excludes,
             
             // Experimental Fields Mapping
-            painPoints: complaint ? [complaint] : [],
+            painPoints: data.complaint ? [data.complaint] : [],
             roles: [], // Derived by backend
             roleConfidence: 'sure',
-            archetype: attitude,
+            archetype: data.attitude,
             selfWorth: '',
-            conversationTopics: topics,
+            conversationTopics: data.topics,
             topicDuration: 'long_term',
             painStyle: 'endurer',
             riskyTopics: false,
@@ -174,12 +215,15 @@ export const ExperimentQuiz: React.FC = () => {
         localStorage.setItem('gifty_answers', JSON.stringify(standardAnswers));
         
         analytics.quizCompleted(TOTAL_STEPS, (Date.now() - startTime.current) / 1000);
-        navigate('/results');
+        navigate('/experiments/dialogue');
+    };
+
+    const applyPersona = (persona: typeof TEST_PERSONAS[0]) => {
+        finish(persona.data);
     };
 
     return (
         <div className="min-h-screen bg-[#0F172A] text-white flex flex-col relative overflow-hidden font-sans">
-            {/* Progress Bar (Removed fixed bar, moved to interactive steps in header) */}
             
             {/* Header */}
             <div className="p-6 flex justify-between items-center relative z-20">
@@ -213,9 +257,26 @@ export const ExperimentQuiz: React.FC = () => {
             {/* Content */}
             <div className="flex-grow flex flex-col justify-center px-6 pb-20 relative z-10">
                 
-                {/* STEP 0: TIMING */}
+                {/* STEP 0: TIMING & DEBUG */}
                 {step === 0 && (
                     <StepWrapper title="Проверка связи" subtitle="Сколько у вас есть времени на этот тест?">
+                        
+                        {/* Debug Personas */}
+                        <div className="mb-8 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl">
+                            <p className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-3">🛠 Быстрый тест (Dev Mode)</p>
+                            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                                {TEST_PERSONAS.map(p => (
+                                    <button 
+                                        key={p.label}
+                                        onClick={() => applyPersona(p)}
+                                        className="whitespace-nowrap px-4 py-2 bg-blue-500/20 hover:bg-blue-500 text-blue-200 hover:text-white rounded-lg text-xs font-bold transition-all border border-blue-500/30"
+                                    >
+                                        {p.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         {TIMING_OPTIONS.map(opt => (
                             <OptionButton 
                                 key={opt.id}
@@ -558,7 +619,7 @@ export const ExperimentQuiz: React.FC = () => {
                         </div>
 
                         <button 
-                            onClick={finish}
+                            onClick={() => finish()}
                             className="w-full py-5 bg-white text-black rounded-2xl font-black text-xl uppercase tracking-widest shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:scale-105 transition-transform"
                         >
                             Сгенерировать

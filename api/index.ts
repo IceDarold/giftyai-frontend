@@ -355,7 +355,7 @@ export const api = {
         }
     },
     investorContact: {
-        create: async (data: { name: string; company: string; email: string; linkedin?: string }) => {
+        create: async (data: { name: string; company: string; email: string; linkedin?: string; hp?: string }) => {
             return await apiFetch('/api/v1/public/investor-contact', {
                 method: 'POST',
                 body: JSON.stringify(data),

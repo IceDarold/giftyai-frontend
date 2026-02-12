@@ -3,16 +3,198 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mascot } from '../components/Mascot';
 import { GiftCard } from '../components/GiftCard';
-import { DialogueHypothesis, DialogueProbeOption, Gift, RecommendationSession, QuizAnswers } from '../domain/types';
-import { api } from '../api';
+import { DialogueHypothesis, DialogueProbeOption, Gift } from '../domain/types';
+import { MOCK_DB_GIFTS } from '../api/mock/data';
 
 // --- TYPES ---
 
 interface ProbeData {
     question: string;
-    subtitle?: string;
+    subtitle: string;
     options: DialogueProbeOption[];
 }
+
+// --- MOCK DATA LOGIC ---
+
+// Dynamic Root Probe Generator
+const GET_ROOT_PROBE = (topic: string): ProbeData => {
+    if (topic.includes('Спорт')) {
+        return {
+            question: 'Так, давай уточним про спорт 🏃‍♂️',
+            subtitle: 'Выбери все, что про него (можно несколько):',
+            options: [
+                { id: 'runner', label: 'Бег / Кардио', icon: '👟', description: 'Марафоны, паркран' },
+                { id: 'gym', label: 'Качалка', icon: '🏋️‍♂️', description: 'Железо, кроссфит' },
+                { id: 'yoga', label: 'Йога / Растяжка', icon: '🧘‍♀️', description: 'Коврик, дзен' }
+            ]
+        };
+    }
+    if (topic.includes('Уют')) {
+        return {
+            question: 'Поговорим про уют 🏠',
+            subtitle: 'Что создает для него атмосферу?',
+            options: [
+                { id: 'warmth', label: 'Тепло', icon: '🧣', description: 'Пледы, носки' },
+                { id: 'light', label: 'Свет / Аромат', icon: '🕯️', description: 'Свечи, лампы' },
+                { id: 'tasty', label: 'Вкусняшки', icon: '☕️', description: 'Чай, какао' }
+            ]
+        };
+    }
+    // Default Music
+    return {
+        question: 'Так, давай уточним насчет музыки 🎵',
+        subtitle: 'Выбери все, что про него (можно несколько):',
+        options: [
+            { id: 'listener', label: 'Просто слушает', icon: '🎧', description: 'Винил, стриминг, фон' },
+            { id: 'player', label: 'Играет сам', icon: '🎸', description: 'Есть инструмент' },
+            { id: 'fan', label: 'Фанатеет', icon: '🤘', description: 'Знает биографии, ходит в мерче' }
+        ]
+    };
+};
+
+const SECONDARY_PROBES: Record<string, ProbeData> = {
+    'player': {
+        question: 'А на чем он играет?',
+        subtitle: 'Выбери инструменты:',
+        options: [
+            { id: 'guitar', label: 'Гитара', icon: '🎸', description: 'Электро, акустика, бас' },
+            { id: 'piano', label: 'Клавишные', icon: '🎹', description: 'Пианино, синтезатор' },
+            { id: 'drums', label: 'Ударные', icon: '🥁', description: 'Барабаны, перкуссия' }
+        ]
+    },
+    'listener': {
+        question: 'Как он обычно слушает?',
+        subtitle: 'Важна атмосфера:',
+        options: [
+            { id: 'vinyl', label: 'Винил / Hi-Fi', icon: '📀', description: 'Ламповый звук, ритуал' },
+            { id: 'streaming', label: 'В наушниках', icon: '📱', description: 'Музыка 24/7' },
+            { id: 'live', label: 'Живые концерты', icon: '🎫', description: 'Энергия толпы' }
+        ]
+    },
+    'fan': {
+        question: 'От кого он фанатеет?',
+        subtitle: 'Выбери стили или группы:',
+        options: [
+            { id: 'rock_legends', label: 'Рок-легенды', icon: '⚡️', description: 'Queen, Metallica' },
+            { id: 'kpop', label: 'K-Pop / Idol', icon: '✨', description: 'BTS, Stray Kids' },
+            { id: 'indie', label: 'Андерграунд', icon: '👁️', description: 'Редкое, странное' }
+        ]
+    },
+    'gym': {
+        question: 'Какая у него цель?',
+        subtitle: 'Ради чего он потеет?',
+        options: [
+            { id: 'mass', label: 'Набрать массу', icon: '💪', description: 'Протеин, веса' },
+            { id: 'health', label: 'Здоровье', icon: '❤️', description: 'Тонус, спина' },
+            { id: 'show', label: 'Красота', icon: '🤳', description: 'Фото в зеркале' }
+        ]
+    }
+};
+
+const GET_HYPOTHESES = (selections: string[], topic: string): DialogueHypothesis[] => {
+    if (topic.includes('Спорт')) {
+        return [
+            {
+                id: 'h_recovery',
+                title: 'Профессиональное восстановление',
+                gutgType: 'Optimizer',
+                description: 'Спорт — это не только тренировки, но и отдых. Массажер перкуссионный или валик МФР.',
+                previewGifts: [{ ...MOCK_DB_GIFTS[32], title: 'Массажер Gun Pro' }]
+            },
+            {
+                id: 'h_gear',
+                title: 'Экипировка нового уровня',
+                gutgType: 'Catalyst',
+                description: 'Вещи, которые повышают эффективность. Умные часы, пульсометр или крутая бутылка.',
+                previewGifts: [{ ...MOCK_DB_GIFTS[1] }]
+            },
+            {
+                id: 'h_style_gym',
+                title: 'Стиль в зале',
+                gutgType: 'Mirror',
+                description: 'Чтобы чувствовать себя уверенно. Качественное полотенце, сумка.',
+                previewGifts: [MOCK_DB_GIFTS[0]]
+            }
+        ];
+    }
+
+    // Default Music Logic
+    if (selections.includes('guitar') || selections.includes('player')) {
+        return [
+            {
+                id: 'h_tone',
+                title: 'В поисках того самого звука',
+                gutgType: 'Catalyst',
+                description: 'Для музыканта звук — это религия. Педали эффектов или крутой процессор — это новые краски для творчества.',
+                previewGifts: [MOCK_DB_GIFTS[16], { ...MOCK_DB_GIFTS[1], title: 'Педаль Overdrive', imageUrl: 'https://images.unsplash.com/photo-1519508234439-4f23643125c1?auto=format&fit=crop&w=400&q=60' }]
+            },
+            {
+                id: 'h_care',
+                title: 'Забота об инструменте',
+                gutgType: 'Optimizer',
+                description: 'Инструмент требует ухода. Профессиональный набор для чистки — это проявление уважения к его "подруге".',
+                previewGifts: [{ ...MOCK_DB_GIFTS[5], title: 'Набор Dunlop Care', imageUrl: 'https://m.media-amazon.com/images/I/71Jg+Kk7GBL.jpg' }]
+            },
+            {
+                id: 'h_style',
+                title: 'Рок-звезда на диване',
+                gutgType: 'Mirror',
+                description: 'Стильный ремень, медиаторы из кости мамонта или неоновая вывеска в студию.',
+                previewGifts: [MOCK_DB_GIFTS[25]]
+            }
+        ];
+    }
+
+    if (selections.includes('vinyl') || selections.includes('listener')) {
+        return [
+            {
+                id: 'h_ritual',
+                title: 'Ритуал прослушивания',
+                gutgType: 'Mirror',
+                description: 'Винил — это не про звук, а про процесс. Красивая щетка, клемп или подставка для конверта "Now Playing".',
+                previewGifts: [MOCK_DB_GIFTS[7]]
+            },
+            {
+                id: 'h_storage',
+                title: 'Эстетика хранения',
+                gutgType: 'Optimizer',
+                description: 'Пластинки должны стоять красиво. Ящик из массива дуба или стильные разделители.',
+                previewGifts: [MOCK_DB_GIFTS[27]]
+            },
+            {
+                id: 'h_new',
+                title: 'Новые бриллианты',
+                gutgType: 'Catalyst',
+                description: 'Редкие издания любимых альбомов или подарочные бокс-сеты.',
+                previewGifts: [MOCK_DB_GIFTS[8]]
+            }
+        ];
+    }
+
+    return [
+        {
+            id: 'h_generic_1',
+            title: 'Музыкальный декор',
+            gutgType: 'Mirror',
+            description: 'Интерьерные вещи, кричащие о любви к музыке.',
+            previewGifts: [MOCK_DB_GIFTS[25]]
+        },
+        {
+            id: 'h_generic_2',
+            title: 'Звук без границ',
+            gutgType: 'Optimizer',
+            description: 'Технологии, чтобы музыка была везде.',
+            previewGifts: [MOCK_DB_GIFTS[1]]
+        },
+        {
+            id: 'h_generic_3',
+            title: 'История музыки',
+            gutgType: 'Anchor',
+            description: 'Книги, биографии и постеры.',
+            previewGifts: [MOCK_DB_GIFTS[18]]
+        }
+    ];
+};
 
 // --- COMPONENTS ---
 
@@ -83,64 +265,62 @@ const ProbeView: React.FC<{
             </div>
             
             {/* Options Area (Gifty's Suggestions) */}
-            {data.options && data.options.length > 0 && (
-                <div>
-                    <p className="text-xs font-bold text-white/30 uppercase tracking-widest mb-4 ml-2">Подсказки (можно несколько):</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        {data.options.map(opt => {
-                            const isSelected = selected.has(opt.id);
-                            const isMulti = selected.size > 1;
-                            
-                            return (
-                                <button 
-                                    key={opt.id}
-                                    onClick={() => toggleSelection(opt.id)}
-                                    className={`relative p-4 text-left transition-all duration-300 group flex items-center gap-3 rounded-2xl border ${
-                                        isSelected 
-                                        ? 'bg-gradient-to-r from-brand-blue/20 to-brand-purple/20 border-brand-blue/50 shadow-[0_0_20px_rgba(255,77,109,0.2)]' 
-                                        : 'bg-slate-800/50 border-white/10 hover:bg-slate-700 hover:border-white/20'
-                                    }`}
-                                >
-                                    {/* Connection Line Effect */}
-                                    {isSelected && isMulti && (
-                                        <div className="absolute inset-0 border-2 border-brand-blue/30 rounded-2xl animate-pulse"></div>
-                                    )}
-                                    
-                                    <span className={`text-2xl transition-transform ${isSelected ? 'scale-110' : 'group-hover:scale-110'}`}>{opt.icon}</span>
-                                    <div className="flex-grow">
-                                        <div className={`font-bold text-sm leading-tight ${isSelected ? 'text-white' : 'text-white/80'}`}>{opt.label}</div>
-                                        <div className="text-[10px] text-white/40 leading-tight mt-0.5">{opt.description}</div>
-                                    </div>
-
-                                    {/* Checkmark / Connection Icon */}
-                                    {isSelected && (
-                                        <div className="absolute -top-2 -right-2 w-6 h-6 bg-brand-blue rounded-full flex items-center justify-center text-white shadow-md text-xs border-2 border-[#0F172A]">
-                                            {isMulti ? '🔗' : '✓'}
-                                        </div>
-                                    )}
-                                </button>
-                            );
-                        })}
-                    </div>
-
-                    {/* Confirm Button (Only if items selected and no custom text) */}
-                    {selected.size > 0 && !customValue && (
-                        <div className="mt-6 flex justify-end animate-fade-in-up">
+            <div>
+                <p className="text-xs font-bold text-white/30 uppercase tracking-widest mb-4 ml-2">Подсказки (можно несколько):</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {data.options.map(opt => {
+                        const isSelected = selected.has(opt.id);
+                        const isMulti = selected.size > 1;
+                        
+                        return (
                             <button 
-                                onClick={handleSend}
-                                className="bg-white text-black px-8 py-3 rounded-full font-bold text-sm shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-105 transition-transform flex items-center gap-2"
+                                key={opt.id}
+                                onClick={() => toggleSelection(opt.id)}
+                                className={`relative p-4 text-left transition-all duration-300 group flex items-center gap-3 rounded-2xl border ${
+                                    isSelected 
+                                    ? 'bg-gradient-to-r from-brand-blue/20 to-brand-purple/20 border-brand-blue/50 shadow-[0_0_20px_rgba(255,77,109,0.2)]' 
+                                    : 'bg-slate-800/50 border-white/10 hover:bg-slate-700 hover:border-white/20'
+                                }`}
                             >
-                                {selected.size > 1 ? 'Объединить и продолжить' : 'Выбрать'} →
+                                {/* Connection Line Effect */}
+                                {isSelected && isMulti && (
+                                    <div className="absolute inset-0 border-2 border-brand-blue/30 rounded-2xl animate-pulse"></div>
+                                )}
+                                
+                                <span className={`text-2xl transition-transform ${isSelected ? 'scale-110' : 'group-hover:scale-110'}`}>{opt.icon}</span>
+                                <div className="flex-grow">
+                                    <div className={`font-bold text-sm leading-tight ${isSelected ? 'text-white' : 'text-white/80'}`}>{opt.label}</div>
+                                    <div className="text-[10px] text-white/40 leading-tight mt-0.5">{opt.description}</div>
+                                </div>
+
+                                {/* Checkmark / Connection Icon */}
+                                {isSelected && (
+                                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-brand-blue rounded-full flex items-center justify-center text-white shadow-md text-xs border-2 border-[#0F172A]">
+                                        {isMulti ? '🔗' : '✓'}
+                                    </div>
+                                )}
                             </button>
-                        </div>
-                    )}
+                        );
+                    })}
                 </div>
-            )}
+
+                {/* Confirm Button (Only if items selected and no custom text) */}
+                {selected.size > 0 && !customValue && (
+                    <div className="mt-6 flex justify-end animate-fade-in-up">
+                        <button 
+                            onClick={handleSend}
+                            className="bg-white text-black px-8 py-3 rounded-full font-bold text-sm shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-105 transition-transform flex items-center gap-2"
+                        >
+                            {selected.size > 1 ? 'Объединить и продолжить' : 'Выбрать'} →
+                        </button>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
 
-// 2. HYPOTHESIS CARD
+// 2. HYPOTHESIS CARD (Same as before)
 const HypothesisCard: React.FC<{ 
     data: DialogueHypothesis; 
     onExpand: () => void;
@@ -173,14 +353,18 @@ const HypothesisCard: React.FC<{
             </div>
 
             <div className="px-6 pb-4 overflow-x-auto no-scrollbar flex gap-3">
-                {data.previewGifts && data.previewGifts.map((gift, i) => (
+                {data.previewGifts.map((gift, i) => (
                     <div key={gift.id || i} className="w-24 shrink-0 cursor-pointer" onClick={onExpand}>
                         <div className="aspect-square rounded-xl overflow-hidden mb-1.5 bg-slate-900 border border-white/5 relative group/img">
-                            <img src={gift.imageUrl || 'https://placehold.co/100x100?text=Gift'} className="w-full h-full object-cover opacity-80 group-hover/img:opacity-100 transition-opacity" alt="" />
+                            <img src={gift.imageUrl || ''} className="w-full h-full object-cover opacity-80 group-hover/img:opacity-100 transition-opacity" alt="" />
                         </div>
-                        <div className="text-[9px] font-bold text-white/40 truncate">{gift.price} {gift.currency}</div>
+                        <div className="text-[9px] font-bold text-white/40 truncate">{gift.price} ₽</div>
                     </div>
                 ))}
+                <button onClick={onExpand} className="w-24 shrink-0 aspect-square rounded-xl border border-white/10 hover:bg-white/5 flex flex-col items-center justify-center gap-1 transition-colors">
+                    <span className="text-xl">👀</span>
+                    <span className="text-[10px] font-bold text-white/50">Еще +5</span>
+                </button>
             </div>
             
             <div className="p-4 pt-0">
@@ -206,6 +390,7 @@ const HypothesisCard: React.FC<{
                         </button>
                         <div className="flex gap-2">
                             <button onClick={() => setIsRejecting(true)} className="flex-1 py-3 bg-white/5 hover:bg-red-500/10 hover:text-red-300 text-white/40 hover:border-red-500/30 border border-transparent font-bold rounded-xl text-xs transition-all">Не про него</button>
+                            <button onClick={onExpand} className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white/60 font-bold rounded-xl text-xs transition-colors">Раскрыть</button>
                         </div>
                     </div>
                 )}
@@ -237,106 +422,83 @@ const RescueView: React.FC<{ onPivot: (mode: 'topic' | 'gutg') => void }> = ({ o
 export const ExperimentDialogue: React.FC = () => {
     const navigate = useNavigate();
     
-    // API State
-    const [session, setSession] = useState<RecommendationSession | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    // State
+    const [state, setState] = useState<'init' | 'analyzing' | 'probing' | 'hypothesizing' | 'feed' | 'rescue'>('init');
+    const [topic, setTopic] = useState<string>('Music');
+    const [currentProbe, setCurrentProbe] = useState<ProbeData | null>(null);
+    const [hypotheses, setHypotheses] = useState<DialogueHypothesis[]>([]);
     
-    // Initial Load - Init Session
+    // Initial Load
     useEffect(() => {
-        const init = async () => {
-            const stored = localStorage.getItem('gifty_answers');
-            if (!stored) {
-                // Mock answers if none exist (for direct page access)
-                const mockAnswers: QuizAnswers = {
-                    name: 'User', ageGroup: '30', recipientGender: 'unisex',
-                    interests: 'Музыка', budget: '5000', city: 'Moscow',
-                    relationship: 'partner', occasion: 'birthday', vibe: 'cool',
-                    roles: [], roleConfidence: 'guessing', archetype: '', selfWorth: '',
-                    conversationTopics: '', topicDuration: 'long_term', painPoints: [], painStyle: 'endurer', riskyTopics: false
-                };
-                await startSession(mockAnswers);
-            } else {
-                await startSession(JSON.parse(stored));
+        const stored = localStorage.getItem('gifty_answers');
+        let initialTopic = 'Music';
+        
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            if (parsed.interests) {
+                // Heuristic to detect topic
+                if (parsed.interests.includes('Спорт')) initialTopic = 'Спорт';
+                if (parsed.interests.includes('Уют')) initialTopic = 'Уют';
             }
-        };
-        init();
+        }
+        
+        setTopic(initialTopic);
+        setCurrentProbe(GET_ROOT_PROBE(initialTopic));
+        
+        const timer = setTimeout(() => {
+            setState('probing');
+        }, 1000);
+        return () => clearTimeout(timer);
     }, []);
 
-    const startSession = async (answers: QuizAnswers) => {
-        setLoading(true);
-        try {
-            const newSession = await api.gutg.init(answers);
-            setSession(newSession);
-        } catch (e) {
-            setError('Failed to start session');
-        } finally {
-            setLoading(false);
+    const handleProbeSubmit = (ids: string[], custom?: string) => {
+        // Switch to "thinking" state
+        setState('analyzing');
+
+        // Logic branching (Mock)
+        const primaryId = ids[0];
+
+        if (!custom && ids.length === 1 && SECONDARY_PROBES[primaryId]) {
+            setTimeout(() => {
+                setCurrentProbe(SECONDARY_PROBES[primaryId]);
+                setState('probing');
+            }, 1500); 
+        } else {
+            // Generate hypotheses based on selection
+            setTimeout(() => {
+                const results = GET_HYPOTHESES(ids, topic);
+                setHypotheses(results);
+                setState('hypothesizing');
+            }, 2000); 
         }
     };
 
-    const handleProbeSubmit = async (ids: string[], custom?: string) => {
-        if (!session) return;
-        setLoading(true);
-        const val = custom ? custom : ids.join(', ');
-        try {
-            const updated = await api.gutg.interact(session.session_id, 'answer_probe', val);
-            setSession(updated);
-        } catch (e) {
-            setError('Error interacting');
-        } finally {
-            setLoading(false);
+    const handleDislike = (id: string, reason?: string) => {
+        setHypotheses(prev => prev.filter(h => h.id !== id));
+        if (hypotheses.length <= 1) {
+            setState('analyzing');
+            setTimeout(() => setState('rescue'), 1000);
         }
     };
 
-    const handleLike = async (id: string) => {
-        if (!session) return;
-        setLoading(true);
-        try {
-            const updated = await api.gutg.interact(session.session_id, 'like_hypothesis', id);
-            setSession(updated);
-        } catch (e) {
-            setError('Error liking');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleDislike = async (id: string, reason?: string) => {
-        if (!session) return;
-        // Optimistic UI update could go here
-        setLoading(true);
-        try {
-            const updated = await api.gutg.interact(session.session_id, 'dislike_hypothesis', id);
-            setSession(updated);
-        } catch (e) {
-            setError('Error disliking');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleRescue = async (mode: 'topic' | 'gutg') => {
-        if (!session) return;
-        setLoading(true);
-        try {
-            // Sending special rescue pivot signal
-            const updated = await api.gutg.interact(session.session_id, 'answer_probe', `Rescue Pivot: ${mode}`);
-            setSession(updated);
-        } catch (e) {
-            setError('Rescue failed');
-        } finally {
-            setLoading(false);
-        }
+    const handleExpand = (id: string) => {
+        setState('feed');
     };
 
     const handleReset = () => {
-        window.location.reload();
+        setHypotheses([]);
+        setCurrentProbe(GET_ROOT_PROBE(topic));
+        setState('analyzing');
+        setTimeout(() => setState('probing'), 1000);
     };
 
-    if (!session && !loading) return <div className="p-10 text-white text-center">Initializing...</div>;
-
-    const currentState = session?.state || 'BRANCHING';
+    const handleTopicChange = (newTopic: string) => {
+        setTopic(newTopic);
+        setCurrentProbe(GET_ROOT_PROBE(newTopic));
+        setHypotheses([]);
+        setState('analyzing');
+        setTimeout(() => setState('probing'), 1000);
+    };
 
     return (
         <div className="min-h-screen bg-[#0F172A] text-white font-sans relative overflow-x-hidden flex flex-col">
@@ -347,10 +509,17 @@ export const ExperimentDialogue: React.FC = () => {
                     ← Exit Lab
                 </button>
                 <div className="pointer-events-auto flex flex-col gap-2 items-end">
-                    <div className="text-[10px] font-mono text-cyan-500 uppercase">
-                        State: {currentState}
+                    <div className="text-[10px] font-mono text-cyan-500 uppercase">State: {state}</div>
+                    <div className="flex gap-1">
+                        <button onClick={handleReset} className="px-2 py-1 bg-white/5 hover:bg-white/10 rounded text-[10px] border border-white/10">Reset</button>
+                        <button onClick={() => setState('rescue')} className="px-2 py-1 bg-red-500/20 hover:bg-red-500/40 text-red-300 rounded text-[10px] border border-red-500/30">Rescue</button>
                     </div>
-                    <button onClick={handleReset} className="px-2 py-1 bg-white/5 hover:bg-white/10 rounded text-[10px] border border-white/10">Reset</button>
+                    {/* Quick Topic Switch for Testing */}
+                    <div className="flex gap-1">
+                        <button onClick={() => handleTopicChange('Music')} className="px-2 py-1 bg-blue-500/20 text-blue-200 rounded text-[10px]">🎵 Music</button>
+                        <button onClick={() => handleTopicChange('Спорт')} className="px-2 py-1 bg-green-500/20 text-green-200 rounded text-[10px]">🏃 Sport</button>
+                        <button onClick={() => handleTopicChange('Уют')} className="px-2 py-1 bg-orange-500/20 text-orange-200 rounded text-[10px]">🏠 Cozy</button>
+                    </div>
                 </div>
             </div>
 
@@ -360,26 +529,26 @@ export const ExperimentDialogue: React.FC = () => {
                 <div className="mb-8 w-full max-w-2xl flex items-end gap-4 min-h-[100px]">
                     <div className="mb-1 relative shrink-0">
                         <Mascot 
-                            emotion={currentState === 'DEAD_END' ? 'surprised' : currentState === 'SHOWING_HYPOTHESES' ? 'happy' : 'thinking'} 
+                            emotion={state === 'rescue' ? 'surprised' : state === 'hypothesizing' ? 'happy' : 'thinking'} 
                             className="w-16 h-16 md:w-20 md:h-20 drop-shadow-[0_0_30px_rgba(255,255,255,0.15)]" 
                             accessory="none"
                             variant="default"
                         />
                     </div>
                     
-                    {loading ? (
+                    {state === 'analyzing' || state === 'init' ? (
                         <ChatBubble isTyping={true}>...</ChatBubble>
                     ) : (
                         <ChatBubble>
-                            {currentState === 'BRANCHING' && session?.current_probe && (
+                            {state === 'probing' && currentProbe && (
                                 <>
-                                    <p>{session.current_probe.question}</p>
-                                    {session.current_probe.subtitle && <p className="text-sm text-gray-400 mt-1 font-normal">{session.current_probe.subtitle}</p>}
+                                    <p>{currentProbe.question}</p>
+                                    <p className="text-sm text-gray-400 mt-1 font-normal">{currentProbe.subtitle}</p>
                                 </>
                             )}
-                            {currentState === 'SHOWING_HYPOTHESES' && <p>Я проанализировал данные. Вот несколько стратегий, которые сработают лучше всего:</p>}
-                            {currentState === 'DEAD_END' && <p>Хм, кажется я зашел в тупик. Попробуем зайти с другой стороны?</p>}
-                            {currentState === 'DEEP_DIVE' && <p>Отличный выбор! Вот подборка товаров в этой стратегии.</p>}
+                            {state === 'hypothesizing' && <p>Я проанализировал данные. Вот 3 направления, которые сработают лучше всего:</p>}
+                            {state === 'rescue' && <p>Хм, кажется я зашел в тупик. Попробуем зайти с другой стороны?</p>}
+                            {state === 'feed' && <p>Вот подборка товаров по этому направлению.</p>}
                         </ChatBubble>
                     )}
                 </div>
@@ -387,49 +556,54 @@ export const ExperimentDialogue: React.FC = () => {
                 {/* --- INTERACTIVE CONTENT AREA --- */}
                 <div className="w-full flex-grow flex flex-col items-center justify-center transition-opacity duration-300">
                     
-                    {loading && (
+                    {(state === 'analyzing' || state === 'init') && (
                         <div className="h-32"></div> // Spacer
                     )}
 
-                    {!loading && currentState === 'BRANCHING' && session?.current_probe && (
+                    {state === 'probing' && currentProbe && (
                         <ProbeView 
-                            data={session.current_probe}
+                            data={currentProbe}
                             onConfirm={handleProbeSubmit} 
                         />
                     )}
 
-                    {!loading && currentState === 'SHOWING_HYPOTHESES' && session?.current_hypotheses && (
+                    {state === 'hypothesizing' && (
                         <div className="w-full max-w-xl animate-fade-in-up">
-                            {session.current_hypotheses.map(h => (
+                            {hypotheses.map(h => (
                                 <HypothesisCard 
                                     key={h.id} 
                                     data={h} 
-                                    onExpand={() => handleLike(h.id)} 
-                                    onSelect={() => handleLike(h.id)}
+                                    onExpand={() => handleExpand(h.id)} 
+                                    onSelect={() => handleExpand(h.id)}
                                     onReject={(reason) => handleDislike(h.id, reason)} 
                                 />
                             ))}
-                            {session.current_hypotheses.length === 0 && (
-                                <div className="text-center text-white/50">Гипотезы закончились...</div>
-                            )}
+                            <button onClick={() => setState('rescue')} className="w-full py-4 rounded-xl border-2 border-dashed border-white/10 text-white/40 font-bold hover:text-white hover:border-white/30 transition-all mt-4 mb-12">
+                                Всё не то, попробуем что-то другое?
+                            </button>
                         </div>
                     )}
 
-                    {!loading && currentState === 'DEEP_DIVE' && session?.deep_dive_products && (
+                    {state === 'feed' && (
                         <div className="w-full animate-fade-in-up">
                             <div className="flex items-center gap-2 mb-8">
-                                <button onClick={handleReset} className="text-white/50 hover:text-white font-bold bg-white/10 px-4 py-2 rounded-full transition-colors">← Начать заново</button>
+                                <button onClick={() => setState('hypothesizing')} className="text-white/50 hover:text-white font-bold bg-white/10 px-4 py-2 rounded-full transition-colors">← Назад к гипотезам</button>
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                {session.deep_dive_products.map((g, i) => (
+                                {MOCK_DB_GIFTS.slice(0, 8).map((g, i) => (
                                     <GiftCard key={g.id} gift={g} />
                                 ))}
                             </div>
                         </div>
                     )}
 
-                    {!loading && currentState === 'DEAD_END' && (
-                        <RescueView onPivot={handleRescue} />
+                    {state === 'rescue' && (
+                        <RescueView onPivot={(mode) => {
+                            setState('analyzing');
+                            setTimeout(() => {
+                                handleTopicChange(mode === 'topic' ? 'Уют' : 'Спорт');
+                            }, 1500);
+                        }} />
                     )}
                 </div>
 
