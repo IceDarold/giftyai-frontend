@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/Button';
@@ -109,8 +108,7 @@ export const Investors: React.FC = () => {
             name: formData.name,
             company: formData.company,
             email: formData.email,
-            linkedin: formData.linkedin,
-            hp: formData.hp
+            linkedin: formData.linkedin
         });
         
         track('investor_contact_submitted', {
