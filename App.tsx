@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Layout } from './components/Layout';
@@ -17,6 +18,11 @@ import { DevModeProvider } from './components/DevModeContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Collections } from './pages/Collections';
 import { WishlistProvider } from './components/WishlistContext';
+import { ExperimentalCatalog } from './pages/ExperimentalCatalog';
+import { ExperimentSwipe } from './pages/ExperimentSwipe';
+import { ExperimentDecision } from './pages/ExperimentDecision';
+import { ExperimentQuiz } from './pages/ExperimentQuiz';
+import { ExperimentDialogue } from './pages/ExperimentDialogue';
 import { analytics } from './utils/analytics';
 
 // Component to track page views
@@ -36,6 +42,7 @@ const PageTracker = () => {
     else if (path.startsWith('/profile')) pageName = 'profile';
     else if (path.startsWith('/login')) pageName = 'login';
     else if (path.startsWith('/investors')) pageName = 'investors';
+    else if (path.startsWith('/experiments')) pageName = 'experiments';
     else pageName = path.substring(1);
 
     analytics.pageView(pageName, window.location.href);
@@ -52,13 +59,15 @@ const AppRoutes = () => {
                  && location.pathname !== '/login'
                  && location.pathname !== '/partners'
                  && location.pathname !== '/investors'
-                 && !location.pathname.startsWith('/blog/');
+                 && !location.pathname.startsWith('/blog/')
+                 && !location.pathname.startsWith('/experiments'); // Hide nav in experiments for immersion
     
     // Logic for hiding Footer (Explicitly exclude Quiz and Partners to control footer placement manually)
     const showFooter = !location.pathname.startsWith('/quiz') 
                     && location.pathname !== '/login'
                     && location.pathname !== '/partners'
-                    && location.pathname !== '/investors';
+                    && location.pathname !== '/investors'
+                    && !location.pathname.startsWith('/experiments');
 
     return (
         <Layout showNav={showNav} showFooter={showFooter}>
@@ -83,12 +92,19 @@ const AppRoutes = () => {
                 <Route path="/profile" element={
                     <ProtectedRoute><Profile /></ProtectedRoute>
                 } />
+
+                {/* Experimental Routes */}
+                <Route path="/experiments" element={<ExperimentalCatalog />} />
+                <Route path="/experiments/swipe" element={<ExperimentSwipe />} />
+                <Route path="/experiments/decision" element={<ExperimentDecision />} />
+                <Route path="/experiments/new-quiz" element={<ExperimentQuiz />} />
+                <Route path="/experiments/dialogue" element={<ExperimentDialogue />} />
             </Routes>
         </Layout>
     );
 };
 
-const App: React.FC = () => {
+export const App: React.FC = () => {
   return (
     <AuthProvider>
         <DevModeProvider>
@@ -103,5 +119,3 @@ const App: React.FC = () => {
     </AuthProvider>
   );
 };
-
-export default App;

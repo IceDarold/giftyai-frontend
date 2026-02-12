@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   name: string | null;
@@ -75,6 +76,11 @@ export interface QuizAnswers {
   painStyle: 'endurer' | 'optimizer'; // Tolerates vs Optimizes
   riskyTopics: boolean; // True if weight/hygiene/order are sensitive topics (Risk Check)
 
+  // Gifty Express / Psychology Fields
+  effortLevel?: string;
+  idealWeekend?: string;
+  materialAttitude?: string;
+
   // Legacy/General
   interests: string;
   budget: string;
@@ -133,4 +139,38 @@ export interface TeamMember {
   linkedin_url: string | null;
   photo_public_id: string | null;
   sort_order?: number;
+}
+
+// --- Dialogue Algorithm Types ---
+
+export interface DialogueProbeOption {
+    id: string;
+    label: string;
+    icon: string;
+    description?: string;
+}
+
+export interface DialogueHypothesis {
+    id: string;
+    title: string; // e.g. "Эстетика звука"
+    gutgType: 'Mirror' | 'Optimizer' | 'Anchor' | 'Catalyst' | 'Permission';
+    description: string; // "Он ценит красоту момента..."
+    previewGifts: Gift[]; // 3 items to show "meat"
+}
+
+// --- GUTG API Types ---
+
+export type GUTGState = 'BRANCHING' | 'SHOWING_HYPOTHESES' | 'DEEP_DIVE' | 'DEAD_END';
+
+export interface RecommendationSession {
+    session_id: string;
+    state: GUTGState;
+    selected_topic?: string;
+    current_probe?: {
+        question: string;
+        subtitle?: string;
+        options: DialogueProbeOption[];
+    };
+    current_hypotheses?: DialogueHypothesis[];
+    deep_dive_products?: Gift[];
 }

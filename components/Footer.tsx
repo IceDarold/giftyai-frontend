@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useDevMode, DevInfoModal } from './DevModeContext';
 
 const DevLoginModal = ({ onClose, onLogin }: { onClose: () => void, onLogin: (p: string) => boolean }) => {
@@ -51,6 +51,7 @@ const DevLoginModal = ({ onClose, onLogin }: { onClose: () => void, onLogin: (p:
 export const Footer: React.FC = () => {
   const { isDevMode, enableDevMode, disableDevMode, isInfoOpen, setInfoOpen } = useDevMode();
   const [showAuth, setShowAuth] = useState(false);
+  const navigate = useNavigate();
 
   const handleDevTrigger = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -94,13 +95,22 @@ export const Footer: React.FC = () => {
                 </button>
                 
                 {isDevMode && (
-                    <button 
-                        onClick={() => setInfoOpen(true)}
-                        className="w-6 h-6 rounded-full bg-white/10 text-white/50 hover:bg-white/20 hover:text-white flex items-center justify-center font-serif italic text-xs transition-all"
-                        title="Dev Mode Info"
-                    >
-                        i
-                    </button>
+                    <>
+                        <button 
+                            onClick={() => setInfoOpen(true)}
+                            className="w-6 h-6 rounded-full bg-white/10 text-white/50 hover:bg-white/20 hover:text-white flex items-center justify-center font-serif italic text-xs transition-all"
+                            title="Dev Mode Info"
+                        >
+                            i
+                        </button>
+                        <button 
+                            onClick={() => navigate('/experiments')}
+                            className="px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 hover:bg-purple-500 hover:text-white font-bold text-[10px] uppercase tracking-wider transition-all flex items-center gap-1 border border-purple-500/30"
+                            title="Experimental Interfaces"
+                        >
+                            🧪 Lab
+                        </button>
+                    </>
                 )}
               </div>
            </div>

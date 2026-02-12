@@ -1,4 +1,5 @@
-import { QuizAnswers, Gift, UserProfile, CalendarEvent, User, RecommendationsResponse, TeamMember } from '../domain/types';
+
+import { QuizAnswers, Gift, UserProfile, CalendarEvent, User, RecommendationsResponse, TeamMember, RecommendationSession, DialogueHypothesis, DialogueProbeOption } from '../domain/types';
 import { mapGiftDTOToGift, mapRecommendationsResponse } from '../mappers/gift';
 import { MockServer } from './mock/server';
 import { GiftDTO } from './dto/types';
@@ -22,6 +23,33 @@ const parseBudget = (input: string): number => {
   // Strictly parse integer from string, assuming input is already cleaned or simple number
   const val = parseInt(input.replace(/[^\d]/g, ''), 10);
   return isNaN(val) ? 0 : val;
+};
+
+// Mapper for GUTG Responses
+const mapSessionResponse = (data: any): RecommendationSession => {
+    return {
+        session_id: data.session_id,
+        state: data.state,
+        selected_topic: data.selected_topic,
+        current_probe: data.current_probe ? {
+            question: data.current_probe.question,
+            subtitle: data.current_probe.subtitle,
+            options: data.current_probe.options.map((opt: any) => ({
+                id: opt.id || opt.text, // Fallback if no ID
+                label: opt.text || opt.label,
+                icon: opt.icon || '🎁', // Fallback icon
+                description: opt.description
+            }))
+        } : undefined,
+        current_hypotheses: data.current_hypotheses ? data.current_hypotheses.map((h: any) => ({
+            id: h.id,
+            title: h.title,
+            gutgType: h.type || 'Mirror',
+            description: h.reasoning || h.description,
+            previewGifts: h.preview_products ? h.preview_products.map((p: any) => mapGiftDTOToGift(p)) : []
+        })) : undefined,
+        deep_dive_products: data.deep_dive_products ? data.deep_dive_products.map((p: any) => mapGiftDTOToGift(p)) : undefined
+    };
 };
 
 export const apiFetch = async (endpoint: string, options: ApiFetchOptions = {}) => {
@@ -162,7 +190,6 @@ export const api = {
             .map(i => i.trim())
             .filter(i => i.length > 0);
       }
-      // Spec requires non-empty optional array, but let's provide a fallback to be safe/helpful
       if (interestsArray.length === 0) interestsArray = ['general'];
 
       // 2. Prepare Gender
@@ -170,11 +197,20 @@ export const api = {
       if (answers.recipientGender === 'male') gender = 'male';
       if (answers.recipientGender === 'female') gender = 'female';
 
-      // 3. Age Parsing (Allow 0)
+      // 3. Age Parsing
       let age = parseInt(answers.ageGroup);
-      if (isNaN(age)) age = 30; // Default only if NaN
+      if (isNaN(age)) age = 30; 
 
-      // 4. Construct Payload strictly matching spec
+      // 4. Construct Payload
+      const deepProfileContext = [
+          answers.interests,
+          answers.conversationTopics ? `Topics: ${answers.conversationTopics}` : '',
+          answers.painPoints && answers.painPoints.length ? `Complaints: ${answers.painPoints.join(', ')}` : '',
+          answers.idealWeekend ? `Weekend: ${answers.idealWeekend}` : '',
+          answers.materialAttitude ? `Attitude: ${answers.materialAttitude}` : '',
+          answers.effortLevel ? `Effort: ${answers.effortLevel}` : ''
+      ].filter(Boolean).join('. ');
+
       const payload = {
         recipient_age: age,
         recipient_gender: gender,
@@ -182,20 +218,19 @@ export const api = {
         occasion: answers.occasion || 'birthday',
         vibe: answers.vibe || 'cozy',
         interests: interestsArray,
-        interests_description: answers.interests || '', // Pass original string for context
+        interests_description: deepProfileContext, 
         exclude_categories: answers.exclude ? answers.exclude.split(', ') : [],
         budget: parseBudget(answers.budget),
         city: answers.city || 'Moscow',
-        top_n: 30, // OPTIMIZATION: Increased to 50
+        top_n: 30, 
         debug: true
       };
 
       try {
-        // Direct API call
         const response = await apiFetch('/api/v1/recommendations/generate', {
             method: 'POST',
             body: JSON.stringify(payload),
-            credentials: 'omit', // Important: Avoid sending cookies to prevent CORS 400 on public endpoint
+            credentials: 'omit', 
             skipErrorLog: false 
         });
         const mapped = mapRecommendationsResponse(response);
@@ -207,6 +242,38 @@ export const api = {
         return { ...mapped, requestPayload: payload, serverError: (e as any).message };
       }
     }
+  },
+  gutg: {
+      init: async (answers: QuizAnswers): Promise<RecommendationSession> => {
+          let gender = 'unisex';
+          if (answers.recipientGender === 'male') gender = 'male';
+          if (answers.recipientGender === 'female') gender = 'female';
+
+          const payload = {
+              recipient_age: parseInt(answers.ageGroup) || 30,
+              recipient_gender: gender,
+              interests: answers.interests ? answers.interests.split(/[,.;]+/).map(i => i.trim()).filter(Boolean) : ['General'],
+              budget: parseBudget(answers.budget),
+              language: 'ru'
+          };
+
+          const response = await apiFetch('/recommendations/init', {
+              method: 'POST',
+              body: JSON.stringify(payload)
+          });
+          return mapSessionResponse(response);
+      },
+      interact: async (sessionId: string, action: 'answer_probe' | 'like_hypothesis' | 'dislike_hypothesis', value: string): Promise<RecommendationSession> => {
+          const response = await apiFetch('/recommendations/interact', {
+              method: 'POST',
+              body: JSON.stringify({
+                  session_id: sessionId,
+                  action,
+                  value
+              })
+          });
+          return mapSessionResponse(response);
+      }
   },
   wishlist: {
     getAll: async (): Promise<string[]> => {

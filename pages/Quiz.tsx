@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+
+import React, { useState, useEffect, useRef, useLayoutEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { Mascot } from '../components/Mascot';
-import { RELATIONSHIPS } from '../constants';
 import { QuizAnswers, StepId } from '../domain/types';
 import { analytics } from '../utils/analytics';
 import { inclineName } from '../utils/stringUtils';
@@ -24,56 +24,24 @@ const Icons = {
   Male: () => <span className="text-3xl">👨</span>,
   Female: () => <span className="text-3xl">👩</span>,
   Unisex: () => <span className="text-3xl">✨</span>,
-  Vibes: {
-    Cozy: () => <span className="text-3xl">☕️</span>,
-    Practical: () => <span className="text-3xl">🛠</span>,
-    Wow: () => <span className="text-3xl">🚀</span>,
-    Emotional: () => <span className="text-3xl">🥹</span>,
-  }
 };
 
-const VIBES = [
-  { id: 'cozy', label: 'Уютный и теплый', desc: 'Для душевных вечеров', icon: Icons.Vibes.Cozy },
-  { id: 'practical', label: 'Практичный и полезный', desc: 'То, что пригодится в деле', icon: Icons.Vibes.Practical },
-  { id: 'wow', label: 'Вау-эффект', desc: 'Удивить и поразить', icon: Icons.Vibes.Wow },
-  { id: 'emotional', label: 'Сентиментальный', desc: 'На память и для души', icon: Icons.Vibes.Emotional },
+const GOALS = [
+    { id: 'impress', label: 'Впечатлить (WOW)', desc: 'Эмоции важнее пользы' },
+    { id: 'care', label: 'Позаботиться', desc: 'Тепло, уют и польза' },
+    { id: 'protocol', label: 'Соблюсти приличие', desc: 'Без рисков (Протокол)' },
+    { id: 'hobby', label: 'Поддержать хобби', desc: 'Вклад в увлечение' }
 ];
 
-// --- New Data Constants ---
-
-const ROLES = [
-    { id: 'esthete', label: '🎨 Эстет', desc: 'Визуал, ценит красоту' },
-    { id: 'techie', label: '💻 Технарь', desc: 'Гаджеты и инновации' },
-    { id: 'foodie', label: '🍔 Гурман', desc: 'Еда как искусство' },
-    { id: 'athlete', label: '🏃 Спортсмен', desc: 'Движение и ЗОЖ' },
-    { id: 'gamer', label: '🎮 Геймер', desc: 'Виртуальные миры' },
-    { id: 'audiophile', label: '🎧 Меломан', desc: 'Живет в наушниках' },
-    { id: 'reader', label: '📚 Читатель', desc: 'Книжный червь' },
-    { id: 'traveler', label: '🌍 Путешественник', desc: 'Не сидит дома' },
-    { id: 'homebody', label: '🏠 Домосед', desc: 'Мой дом - крепость' },
-    { id: 'party', label: '🎉 Тусовщик', desc: 'Душа компании' },
-    { id: 'system', label: '⚙️ Человек-система', desc: 'Порядок во всем' },
-    { id: 'creator', label: '✨ Творец', desc: 'Создает своими руками' },
-    { id: 'collector', label: '💎 Коллекционер', desc: 'Азарт поиска' },
-    { id: 'career', label: '💼 Карьерист', desc: 'Работа - это страсть' },
+const EFFORT_OPTIONS = [
+    { id: 'link', label: 'Дайте ссылку — я куплю', desc: 'Минимум времени' },
+    { id: 'pack', label: 'Могу собрать набор / упаковать', desc: 'Есть пара часов' },
+    { id: 'diy', label: 'Готов сделать своими руками / квест', desc: 'Максимум усилий' }
 ];
 
-const ARCHETYPES = [
-    { id: 'explorer', label: 'Исследователь 🔭', desc: 'Ищет новое, любит открытия' },
-    { id: 'creator', label: 'Создатель 🛠', desc: 'Строит, мастерит, придумывает' },
-    { id: 'curator', label: 'Куратор 🧐', desc: 'Отбирает лучшее, ценит качество' },
-    { id: 'perfectionist', label: 'Перфекционист 📏', desc: 'Всё должно быть идеально' },
-    { id: 'protector', label: 'Защитник 🛡', desc: 'Заботится о других, надежный' },
-    { id: 'comedian', label: 'Комик 🤡', desc: 'Смех - лучшее оружие' },
-];
-
-const PAIN_ZONES = [
-    { id: 'cables', label: '🔌 Провода/Зарядка', desc: 'Вечно теряются или путаются' },
-    { id: 'keys', label: '🔑 Ключи/Мелочи', desc: 'Хаос в карманах или сумке' },
-    { id: 'sleep', label: '😴 Сон/Стресс', desc: 'Трудно расслабиться' },
-    { id: 'workspace', label: '🖥 Рабочее место', desc: 'Беспорядок или неудобство' },
-    { id: 'cleaning', label: '🧹 Уборка/Быт', desc: 'Рутина утомляет' },
-    { id: 'health', label: 'back Здоровье/Спина', desc: 'Сидячий образ жизни' },
+const ATTITUDE_HINTS = [
+    '«Главное — бренд и статус»', '«Лишь бы работало и не ломалось»', 
+    '«Люблю красивые мелочи»', '«Лучше впечатления, чем вещи»'
 ];
 
 const INITIAL_ANSWERS: QuizAnswers = {
@@ -88,7 +56,6 @@ const INITIAL_ANSWERS: QuizAnswers = {
   budget: '',
   exclude: '',
   
-  // New Fields Defaults
   roles: [],
   roleConfidence: 'sure',
   archetype: '',
@@ -98,12 +65,39 @@ const INITIAL_ANSWERS: QuizAnswers = {
   painPoints: [],
   painStyle: 'endurer',
   riskyTopics: false,
+  effortLevel: '',
+  idealWeekend: '',
+  materialAttitude: ''
 };
 
-const INTEREST_TAGS = [
-  'Технологии', 'Кулинария', 'Спорт', 'Чтение', 'Путешествия', 
-  'Дом и уют', 'Красота', 'Кино', 'Музыка', 'Творчество', 
-  'Игры', 'Здоровье', 'Эко', 'Стиль'
+const FLOATING_QUESTIONS = [
+    'Играет на музыкальных инструментах? 🎸',
+    'Какую музыку слушает? 🎧',
+    'Каким спортом увлекается? ⚽️',
+    'Любит готовить дома? 🍳',
+    'Есть домашние животные? 🐱',
+    'Как проводит выходные? 🛌',
+    'Любит походы или отели? ⛺️',
+    'Коллекционирует что-то? 💎',
+    'Следит за модой? 👗',
+    'Фанат какой-то вселенной? ⚡️',
+    'Любит настольные игры? 🎲',
+    'Много работает за компьютером? 💻',
+    'Кофеман или чайный пьяница? ☕️',
+    'Любит сладкое? 🍭',
+    'Занимается саморазвитием? 📚',
+    'Любит что-то мастерить руками? 🛠',
+    'Водит машину? 🚗',
+    'Есть дача или сад? 🌿',
+    'Учит иностранные языки? 🇬🇧',
+    'Любит принимать гостей? 🥂'
+];
+
+const WEEKEND_TAGS_FULL = [
+    'Сон до обеда 😴', 'Сериал 🎬', 'Поход в горы 🏔', 'Тусовка 🎉', 
+    'Уборка 🧹', 'Учеба 📚', 'SPA 🧖‍♀️', 'Бар с друзьями 🍻',
+    'Игры 🎮', 'Прогулка 🌳', 'Шоппинг 🛍', 'Театр 🎭',
+    'Спорт 🏃', 'Дача 🏡'
 ];
 
 const EXCLUDE_TAGS = [
@@ -111,16 +105,52 @@ const EXCLUDE_TAGS = [
   'Еда', 'Сладости', 'Сертификаты', 'Деньги', 'Книги'
 ];
 
-// Map steps to question IDs for analytics
 const STEP_IDS: StepId[] = [
-  'name', 'age', 'gender', 'occasion', 'relationship', 'vibe', 'city', 
-  'roles', 'archetype', 'topics', 'pain', 'interests', 'exclude' as any, 'budget'
+  'name',         // 0
+  'age',          // 1
+  'occasion',     // 2
+  'relationship', // 3
+  'vibe',         // 4
+  'roles',        // 5
+  'budget',       // 6 (Moved Up)
+  'interests',    // 7
+  'pain',         // 8
+  'topics',       // 9
+  'archetype',    // 10
+  'exclude' as any // 11
 ];
+
+const STEP_LABELS = [
+  'Профиль', 'Возраст', 'Повод', 'Связь',
+  'Задача', 'Время', 'Бюджет', 'Интересы',
+  'Проблемы', 'Выходной', 'Отношение', 'Стоп-лист'
+];
+
+const TOTAL_STEPS_COUNT = 12;
+
+const detectGender = (name: string): 'male' | 'female' | null => {
+    const lower = name.trim().toLowerCase();
+    if (!lower) return null;
+    const maleExceptions = ['никита', 'илья', 'лука', 'савва', 'данила', 'кузьма', 'фома', 'лёша', 'леша', 'сережа', 'саша', 'женя', 'валя', 'паша', 'миша', 'дима', 'юра', 'слава'];
+    const femaleExceptions = ['любовь', 'нинель', 'рахиль', 'руфь', 'адель', 'изабель'];
+    if (maleExceptions.includes(lower)) return null;
+    if (femaleExceptions.includes(lower)) return 'female';
+    if (lower.endsWith('а') || lower.endsWith('я')) {
+        if (maleExceptions.some(ex => lower === ex)) return null;
+        return 'female';
+    }
+    if (/[бвгджзклмнпрстфхцчшщй]$/.test(lower)) return 'male';
+    if (lower.endsWith('ь')) {
+        if (lower.endsWith('тель') || lower.endsWith('арь')) return 'male';
+        if (lower.endsWith('ость') || lower.endsWith('чь') || lower.endsWith('шь') || lower.endsWith('щь')) return 'female';
+    }
+    return null;
+};
 
 // --- Components ---
 
 const StepHeader: React.FC<{ title: React.ReactNode; subtitle?: string }> = ({ title, subtitle }) => (
-  <div className="text-center mb-10 animate-fade-in-up">
+  <div className="text-center mb-8 animate-fade-in-up relative z-20">
     <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight leading-tight mb-3 drop-shadow-xl">
       {title}
     </h2>
@@ -142,33 +172,28 @@ const SelectionCard: React.FC<{
 }> = ({ selected, onClick, icon, label, desc, className = '' }) => (
   <button
     onClick={onClick}
-    className={`group relative w-full text-left p-5 rounded-3xl transition-all duration-300 border backdrop-blur-md flex items-center gap-5 outline-none focus:ring-4 focus:ring-brand-purple/30 ${
+    className={`group relative w-full text-left p-4 rounded-3xl transition-all duration-300 border backdrop-blur-md flex flex-col justify-between outline-none focus:ring-4 focus:ring-brand-purple/30 h-full min-h-[100px] ${
       selected 
         ? 'bg-white text-brand-dark border-white shadow-[0_0_30px_rgba(255,255,255,0.2)] scale-[1.02] z-10' 
         : 'bg-white/5 text-white border-white/10 hover:bg-white/10 hover:border-white/20 active:scale-[0.98]'
     } ${className}`}
   >
-    {icon && (
-      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-colors duration-300 ${
-        selected ? 'bg-brand-blue/10' : 'bg-white/10 group-hover:bg-white/20'
-      }`}>
-        {icon}
-      </div>
-    )}
-    <div className="flex-1 min-w-0">
-      <div className="font-bold text-lg leading-tight truncate">{label}</div>
+    <div className="flex items-start justify-between w-full mb-2">
+        {icon && (
+        <div className={`text-2xl transition-transform duration-300 ${selected ? 'scale-110' : 'group-hover:scale-110'}`}>
+            {icon}
+        </div>
+        )}
+        {selected && <div className="w-3 h-3 bg-brand-blue rounded-full" />}
+    </div>
+    
+    <div>
+      <div className="font-bold text-base leading-tight">{label}</div>
       {desc && (
-        <div className={`text-xs font-medium mt-1 truncate ${selected ? 'text-brand-dark/60' : 'text-white/40'}`}>
+        <div className={`text-xs font-medium mt-1 ${selected ? 'text-brand-dark/60' : 'text-white/40'}`}>
           {desc}
         </div>
       )}
-    </div>
-    
-    {/* Radio Indicator */}
-    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-      selected ? 'border-brand-blue' : 'border-white/20 group-hover:border-white/40'
-    }`}>
-      {selected && <div className="w-3 h-3 bg-brand-blue rounded-full" />}
     </div>
   </button>
 );
@@ -197,7 +222,6 @@ const AgePicker: React.FC<{ value: string, onChange: (val: string) => void }> = 
           let minDistance = Infinity;
 
           const buttons = container.children;
-          // Loop through buttons to find which one is geometrically closest to center
           for (let i = 0; i < buttons.length; i++) {
               const button = buttons[i] as HTMLElement;
               const rect = button.getBoundingClientRect();
@@ -209,7 +233,6 @@ const AgePicker: React.FC<{ value: string, onChange: (val: string) => void }> = 
                   closestIndex = i;
               }
           }
-          
           if (closestIndex.toString() !== value) {
               onChange(closestIndex.toString());
           }
@@ -229,10 +252,7 @@ const AgePicker: React.FC<{ value: string, onChange: (val: string) => void }> = 
     <div className="relative w-full h-32 flex items-center group">
         <div className="absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-brand-dark/80 to-transparent z-10 pointer-events-none" />
         <div className="absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-brand-dark/80 to-transparent z-10 pointer-events-none" />
-        
-        {/* Selection Marker */}
         <div className="absolute left-1/2 top-0 bottom-0 w-[64px] -translate-x-1/2 border-x-2 border-brand-purple/50 bg-white/5 rounded-2xl z-0 pointer-events-none backdrop-blur-sm" />
-
         <div 
             ref={scrollRef}
             onScroll={handleScroll}
@@ -259,110 +279,15 @@ const AgePicker: React.FC<{ value: string, onChange: (val: string) => void }> = 
   );
 };
 
-// --- City Autocomplete Component ---
-
-const CityAutocomplete: React.FC<{ 
-    value: string; 
-    onChange: (val: string) => void;
-    onSelect: () => void;
-}> = ({ value, onChange, onSelect }) => {
-    const [suggestions, setSuggestions] = useState<any[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [showSuggestions, setShowSuggestions] = useState(false);
-    const wrapperRef = useRef<HTMLDivElement>(null);
-
-    // Debounce fetch
-    useEffect(() => {
-        const fetchCities = async () => {
-            if (value.length < 2) {
-                setSuggestions([]);
-                return;
-            }
-            
-            // Only fetch if it looks like user is typing, not if they just selected
-            if (!showSuggestions) return; 
-
-            setLoading(true);
-            try {
-                // Using OpenStreetMap Nominatim API (Free, no key required for moderate use)
-                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}&accept-language=ru&limit=5&featuretype=city`);
-                const data = await res.json();
-                setSuggestions(data);
-            } catch (e) {
-                console.error("City fetch error", e);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        const timeoutId = setTimeout(fetchCities, 500);
-        return () => clearTimeout(timeoutId);
-    }, [value]);
-
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
-                setShowSuggestions(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    const handleSelect = (city: any) => {
-        // Extract city name clearly (removing region info if it's too long, but keeping helpful context if needed)
-        const name = city.display_name.split(',')[0];
-        onChange(name);
-        setShowSuggestions(false);
-        onSelect();
-    };
-
-    const handleInputClick = () => {
-        if (value.length >= 2) setShowSuggestions(true);
-    };
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        onChange(e.target.value);
-        setShowSuggestions(true);
-    };
-
-    return (
-        <div ref={wrapperRef} className="relative group w-full">
-            <div className="absolute top-1/2 left-0 -translate-y-1/2 text-white/30 pointer-events-none">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-            </div>
-            <input
-                type="text"
-                value={value}
-                onChange={handleInputChange}
-                onClick={handleInputClick}
-                placeholder="Введите город..."
-                className="w-full bg-transparent pl-12 text-4xl font-black text-white placeholder-white/10 outline-none border-b-2 border-white/20 focus:border-brand-blue transition-all pb-4 caret-brand-blue"
-                autoComplete="off"
-            />
-            {loading && (
-                <div className="absolute right-0 top-1/2 -translate-y-1/2">
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                </div>
-            )}
-            
-            {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-[#2A0A18] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden max-h-60 overflow-y-auto">
-                    {suggestions.map((city: any, i) => (
-                        <div 
-                            key={city.place_id || i}
-                            onClick={() => handleSelect(city)}
-                            className="px-4 py-3 hover:bg-white/10 cursor-pointer text-white border-b border-white/5 last:border-0 transition-colors text-left"
-                        >
-                            <div className="font-bold text-sm">{city.display_name.split(',')[0]}</div>
-                            <div className="text-xs text-white/40 truncate">{city.display_name}</div>
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-};
+interface CloudData {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    width: number;
+    height: number;
+    text: string;
+}
 
 // --- Main Quiz Component ---
 
@@ -370,12 +295,19 @@ export const Quiz: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [step, setStep] = useState(0);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   // Analytics Timer
   const stepStartTimeRef = useRef<number>(Date.now());
   const quizStartTimeRef = useRef<number>(Date.now());
 
-  // Initialize from props OR default (NO persistence loading)
+  // --- Physics State ---
+  const containerRef = useRef<HTMLDivElement>(null);
+  const centerBoxRef = useRef<HTMLDivElement>(null);
+  const cloudRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const cloudsDataRef = useRef<CloudData[]>([]);
+  const requestRef = useRef<number>(0);
+  
   const [answers, setAnswers] = useState<QuizAnswers>(() => {
     if (location.state) {
         const { name, relationship } = location.state as { name: string, relationship: string };
@@ -384,68 +316,227 @@ export const Quiz: React.FC = () => {
     return INITIAL_ANSWERS;
   });
 
-  // Force dark background on body to prevent white/purple leaks on overscroll
+  // Init randomized question subset
+  const [currentQuestions] = useState<string[]>(() => [...FLOATING_QUESTIONS].sort(() => 0.5 - Math.random()).slice(0, 16));
+
   useLayoutEffect(() => {
     const originalBackground = document.body.style.background;
     const originalBackgroundColor = document.body.style.backgroundColor;
-    
     document.body.style.background = 'none';
-    document.body.style.backgroundColor = '#2A0A18'; // brand-dark (Valentine)
-
+    document.body.style.backgroundColor = '#2A0A18'; 
     return () => {
       document.body.style.background = originalBackground;
       document.body.style.backgroundColor = originalBackgroundColor;
     };
   }, []);
 
-  // Clear any existing draft on mount to ensure clean slate
   useEffect(() => {
       localStorage.removeItem('gifty_draft');
-      // If we didn't come from Home via CTA, we should track start here or just let it handle on the first step action?
-      // Best to rely on the Home CTA for 'quiz_started', but if direct load, we might miss it.
-      // For now, assume flow starts at Home.
       stepStartTimeRef.current = Date.now();
       quizStartTimeRef.current = Date.now();
   }, []);
+
+  // --- PHYSICS ENGINE LOGIC ---
+  useEffect(() => {
+    if (step === 7) {
+        const initClouds = () => {
+            if (!containerRef.current || !centerBoxRef.current) return;
+            
+            const containerW = containerRef.current.offsetWidth;
+            const containerH = containerRef.current.offsetHeight;
+            const centerRect = centerBoxRef.current.getBoundingClientRect();
+            const containerRect = containerRef.current.getBoundingClientRect();
+            
+            const box = {
+                left: centerRect.left - containerRect.left - 20, 
+                top: centerRect.top - containerRect.top - 20,
+                right: centerRect.right - containerRect.left + 20,
+                bottom: centerRect.bottom - containerRect.top + 20,
+                width: centerRect.width + 40,
+                height: centerRect.height + 40
+            };
+
+            const newClouds: CloudData[] = [];
+            
+            currentQuestions.forEach((q, i) => {
+                const el = cloudRefs.current[i];
+                if (!el) return;
+                
+                const w = el.offsetWidth;
+                const h = el.offsetHeight;
+                let valid = false;
+                let attempts = 0;
+                let x = 0, y = 0;
+
+                while(!valid && attempts < 100) {
+                    attempts++;
+                    x = Math.random() * (containerW - w);
+                    y = Math.random() * (containerH - h);
+                    
+                    if (x + w > box.left && x < box.right && y + h > box.top && y < box.bottom) {
+                        continue;
+                    }
+                    valid = true;
+                }
+
+                newClouds.push({
+                    x, y,
+                    vx: (Math.random() - 0.5) * 0.8,
+                    vy: (Math.random() - 0.5) * 0.8,
+                    width: w,
+                    height: h,
+                    text: q
+                });
+            });
+            cloudsDataRef.current = newClouds;
+        };
+
+        setTimeout(initClouds, 100);
+
+        const update = () => {
+            if (!containerRef.current || !centerBoxRef.current) {
+                requestRef.current = requestAnimationFrame(update);
+                return;
+            }
+
+            const containerW = containerRef.current.offsetWidth;
+            const containerH = containerRef.current.offsetHeight;
+            const centerRect = centerBoxRef.current.getBoundingClientRect();
+            const containerRect = containerRef.current.getBoundingClientRect();
+            
+            const box = {
+                left: centerRect.left - containerRect.left - 10,
+                top: centerRect.top - containerRect.top - 10,
+                right: centerRect.right - containerRect.left + 10,
+                bottom: centerRect.bottom - containerRect.top + 10
+            };
+
+            cloudsDataRef.current.forEach((cloud, i) => {
+                cloud.x += cloud.vx;
+                cloud.y += cloud.vy;
+
+                if (cloud.x <= 0) { cloud.x = 0; cloud.vx *= -1; }
+                if (cloud.x + cloud.width >= containerW) { cloud.x = containerW - cloud.width; cloud.vx *= -1; }
+                if (cloud.y <= 0) { cloud.y = 0; cloud.vy *= -1; }
+                if (cloud.y + cloud.height >= containerH) { cloud.y = containerH - cloud.height; cloud.vy *= -1; }
+
+                if (cloud.x + cloud.width > box.left && cloud.x < box.right && 
+                    cloud.y + cloud.height > box.top && cloud.y < box.bottom) {
+                    
+                    const centerX = cloud.x + cloud.width / 2;
+                    const centerY = cloud.y + cloud.height / 2;
+                    const boxCenterX = (box.left + box.right) / 2;
+                    const boxCenterY = (box.top + box.bottom) / 2;
+                    
+                    const dx = centerX - boxCenterX;
+                    const dy = centerY - boxCenterY;
+                    
+                    if (Math.abs(dx) / (box.right - box.left) > Math.abs(dy) / (box.bottom - box.top)) {
+                        cloud.vx *= -1;
+                        cloud.x += dx > 0 ? 2 : -2;
+                    } else {
+                        cloud.vy *= -1;
+                        cloud.y += dy > 0 ? 2 : -2;
+                    }
+                }
+
+                for (let j = i + 1; j < cloudsDataRef.current.length; j++) {
+                    const other = cloudsDataRef.current[j];
+                    const dx = (cloud.x + cloud.width/2) - (other.x + other.width/2);
+                    const dy = (cloud.y + cloud.height/2) - (other.y + other.height/2);
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    const minDist = (cloud.width + other.width) / 2 * 0.9;
+
+                    if (dist < minDist) {
+                        const nx = dx / dist;
+                        const ny = dy / dist;
+                        const overlap = minDist - dist;
+                        const moveX = nx * overlap * 0.5;
+                        const moveY = ny * overlap * 0.5;
+                        
+                        cloud.x += moveX;
+                        cloud.y += moveY;
+                        other.x -= moveX;
+                        other.y -= moveY;
+
+                        const tempVx = cloud.vx;
+                        const tempVy = cloud.vy;
+                        cloud.vx = other.vx;
+                        cloud.vy = other.vy;
+                        other.vx = tempVx;
+                        other.vy = tempVy;
+                    }
+                }
+
+                const el = cloudRefs.current[i];
+                if (el) {
+                    el.style.transform = `translate(${cloud.x}px, ${cloud.y}px)`;
+                }
+            });
+
+            requestRef.current = requestAnimationFrame(update);
+        };
+
+        requestRef.current = requestAnimationFrame(update);
+        return () => cancelAnimationFrame(requestRef.current!);
+    }
+  }, [step]);
 
   // Custom inputs state
   const [customOccasion, setCustomOccasion] = useState('');
   const [isCustomOccasion, setIsCustomOccasion] = useState(false);
   const [customRelationship, setCustomRelationship] = useState('');
   const [isCustomRelationship, setIsCustomRelationship] = useState(false);
+  
+  // Strategy Custom
   const [customVibe, setCustomVibe] = useState('');
   const [isCustomVibe, setIsCustomVibe] = useState(false);
+
+  // Interest Tags Logic
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [selectedExcludeTags, setSelectedExcludeTags] = useState<string[]>([]);
+
+  // Weekend Tags Logic
+  const [selectedWeekendTags, setSelectedWeekendTags] = useState<string[]>([]);
+  const [shownWeekendCount, setShownWeekendCount] = useState(8);
+
+  // Exclude Logic - Default 18+ checked
+  const [selectedExcludeTags, setSelectedExcludeTags] = useState<string[]>(['18+']);
   const [customExclude, setCustomExclude] = useState('');
+  
+  const [noComplaints, setNoComplaints] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
-  const textAreaRef = useRef<HTMLTextAreaElement>(null);
+  const textAreaRef = useRef<HTMLInputElement>(null);
 
   const updateAnswer = (field: keyof QuizAnswers, value: any) => {
-    setAnswers(prev => ({ ...prev, [field]: value }));
-  };
-
-  const getAnswerForAnalytics = (currentStep: number) => {
-      const stepId = STEP_IDS[currentStep];
-      if (!stepId) return null;
-      return (answers as any)[stepId];
+    setAnswers(prev => {
+        const next = { ...prev, [field]: value };
+        if (field === 'name') {
+            const detected = detectGender(value as string);
+            if (detected) next.recipientGender = detected;
+        }
+        return next;
+    });
   };
 
   const nextStep = () => {
-    // 1. Capture Analytics for completed step
     const timeSpent = (Date.now() - stepStartTimeRef.current) / 1000;
     const questionId = STEP_IDS[step] || `step_${step}`;
-    const answer = getAnswerForAnalytics(step);
-    
-    analytics.quizStepCompleted(step + 1, questionId, answer, timeSpent);
-    stepStartTimeRef.current = Date.now(); // Reset timer for next step
+    analytics.quizStepCompleted(step + 1, questionId, null, timeSpent);
+    stepStartTimeRef.current = Date.now();
 
-    // Total steps increased to 13 (0-13)
-    if (step === 13) { 
+    if (step === TOTAL_STEPS_COUNT - 1) { 
       const finalAnswers = { ...answers };
-      const combinedInterests = [...selectedTags, ...(answers.interests ? [answers.interests] : [])].join(', ');
-      finalAnswers.interests = combinedInterests;
+      // ... (Rest of finalization logic same)
+      const interestParts = [];
+      if (answers.interests && answers.interests.trim()) interestParts.push(answers.interests);
+      if (selectedTags.length > 0) interestParts.push(...selectedTags);
+      finalAnswers.interests = interestParts.join(', ');
+
+      const weekendParts = [];
+      if (answers.idealWeekend && answers.idealWeekend.trim()) weekendParts.push(answers.idealWeekend);
+      if (selectedWeekendTags.length > 0) weekendParts.push(...selectedWeekendTags);
+      finalAnswers.idealWeekend = weekendParts.join(', ');
       
       const allExcludes = [...selectedExcludeTags];
       if (customExclude.trim()) allExcludes.push(customExclude.trim());
@@ -453,16 +544,20 @@ export const Quiz: React.FC = () => {
       
       if (isCustomOccasion) finalAnswers.occasion = customOccasion;
       if (isCustomRelationship) finalAnswers.relationship = customRelationship;
-      if (isCustomVibe) finalAnswers.vibe = customVibe;
       
-      // Ensure budget is clean number
+      if (isCustomVibe) {
+          finalAnswers.vibe = customVibe;
+      } else {
+          const goalLabel = GOALS.find(g => g.id === finalAnswers.vibe)?.label || '';
+          const effortLabel = EFFORT_OPTIONS.find(e => e.id === finalAnswers.effortLevel)?.label || '';
+          finalAnswers.vibe = `${goalLabel} (${effortLabel})`;
+      }
+
       finalAnswers.budget = (finalAnswers.budget || '').replace(/\D/g, '');
       
-      // Final Analytics
       const totalDuration = (Date.now() - quizStartTimeRef.current) / 1000;
-      analytics.quizCompleted(14, totalDuration);
+      analytics.quizCompleted(TOTAL_STEPS_COUNT, totalDuration);
 
-      // Save result for Results page, but we don't save 'gifty_draft'
       localStorage.setItem('gifty_answers', JSON.stringify(finalAnswers));
       navigate('/results');
     } else {
@@ -471,585 +566,439 @@ export const Quiz: React.FC = () => {
     }
   };
 
+  const startExperimentFlow = () => {
+      navigate('/experiments/dialogue');
+  };
+
   const prevStep = () => {
     if (step > 0) {
         setStep(s => s - 1);
-        stepStartTimeRef.current = Date.now(); // Reset timer to avoid skewing
+        stepStartTimeRef.current = Date.now(); 
         window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
         navigate('/');
     }
   };
 
+  const handleRestart = () => {
+      if(confirm('Начать тест заново? Текущий прогресс будет сброшен.')) {
+          window.location.reload();
+      }
+  };
+
+  const handleJumpToStep = (index: number) => {
+      setStep(index);
+      setIsMenuOpen(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Prevent Next step on enter for CityAutocomplete as it uses Enter to select
-    // Step 9 is topics textarea, step 11 is interest textarea - allow enter for newlines
-    if (step === 6 || step === 9 || step === 11) return; 
+    if ([7, 8, 9, 10].includes(step)) return; 
     if (e.key === 'Enter' && isCurrentStepValid()) nextStep();
   };
 
   const isCurrentStepValid = () => {
     switch (step) {
-      case 0: return (answers.name || '').trim().length > 0;
-      case 1: return true; 
-      case 2: return !!answers.recipientGender;
-      case 3: return isCustomOccasion ? customOccasion.trim().length > 0 : (answers.occasion || '').length > 0;
-      case 4: return isCustomRelationship ? customRelationship.trim().length > 0 : (answers.relationship || '').length > 0;
-      case 5: return isCustomVibe ? customVibe.trim().length > 0 : (answers.vibe || '').length > 0;
-      case 6: return (answers.city || '').trim().length > 0;
-      
-      // New Steps
-      case 7: return answers.roles.length > 0; // Roles
-      case 8: return answers.archetype.length > 0; // Archetype
-      case 9: return answers.conversationTopics.trim().length > 0; // Topics
-      case 10: return true; // Pain Points (Optional)
-      
-      case 11: return ((answers.interests || '').trim().length > 0 || selectedTags.length > 0);
-      case 12: return true; // Exclude is optional
-      case 13: return (answers.budget || '').length > 0 && parseInt(answers.budget) > 0;
+      case 0: return (answers.name || '').trim().length > 0 && !!answers.recipientGender; // Name + Gender
+      case 1: return true; // Age
+      case 2: return isCustomOccasion ? customOccasion.trim().length > 0 : (answers.occasion || '').length > 0;
+      case 3: return isCustomRelationship ? customRelationship.trim().length > 0 : (answers.relationship || '').length > 0;
+      case 4: return isCustomVibe ? customVibe.trim().length > 0 : !!answers.vibe; // Strategy (Goal)
+      case 5: return !!answers.effortLevel; // Effort (Time)
+      case 6: return (answers.budget || '').length > 0 && parseInt(answers.budget) > 0; // Budget moved here
+      case 7: return ((answers.interests || '').trim().length > 0 || selectedTags.length > 0); // Interests
+      case 8: return noComplaints || (answers.painPoints && answers.painPoints.length > 0); // Complaints
+      case 9: return true; // Weekend
+      case 10: return true; // Attitude
+      case 11: return true; // Excludes
       default: return false;
     }
   };
 
-  const toggleTag = (tag: string) => {
+  const toggleInterestTag = (tag: string) => {
       setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+  };
+
+  const toggleWeekendTag = (tag: string) => {
+      setSelectedWeekendTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
 
   const toggleExcludeTag = (tag: string) => {
       setSelectedExcludeTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
 
-  // Toggle for Roles
-  const toggleRole = (roleId: string) => {
-      const current = answers.roles;
-      let nextRoles;
-      if (current.includes(roleId)) {
-          nextRoles = current.filter(r => r !== roleId);
-      } else {
-          // Limit to 3 roles
-          if (current.length >= 3) return;
-          nextRoles = [...current, roleId];
-      }
-      updateAnswer('roles', nextRoles);
-  };
-
-  // Toggle Pain Points
-  const togglePain = (painId: string) => {
-      const current = answers.painPoints;
-      const nextPain = current.includes(painId) 
-        ? current.filter(p => p !== painId) 
-        : [...current, painId];
-      updateAnswer('painPoints', nextPain);
-  };
-
-  const getGenderLabels = () => {
-      const age = parseInt(answers.ageGroup) || 25;
-      if (age <= 12) return { female: 'Девочка', male: 'Мальчик' };
-      if (age <= 20) return { female: 'Девушка', male: 'Парень' };
-      return { female: 'Женщина', male: 'Мужчина' };
-  };
-
-  // --- Dynamic Occasions Logic ---
-  const getOccasions = () => {
-      const age = parseInt(answers.ageGroup) || 25;
-      
-      const baseOccasions = [
-          { id: '14feb', label: '14 февраля', desc: 'Романтика', Icon: Icons.Anniversary },
-          { id: 'birthday', label: 'День рождения', desc: 'Личный праздник', Icon: Icons.Birthday },
-          { id: 'just_because', label: 'Просто так', desc: 'Без повода', Icon: Icons.JustBecause }
-      ];
-
-      if (age >= 18) {
-          baseOccasions.splice(2, 0, { id: 'wedding', label: 'Свадьба', desc: 'Начало истории', Icon: Icons.Wedding });
-          baseOccasions.splice(3, 0, { id: 'anniversary', label: 'Годовщина', desc: 'Важная дата', Icon: Icons.Anniversary });
-      } else if (age >= 6) {
-          baseOccasions.push({ id: 'school', label: 'Школа / Учеба', desc: '1 сентября, выпускной', Icon: Icons.School });
-      }
-
-      return baseOccasions;
-  };
-
-  // --- Dynamic Relationships Logic ---
-  const getRelationships = () => {
-      const age = parseInt(answers.ageGroup) || 25;
-      const g = answers.recipientGender;
-
-      if (age < 13) {
-          if (g === 'male') return ['Сын', 'Внук', 'Брат', 'Племянник', 'Друг', 'Крестник'];
-          if (g === 'female') return ['Дочь', 'Внучка', 'Сестра', 'Племянница', 'Подруга', 'Крестница'];
-          return ['Ребенок', 'Внук/Внучка', 'Брат/Сестра', 'Племянник/ца', 'Друг'];
-      }
-      
-      if (age < 18) {
-          if (g === 'male') return ['Парень', 'Сын', 'Брат', 'Друг', 'Одноклассник', 'Племянник'];
-          if (g === 'female') return ['Девушка', 'Дочь', 'Сестра', 'Подруга', 'Одноклассница', 'Племянница'];
-          return ['Пара', 'Ребенок', 'Брат/Сестра', 'Друг'];
-      }
-
-      if (age <= 50) {
-          if (g === 'male') return ['Муж', 'Парень', 'Папа', 'Брат', 'Друг', 'Коллега'];
-          if (g === 'female') return ['Жена', 'Девушка', 'Мама', 'Сестра', 'Подруга', 'Коллега'];
-          return ['Партнер', 'Родитель', 'Брат/Сестра', 'Друг', 'Коллега'];
-      }
-
-      // 50+
-      if (g === 'male') return ['Папа', 'Дедушка', 'Муж', 'Коллега', 'Начальник', 'Друг'];
-      if (g === 'female') return ['Мама', 'Бабушка', 'Жена', 'Коллега', 'Начальница', 'Подруга'];
-      
-      return ['Родитель', 'Бабушка/Дедушка', 'Партнер', 'Коллега', 'Друг'];
-  };
-
   const renderContent = () => {
-    const genderLabels = getGenderLabels();
-    const occasions = getOccasions();
-    const relationships = getRelationships();
+    switch (step) {
+      case 0: // Profile
+        return (
+          <div className="w-full max-w-md mx-auto animate-fade-in">
+            <StepHeader title="С кем случится магия?" subtitle="Как зовут счастливчика?" />
+            <div className="bg-white/10 backdrop-blur-md rounded-3xl p-2 flex items-center border border-white/20 shadow-inner mb-6">
+                <input 
+                    ref={inputRef}
+                    type="text" 
+                    value={answers.name}
+                    onChange={(e) => updateAnswer('name', e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Имя (например, Саша)"
+                    className="w-full bg-transparent text-white placeholder-white/40 text-2xl font-bold px-4 py-3 outline-none text-center"
+                    autoFocus
+                />
+            </div>
+            {/* Gender Selection */}
+            <div className="flex gap-4 justify-center">
+                <button 
+                    onClick={() => updateAnswer('recipientGender', 'male')}
+                    className={`flex-1 py-4 rounded-2xl font-bold text-lg transition-all border ${answers.recipientGender === 'male' ? 'bg-blue-600 border-blue-400 text-white shadow-lg scale-105' : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'}`}
+                >
+                    👨 Он
+                </button>
+                <button 
+                    onClick={() => updateAnswer('recipientGender', 'female')}
+                    className={`flex-1 py-4 rounded-2xl font-bold text-lg transition-all border ${answers.recipientGender === 'female' ? 'bg-pink-600 border-pink-400 text-white shadow-lg scale-105' : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'}`}
+                >
+                    👩 Она
+                </button>
+            </div>
+          </div>
+        );
 
-    return (
-        <div key={step} className={`w-full max-w-lg mx-auto animate-fade-in`}>
-            {step === 0 && (
-                <>
-                    <StepHeader title="Как зовут счастливчика?" subtitle="Начнем с малого" />
-                    <div className="relative group">
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            value={answers.name}
-                            onChange={(e) => updateAnswer('name', e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            placeholder="Имя"
-                            className="w-full bg-transparent text-center text-5xl font-black text-white placeholder-white/10 outline-none border-b-2 border-white/20 focus:border-brand-blue transition-all pb-4 caret-brand-blue"
-                        />
-                    </div>
-                </>
-            )}
+      case 1: // Age
+        return (
+          <div className="w-full max-w-2xl mx-auto animate-fade-in">
+             <StepHeader title={`Сколько лет ${inclineName(answers.name, 'dative')}?`} />
+             <AgePicker value={answers.ageGroup} onChange={(val) => updateAnswer('ageGroup', val)} />
+          </div>
+        );
 
-            {step === 1 && (
-                <>
-                    <StepHeader title={`Сколько лет ${inclineName(answers.name || '', 'dative')}?`} subtitle="Чтобы попасть в точку" />
-                    <div className="py-10">
-                        <AgePicker value={answers.ageGroup} onChange={(val) => updateAnswer('ageGroup', val)} />
-                    </div>
-                </>
-            )}
+      case 2: // Occasion
+        const occasions = [
+            { id: 'ny', label: 'Новый год', icon: Icons.NewYear },
+            { id: 'bday', label: 'День рождения', icon: Icons.Birthday },
+            { id: 'date', label: 'Свидание / Годовщина', icon: Icons.Anniversary },
+            { id: 'wedding', label: 'Свадьба', icon: Icons.Wedding },
+            { id: 'house', label: 'Новоселье', icon: Icons.JustBecause },
+            { id: 'random', label: 'Просто так', icon: Icons.JustBecause },
+        ];
+        return (
+          <div className="w-full max-w-4xl mx-auto animate-fade-in">
+            <StepHeader title="Какой повод?" />
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                {occasions.map(occ => (
+                    <SelectionCard 
+                        key={occ.id}
+                        selected={!isCustomOccasion && answers.occasion === occ.label}
+                        onClick={() => { setIsCustomOccasion(false); updateAnswer('occasion', occ.label); nextStep(); }}
+                        label={occ.label}
+                        icon={<occ.icon />}
+                    />
+                ))}
+            </div>
+            {/* Custom Input Toggle */}
+            <div className={`transition-all duration-300 ${isCustomOccasion ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}>
+                <div 
+                    onClick={() => setIsCustomOccasion(true)}
+                    className={`bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3 cursor-pointer ${isCustomOccasion ? 'ring-2 ring-brand-purple bg-white/10' : ''}`}
+                >
+                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-xl">✍️</div>
+                    <input 
+                        type="text"
+                        value={customOccasion}
+                        onChange={(e) => { setCustomOccasion(e.target.value); setIsCustomOccasion(true); }}
+                        placeholder="Свой вариант (например, Выпускной)"
+                        className="bg-transparent w-full text-white font-bold outline-none placeholder-white/30"
+                    />
+                </div>
+            </div>
+          </div>
+        );
 
-            {step === 2 && (
-                <>
-                    <StepHeader title="Пол получателя" subtitle="Для уточнения интересов" />
-                    <div className="grid grid-cols-1 gap-4">
-                        {[
-                            { id: 'female', label: genderLabels.female, Icon: Icons.Female },
-                            { id: 'male', label: genderLabels.male, Icon: Icons.Male },
-                            { id: 'unisex', label: 'Не важно', Icon: Icons.Unisex }
-                        ].map((g) => (
-                            <SelectionCard
-                                key={g.id}
-                                label={g.label}
-                                icon={<g.Icon />}
-                                selected={answers.recipientGender === g.id}
-                                onClick={() => { updateAnswer('recipientGender', g.id); setTimeout(nextStep, 250); }}
-                            />
-                        ))}
-                    </div>
-                </>
-            )}
-
-            {step === 3 && (
-                <>
-                    <StepHeader title="По какому поводу?" subtitle="Контекст решает всё" />
-                    <div className="grid grid-cols-1 gap-3 mb-6">
-                        {occasions.map(occ => (
-                            <SelectionCard
-                                key={occ.id}
-                                label={occ.label}
-                                desc={occ.desc}
-                                icon={<occ.Icon />}
-                                selected={!isCustomOccasion && answers.occasion === occ.label}
-                                onClick={() => { setIsCustomOccasion(false); updateAnswer('occasion', occ.label); setTimeout(nextStep, 250); }}
-                            />
-                        ))}
+      case 3: // Relationship
+        const rels = ['Партнер', 'Родитель', 'Друг/Подруга', 'Коллега', 'Ребенок', 'Родственник'];
+        return (
+            <div className="w-full max-w-4xl mx-auto animate-fade-in">
+                <StepHeader title={`Кем ${answers.name} вам приходится?`} />
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                    {rels.map(rel => (
                         <SelectionCard 
-                            label="Свой вариант"
-                            desc="Опишите своими словами"
-                            icon={<Icons.Edit />}
-                            selected={isCustomOccasion}
-                            onClick={() => { setIsCustomOccasion(true); updateAnswer('occasion', ''); }}
+                            key={rel}
+                            selected={!isCustomRelationship && answers.relationship === rel}
+                            onClick={() => { setIsCustomRelationship(false); updateAnswer('relationship', rel); nextStep(); }}
+                            label={rel}
                         />
-                    </div>
-                    {isCustomOccasion && (
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            placeholder="Например: Выпускной"
-                            value={customOccasion}
-                            onChange={(e) => setCustomOccasion(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            className="w-full bg-white/10 rounded-2xl px-6 py-4 text-white placeholder-white/30 font-bold outline-none border border-white/20 focus:border-brand-purple"
-                        />
-                    )}
-                </>
-            )}
+                    ))}
+                </div>
+                <div 
+                    onClick={() => setIsCustomRelationship(true)}
+                    className={`bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3 cursor-pointer ${isCustomRelationship ? 'ring-2 ring-brand-purple bg-white/10' : ''}`}
+                >
+                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-xl">🤝</div>
+                    <input 
+                        type="text"
+                        value={customRelationship}
+                        onChange={(e) => { setCustomRelationship(e.target.value); setIsCustomRelationship(true); }}
+                        placeholder="Другое (например, Сосед)"
+                        className="bg-transparent w-full text-white font-bold outline-none placeholder-white/30"
+                    />
+                </div>
+            </div>
+        );
 
-            {step === 4 && (
-                <>
-                    <StepHeader title="Кто этот человек для вас?" />
-                    <div className="grid grid-cols-2 gap-3 mb-6">
-                        {relationships.map(rel => (
-                            <button
-                                key={rel}
-                                onClick={() => { setIsCustomRelationship(false); updateAnswer('relationship', rel); setTimeout(nextStep, 250); }}
-                                className={`p-4 rounded-2xl font-bold text-sm transition-all border ${
-                                    !isCustomRelationship && answers.relationship === rel
-                                    ? 'bg-white text-brand-blue border-white shadow-lg scale-105' 
-                                    : 'bg-white/5 text-white border-white/10 hover:bg-white/10'
-                                }`}
-                            >
-                                {rel}
-                            </button>
-                        ))}
-                        <button
-                            onClick={() => { setIsCustomRelationship(true); updateAnswer('relationship', ''); }}
-                            className={`p-4 rounded-2xl font-bold text-sm transition-all border col-span-2 ${
-                                isCustomRelationship
-                                ? 'bg-white text-brand-blue border-white shadow-lg'
-                                : 'bg-white/5 text-white border-white/10 hover:bg-white/10'
-                            }`}
-                        >
-                            Другое
-                        </button>
-                    </div>
-                    {isCustomRelationship && (
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            placeholder="Кем приходится?"
-                            value={customRelationship}
-                            onChange={(e) => setCustomRelationship(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            className="w-full bg-white/10 rounded-2xl px-6 py-4 text-white placeholder-white/30 font-bold outline-none border border-white/20 focus:border-brand-purple"
+      case 4: // Strategy (Vibe/Goal)
+        return (
+            <div className="w-full max-w-2xl mx-auto animate-fade-in">
+                <StepHeader title="Какая у нас цель?" subtitle="Какую эмоцию хотим вызвать?" />
+                <div className="flex flex-col gap-3">
+                    {GOALS.map(goal => (
+                        <SelectionCard 
+                            key={goal.id}
+                            selected={!isCustomVibe && answers.vibe === goal.id}
+                            onClick={() => { setIsCustomVibe(false); updateAnswer('vibe', goal.id); }}
+                            label={goal.label}
+                            desc={goal.desc}
                         />
-                    )}
-                </>
-            )}
-
-            {step === 5 && (
-                <>
-                    <StepHeader title="Какое настроение?" subtitle="Эмоциональный окрас" />
-                    <div className="grid grid-cols-1 gap-3 mb-6">
-                        {VIBES.map(v => (
-                            <SelectionCard
-                                key={v.id}
-                                label={v.label}
-                                desc={v.desc}
-                                icon={<v.icon />}
-                                selected={!isCustomVibe && answers.vibe === v.label}
-                                onClick={() => { setIsCustomVibe(false); updateAnswer('vibe', v.label); setTimeout(nextStep, 250); }}
-                            />
-                        ))}
-                        <SelectionCard
-                            label="Свой вариант"
-                            icon={<Icons.Edit />}
-                            selected={isCustomVibe}
-                            onClick={() => { setIsCustomVibe(true); updateAnswer('vibe', ''); }}
-                        />
-                    </div>
-                    {isCustomVibe && (
-                        <input
-                            ref={inputRef}
+                    ))}
+                     <div 
+                        onClick={() => setIsCustomVibe(true)}
+                        className={`bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3 cursor-pointer transition-all ${isCustomVibe ? 'ring-2 ring-brand-purple bg-white/10' : ''}`}
+                    >
+                        <input 
                             type="text"
-                            placeholder="Опишите вайб..."
                             value={customVibe}
-                            onChange={(e) => setCustomVibe(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            className="w-full bg-white/10 rounded-2xl px-6 py-4 text-white placeholder-white/30 font-bold outline-none border border-white/20 focus:border-brand-purple"
-                        />
-                    )}
-                </>
-            )}
-
-            {step === 6 && (
-                <>
-                    <StepHeader title="Город доставки" subtitle="Чтобы найти товары рядом" />
-                    <div className="mb-6 relative z-50">
-                        <CityAutocomplete 
-                            value={answers.city} 
-                            onChange={(val) => updateAnswer('city', val)} 
-                            onSelect={() => setTimeout(nextStep, 250)}
+                            onChange={(e) => { setCustomVibe(e.target.value); setIsCustomVibe(true); }}
+                            placeholder="Своя цель (например, Рассмешить)"
+                            className="bg-transparent w-full text-white font-bold outline-none placeholder-white/30"
                         />
                     </div>
-                </>
-            )}
+                </div>
+            </div>
+        );
 
-            {/* --- NEW STEP 7: Roles --- */}
-            {step === 7 && (
-                <>
-                    <StepHeader title="Кто он по жизни?" subtitle="Выберите 3 главных роли" />
-                    <div className="flex flex-wrap justify-center gap-2 mb-8">
-                        {ROLES.map(role => (
-                            <button
-                                key={role.id}
-                                onClick={() => toggleRole(role.id)}
-                                className={`px-4 py-3 rounded-2xl font-bold text-sm transition-all border shadow-sm ${
-                                    answers.roles.includes(role.id)
-                                    ? 'bg-white text-brand-dark border-white scale-105 shadow-lg'
-                                    : 'bg-white/10 text-white border-white/10 hover:bg-white/20'
-                                }`}
-                            >
-                                {role.label}
-                            </button>
-                        ))}
-                    </div>
-                    
-                    {answers.roles.length > 0 && (
-                        <div className="flex justify-center animate-fade-in">
-                            <div className="bg-white/10 p-1 rounded-xl flex">
-                                <button 
-                                    onClick={() => updateAnswer('roleConfidence', 'sure')}
-                                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${answers.roleConfidence === 'sure' ? 'bg-brand-blue text-white shadow' : 'text-white/60 hover:text-white'}`}
-                                >
-                                    Знаю точно
-                                </button>
-                                <button 
-                                    onClick={() => updateAnswer('roleConfidence', 'guessing')}
-                                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${answers.roleConfidence === 'guessing' ? 'bg-brand-purple text-white shadow' : 'text-white/60 hover:text-white'}`}
-                                >
-                                    Кажется
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </>
-            )}
-
-            {/* --- NEW STEP 8: Archetype --- */}
-            {step === 8 && (
-                <>
-                    <StepHeader title="Внутренний миф" subtitle="Какой он персонаж?" />
-                    
-                    <div className="grid grid-cols-2 gap-3 mb-8">
-                        {ARCHETYPES.map(arch => (
-                            <button
-                                key={arch.id}
-                                onClick={() => updateAnswer('archetype', arch.id)}
-                                className={`p-4 rounded-2xl text-left transition-all border ${
-                                    answers.archetype === arch.id
-                                    ? 'bg-gradient-to-br from-brand-blue to-brand-purple border-white/50 text-white shadow-lg scale-[1.02]'
-                                    : 'bg-white/5 border-white/10 text-white hover:bg-white/10'
-                                }`}
-                            >
-                                <div className="font-bold mb-1">{arch.label}</div>
-                                <div className="text-[10px] opacity-70 leading-tight">{arch.desc}</div>
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
-                        <label className="block text-xs font-bold text-white/50 uppercase tracking-wider mb-2 ml-1">
-                            Суперсила (за что ценит себя?)
-                        </label>
-                        <input
-                            type="text"
-                            placeholder="Например: Умеет решать любые проблемы..."
-                            value={answers.selfWorth}
-                            onChange={(e) => updateAnswer('selfWorth', e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            className="w-full bg-transparent text-white font-medium outline-none placeholder-white/20 border-b border-white/10 focus:border-brand-blue pb-2 transition-all"
+      case 5: // Effort (Roles/Time)
+        return (
+            <div className="w-full max-w-2xl mx-auto animate-fade-in">
+                <StepHeader title="Ваша готовность" subtitle="Сколько сил вы готовы вложить?" />
+                <div className="flex flex-col gap-3">
+                    {EFFORT_OPTIONS.map(opt => (
+                        <SelectionCard 
+                            key={opt.id}
+                            selected={answers.effortLevel === opt.id}
+                            onClick={() => { updateAnswer('effortLevel', opt.id); nextStep(); }}
+                            label={opt.label}
+                            desc={opt.desc}
                         />
-                    </div>
-                </>
-            )}
+                    ))}
+                </div>
+            </div>
+        );
 
-            {/* --- NEW STEP 9: Topics --- */}
-            {step === 9 && (
-                <>
-                    <StepHeader title="Горящие глаза" subtitle="О чем может говорить часами?" />
-                    
-                    <div className="relative mb-8">
-                        <textarea
-                            ref={textAreaRef}
-                            value={answers.conversationTopics}
-                            onChange={(e) => updateAnswer('conversationTopics', e.target.value)}
-                            placeholder="Космос, инвестиции, коты, история Рима, новый стартап..."
-                            className="w-full h-32 bg-white/10 rounded-3xl p-6 text-white placeholder-white/30 font-bold text-xl outline-none border border-white/10 focus:border-brand-purple focus:bg-white/15 transition-all resize-none shadow-inner text-center leading-relaxed"
-                        />
-                    </div>
-
-                    <div className="flex justify-center gap-4">
+      case 6: // Budget
+        const budgets = [1000, 3000, 5000, 10000, 20000, 50000];
+        return (
+            <div className="w-full max-w-md mx-auto animate-fade-in text-center">
+                <StepHeader title="Бюджет" subtitle="Примерная сумма" />
+                <div className="relative mb-8">
+                    <input 
+                        type="text"
+                        inputMode="numeric"
+                        value={answers.budget}
+                        onChange={(e) => updateAnswer('budget', e.target.value.replace(/\D/g, ''))}
+                        onKeyDown={handleKeyDown}
+                        placeholder="0"
+                        className="w-full bg-transparent text-6xl font-black text-white text-center outline-none border-b-2 border-white/20 focus:border-brand-purple pb-2 placeholder-white/10"
+                        autoFocus
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-white/30">₽</span>
+                </div>
+                <div className="flex flex-wrap justify-center gap-2">
+                    {budgets.map(b => (
                         <button 
-                            onClick={() => updateAnswer('topicDuration', 'long_term')}
-                            className={`px-6 py-3 rounded-2xl border transition-all ${
-                                answers.topicDuration === 'long_term' 
-                                ? 'bg-white text-brand-dark border-white font-bold shadow-lg' 
-                                : 'bg-transparent text-white/60 border-white/20 hover:bg-white/10'
-                            }`}
+                            key={b}
+                            onClick={() => updateAnswer('budget', b.toString())}
+                            className="bg-white/10 hover:bg-white/20 text-white font-bold px-4 py-2 rounded-xl transition-all"
                         >
-                            ❤️ Давно любит
+                            {b.toLocaleString()}
                         </button>
-                        <button 
-                            onClick={() => updateAnswer('topicDuration', 'temporary')}
-                            className={`px-6 py-3 rounded-2xl border transition-all ${
-                                answers.topicDuration === 'temporary' 
-                                ? 'bg-white text-brand-dark border-white font-bold shadow-lg' 
-                                : 'bg-transparent text-white/60 border-white/20 hover:bg-white/10'
-                            }`}
-                        >
-                            🔥 Новый хайп
-                        </button>
-                    </div>
-                </>
-            )}
+                    ))}
+                </div>
+            </div>
+        );
 
-            {/* --- NEW STEP 10: Pain Points --- */}
-            {step === 10 && (
-                <>
-                    <StepHeader title="Бытовые враги" subtitle="Что портит настроение?" />
-                    
-                    <div className="flex flex-wrap justify-center gap-3 mb-8">
-                        {PAIN_ZONES.map(pain => (
-                            <button
-                                key={pain.id}
-                                onClick={() => togglePain(pain.id)}
-                                className={`px-4 py-3 rounded-xl text-left transition-all border flex flex-col ${
-                                    answers.painPoints.includes(pain.id)
-                                    ? 'bg-red-500/20 border-red-400 text-white shadow-[0_0_15px_rgba(248,113,113,0.3)]'
-                                    : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
-                                }`}
-                            >
-                                <span className="font-bold text-sm">{pain.label}</span>
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-6">
-                        <div className="bg-white/5 p-1 rounded-xl flex">
-                            <button 
-                                onClick={() => updateAnswer('painStyle', 'endurer')}
-                                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${answers.painStyle === 'endurer' ? 'bg-white/20 text-white' : 'text-white/40'}`}
-                            >
-                                🧘‍♂️ Терпит неудобства
-                            </button>
-                            <button 
-                                onClick={() => updateAnswer('painStyle', 'optimizer')}
-                                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${answers.painStyle === 'optimizer' ? 'bg-brand-blue text-white' : 'text-white/40'}`}
-                            >
-                                🚀 Оптимизирует всё
-                            </button>
+      case 7: // Interests (Physics Clouds)
+        return (
+            <div className="w-full h-[60vh] relative animate-fade-in">
+                <div className="text-center mb-4 relative z-20 pointer-events-none">
+                    <h2 className="text-3xl font-black text-white drop-shadow-md">Интересы</h2>
+                    <p className="text-white/70 text-sm">Нажимайте на то, что подходит, или пишите своё</p>
+                </div>
+                
+                {/* Physics Container */}
+                <div ref={containerRef} className="absolute inset-0 z-0 overflow-hidden">
+                    <div 
+                        ref={centerBoxRef} 
+                        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border-2 border-white/10 rounded-full flex items-center justify-center bg-white/5 backdrop-blur-sm z-10 pointer-events-none"
+                    >
+                        <div className="text-center px-4">
+                            <span className="text-4xl block mb-2">🎁</span>
+                            <span className="text-xs font-bold text-white/50 uppercase tracking-widest">Drop zone</span>
                         </div>
-
-                        <label className="flex items-center gap-3 cursor-pointer group bg-white/5 p-4 rounded-2xl border border-white/10 hover:bg-white/10 transition-all">
-                            <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${answers.riskyTopics ? 'bg-red-500 border-red-500' : 'border-white/30'}`}>
-                                {answers.riskyTopics && <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
-                            </div>
-                            <input 
-                                type="checkbox" 
-                                className="hidden" 
-                                checked={answers.riskyTopics} 
-                                onChange={() => updateAnswer('riskyTopics', !answers.riskyTopics)} 
-                            />
-                            <div className="text-left">
-                                <div className="text-sm font-bold text-white">Risk Check ⚠️</div>
-                                <div className="text-xs text-white/50">Есть табу (вес, гигиена, порядок)?</div>
-                            </div>
-                        </label>
                     </div>
-                </>
-            )}
 
-            {step === 11 && (
-                <>
-                    <StepHeader title="Хобби и увлечения" subtitle="Конкретика (если есть)" />
-                    <div className="flex flex-wrap gap-2 mb-8 justify-center">
-                        {INTEREST_TAGS.map(tag => (
+                    {currentQuestions.map((q, i) => {
+                        const isSelected = selectedTags.includes(q);
+                        return (
                             <button
-                                key={tag}
-                                onClick={() => toggleTag(tag)}
-                                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all border ${
-                                    selectedTags.includes(tag) 
-                                    ? 'bg-white text-brand-dark border-white shadow-lg scale-105' 
-                                    : 'bg-white/5 text-white border-white/10 hover:bg-white/10'
+                                key={i}
+                                ref={el => { if (el) cloudRefs.current[i] = el; }}
+                                onClick={() => toggleInterestTag(q)}
+                                className={`absolute whitespace-nowrap px-4 py-2 rounded-full font-bold text-sm transition-colors duration-300 shadow-lg select-none will-change-transform ${
+                                    isSelected 
+                                    ? 'bg-brand-blue text-white z-20 scale-110 ring-2 ring-white' 
+                                    : 'bg-white/10 text-white/80 hover:bg-white/20 border border-white/10 z-10'
                                 }`}
+                                style={{ top: 0, left: 0 }} // Positioned by physics engine
                             >
-                                {tag}
+                                {q}
                             </button>
-                        ))}
-                    </div>
-                    <div className="relative">
-                        <textarea
+                        );
+                    })}
+                </div>
+
+                {/* Manual Input Overlay */}
+                <div className="absolute bottom-0 left-0 right-0 z-30 p-4">
+                    <div className="max-w-md mx-auto bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-2 flex gap-2 shadow-2xl">
+                        <input 
                             ref={textAreaRef}
                             value={answers.interests}
                             onChange={(e) => updateAnswer('interests', e.target.value)}
-                            placeholder="Любит Гарри Поттера, мечтает о корги, фанат Marvel..."
-                            className="w-full h-32 bg-white/10 rounded-3xl p-6 text-white placeholder-white/30 font-medium text-lg outline-none border border-white/10 focus:border-brand-purple focus:bg-white/15 transition-all resize-none shadow-inner"
+                            placeholder="Что еще? (например: любит корги и матчу)"
+                            className="bg-transparent w-full text-white px-3 outline-none placeholder-white/40 font-medium"
+                            onKeyDown={(e) => { if(e.key === 'Enter') nextStep(); }}
                         />
                     </div>
-                </>
-            )}
+                </div>
+            </div>
+        );
 
-            {step === 12 && (
-                <>
-                    <StepHeader title="Чего точно НЕ дарить?" subtitle="Исключим провальные варианты" />
-                    <div className="flex flex-wrap gap-2 mb-6 justify-center">
-                        {EXCLUDE_TAGS.map(tag => (
-                            <button
-                                key={tag}
-                                onClick={() => toggleExcludeTag(tag)}
-                                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all border ${
-                                    selectedExcludeTags.includes(tag) 
-                                    ? 'bg-red-500 text-white border-red-400 shadow-lg scale-105' 
-                                    : 'bg-white/5 text-white border-white/10 hover:bg-white/10'
-                                }`}
-                            >
-                                {selectedExcludeTags.includes(tag) ? '✕ ' : ''}{tag}
-                            </button>
-                        ))}
-                    </div>
-                    <div className="relative group">
-                        <input
-                            type="text"
-                            placeholder="Что-то еще? (например: живые цветы)"
-                            value={customExclude}
-                            onChange={(e) => setCustomExclude(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            className="w-full bg-white/10 rounded-2xl px-6 py-4 text-white placeholder-white/30 font-bold outline-none border border-white/20 focus:border-brand-purple transition-all"
-                        />
-                    </div>
-                    <p className="text-center text-white/40 text-sm mt-6">
-                        Можно пропустить, если ограничений нет
-                    </p>
-                </>
-            )}
+      case 8: // Pain Points
+        return (
+            <div className="w-full max-w-2xl mx-auto animate-fade-in">
+                <StepHeader title="На что жалуется?" subtitle="Что отравляет жизнь?" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+                    {['Устает на работе', 'Болит спина/шея', 'Не высыпается', 'Мерзнет', 'Скучно дома', 'Нет времени на себя', 'Телефон садится', 'Все ломается'].map(pain => (
+                        <button 
+                            key={pain}
+                            onClick={() => {
+                                const current = answers.painPoints || [];
+                                const next = current.includes(pain) ? current.filter(p => p !== pain) : [...current, pain];
+                                updateAnswer('painPoints', next);
+                                setNoComplaints(false);
+                            }}
+                            className={`p-4 rounded-xl text-left font-bold transition-all border ${
+                                (answers.painPoints || []).includes(pain)
+                                ? 'bg-red-500/20 border-red-500 text-white'
+                                : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
+                            }`}
+                        >
+                            {pain}
+                        </button>
+                    ))}
+                </div>
+                <button 
+                    onClick={() => { updateAnswer('painPoints', []); setNoComplaints(!noComplaints); }}
+                    className={`w-full py-3 rounded-xl font-bold border transition-all ${noComplaints ? 'bg-green-500/20 border-green-500 text-green-200' : 'bg-transparent border-white/20 text-white/50 hover:bg-white/5'}`}
+                >
+                    Ни на что не жалуется (Счастливый человек)
+                </button>
+            </div>
+        );
 
-            {step === 13 && (
-                <>
-                    <StepHeader title="Бюджет" subtitle="Сколько готовы потратить?" />
-                    <div className="relative mb-8">
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            inputMode="numeric"
-                            placeholder="0"
-                            value={(answers.budget || '').replace(/\D/g, '')}
-                            onChange={(e) => updateAnswer('budget', e.target.value.replace(/\D/g, ''))}
-                            onKeyDown={handleKeyDown}
-                            className="w-full bg-transparent text-center text-6xl font-black text-white placeholder-white/10 outline-none border-b-2 border-white/20 focus:border-brand-blue transition-all pb-4"
+      case 9: // Weekend
+        return (
+            <div className="w-full max-w-3xl mx-auto animate-fade-in">
+                <StepHeader title="Идеальный выходной" subtitle="Как восстанавливает ресурс?" />
+                <div className="flex flex-wrap justify-center gap-3 mb-6">
+                    {WEEKEND_TAGS_FULL.slice(0, shownWeekendCount).map(tag => (
+                        <button
+                            key={tag}
+                            onClick={() => toggleWeekendTag(tag)}
+                            className={`px-5 py-3 rounded-2xl font-bold text-sm border transition-all ${
+                                selectedWeekendTags.includes(tag)
+                                ? 'bg-white text-brand-dark border-white shadow-lg transform scale-105'
+                                : 'bg-white/5 text-white border-white/10 hover:bg-white/10'
+                            }`}
+                        >
+                            {tag}
+                        </button>
+                    ))}
+                </div>
+                {shownWeekendCount < WEEKEND_TAGS_FULL.length && (
+                    <button onClick={() => setShownWeekendCount(prev => prev + 6)} className="block mx-auto text-white/50 hover:text-white text-sm font-bold mb-6">
+                        Показать еще...
+                    </button>
+                )}
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                    <textarea 
+                        value={answers.idealWeekend}
+                        onChange={(e) => updateAnswer('idealWeekend', e.target.value)}
+                        placeholder="Свой вариант..."
+                        className="w-full bg-transparent text-white outline-none resize-none h-20 placeholder-white/30"
+                    />
+                </div>
+            </div>
+        );
+
+      case 10: // Attitude (Material)
+        return (
+            <div className="w-full max-w-2xl mx-auto animate-fade-in">
+                <StepHeader title="Отношение к вещам" subtitle="Что важнее?" />
+                <div className="grid grid-cols-1 gap-3">
+                    {ATTITUDE_HINTS.map((hint, idx) => (
+                        <SelectionCard 
+                            key={idx}
+                            selected={answers.materialAttitude === hint}
+                            onClick={() => { updateAnswer('materialAttitude', hint); nextStep(); }}
+                            label={hint}
                         />
-                        <span className="absolute top-1/2 right-4 -translate-y-1/2 text-2xl font-bold text-white/30">₽</span>
-                    </div>
-                    
-                    <div className="flex flex-wrap justify-center gap-3">
-                        {[1000, 3000, 5000, 10000, 15000, 25000].map(amount => (
-                            <button
-                                key={amount}
-                                onClick={() => updateAnswer('budget', amount.toString())}
-                                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold transition-all border border-white/5"
-                            >
-                                {amount.toLocaleString()} ₽
-                            </button>
-                        ))}
-                    </div>
-                </>
-            )}
-        </div>
-    );
+                    ))}
+                </div>
+            </div>
+        );
+
+      case 11: // Exclude (Stop list)
+        return (
+            <div className="w-full max-w-2xl mx-auto animate-fade-in text-center">
+                <StepHeader title="Стоп-лист" subtitle="Что точно НЕ дарить?" />
+                <div className="flex flex-wrap justify-center gap-3 mb-8">
+                    {EXCLUDE_TAGS.map(tag => (
+                        <button
+                            key={tag}
+                            onClick={() => toggleExcludeTag(tag)}
+                            className={`px-4 py-2 rounded-xl font-bold text-sm border transition-all ${
+                                selectedExcludeTags.includes(tag)
+                                ? 'bg-red-500/20 border-red-500 text-red-200 line-through'
+                                : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
+                            }`}
+                        >
+                            {tag}
+                        </button>
+                    ))}
+                </div>
+                <div className="max-w-md mx-auto relative">
+                    <input 
+                        type="text"
+                        value={customExclude}
+                        onChange={(e) => setCustomExclude(e.target.value)}
+                        placeholder="Что еще исключить?"
+                        className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white focus:border-red-400 outline-none text-center placeholder-white/30"
+                    />
+                </div>
+            </div>
+        );
+
+      default:
+        return null;
+    }
   };
 
   return (
@@ -1061,38 +1010,93 @@ export const Quiz: React.FC = () => {
           <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-brand-purple/20 rounded-full blur-[120px] animate-blob" />
       </div>
 
-      {/* Navigation Bar */}
+      {/* Navigation Bar - Same */}
       <div className="relative z-50 px-6 py-6 flex items-center justify-between">
           <button 
             onClick={prevStep}
-            className="w-12 h-12 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white transition-all active:scale-90 border border-white/10 backdrop-blur-md"
+            className="w-12 h-12 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white transition-all active:scale-90 border border-white/10 backdrop-blur-md shrink-0"
           >
             <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-80"><path d="M15 18l-6-6 6-6"/></svg>
           </button>
 
-          {/* Segmented Progress */}
-          <div className="flex gap-1 absolute left-1/2 -translate-x-1/2 max-w-[200px] flex-wrap justify-center">
-              {Array.from({ length: 14 }).map((_, i) => (
-                  <div 
+          {/* Interactive Step Indicator */}
+          <div className="flex gap-1.5 absolute left-1/2 -translate-x-1/2 max-w-[55vw] md:max-w-[400px] overflow-x-auto no-scrollbar py-2 px-4 justify-start md:justify-center">
+              {Array.from({ length: TOTAL_STEPS_COUNT }).map((_, i) => (
+                  <button 
                     key={i} 
-                    className={`h-1.5 rounded-full transition-all duration-500 ${
-                        i <= step ? 'w-3 bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]' : 'w-1.5 bg-white/10'
-                    }`} 
+                    onClick={() => setStep(i)}
+                    className={`h-1.5 rounded-full transition-all duration-300 shrink-0 ${
+                        i === step 
+                        ? 'w-8 bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)]' 
+                        : i < step 
+                            ? 'w-3 bg-white/60 hover:bg-white' 
+                            : 'w-2 bg-white/20 hover:bg-white/40'
+                    }`}
+                    title={`Step ${i + 1}`}
                   />
               ))}
           </div>
 
-          <div className="w-12 h-12" /> {/* Spacer */}
+          <div className="relative">
+              <button 
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="w-12 h-12 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white transition-all active:scale-90 border border-white/10 backdrop-blur-md"
+              >
+                <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-80">
+                    <path d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              
+              {isMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)} />
+                    <div className="absolute right-0 top-full mt-2 w-64 bg-[#2A0A18]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 animate-pop max-h-[70vh] overflow-y-auto no-scrollbar">
+                        <div className="p-4 border-b border-white/10 bg-white/5">
+                            <button 
+                                onClick={handleRestart}
+                                className="w-full text-center py-2 text-xs font-bold text-white/50 hover:text-white border border-white/10 rounded-lg hover:bg-white/10 transition-colors"
+                            >
+                                ↺ Сбросить прогресс
+                            </button>
+                        </div>
+                        {STEP_LABELS.map((label, idx) => (
+                            <button 
+                                key={idx}
+                                onClick={() => handleJumpToStep(idx)}
+                                className={`w-full text-left px-5 py-3 text-sm font-bold flex items-center justify-between transition-colors border-b border-white/5 last:border-0 ${
+                                    idx === step 
+                                    ? 'bg-brand-purple/20 text-white border-l-4 border-l-brand-purple' 
+                                    : idx < step 
+                                        ? 'text-white/70 hover:bg-white/10' 
+                                        : 'text-white/30 hover:text-white/50 hover:bg-white/5'
+                                }`}
+                            >
+                                <span>{label}</span>
+                                {idx < step && <span className="text-green-400 text-xs">✓</span>}
+                                {idx === step && <span className="w-2 h-2 rounded-full bg-brand-purple animate-pulse"></span>}
+                            </button>
+                        ))}
+                        <div className="p-2 bg-white/5">
+                            <button 
+                                onClick={() => navigate('/')}
+                                className="w-full text-center py-3 text-sm font-bold text-red-300 hover:bg-white/5 rounded-xl transition-colors"
+                            >
+                                Выйти
+                            </button>
+                        </div>
+                    </div>
+                  </>
+              )}
+          </div>
       </div>
 
       {/* Main Content Area */}
       <div className="flex-grow flex flex-col items-center justify-center px-6 relative z-10">
           
-          {/* Mascot stays constant but reacts */}
           <div className="mb-8 transition-transform duration-500 hover:scale-105 cursor-pointer">
              <Mascot 
                 className="w-32 h-32 md:w-40 md:h-40 drop-shadow-2xl" 
-                emotion={step === 0 ? 'happy' : step === 9 ? 'excited' : step === 10 ? 'thinking' : step === 13 ? 'cool' : 'happy'}
+                emotion={step === 0 ? 'happy' : step === 9 ? 'excited' : step === 10 ? 'thinking' : step === 11 ? 'cool' : 'happy'}
                 accessory="santa-hat"
                 variant="cupid"
              />
@@ -1117,15 +1121,25 @@ export const Quiz: React.FC = () => {
                 }`}
             >
                 <div className="flex items-center justify-center gap-2">
-                    {step === 13 ? 'Сотворить магию' : 'Далее'}
-                    {isCurrentStepValid() && step !== 13 && (
+                    {step === 11 ? 'Сотворить магию' : 'Далее'}
+                    {isCurrentStepValid() && step !== 11 && (
                         <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="animate-pulse">
                             <path d="M5 12h14M12 5l7 7-7 7"/>
                         </svg>
                     )}
-                    {step === 13 && <span className="text-2xl">💘</span>}
+                    {step === 11 && <span className="text-2xl">💘</span>}
                 </div>
             </Button>
+
+            {/* Experiment Entry Point (Only at last step) */}
+            {step === 11 && (
+                <button 
+                    onClick={startExperimentFlow}
+                    className="w-full mt-4 py-3 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-xl font-bold text-xs uppercase tracking-widest border border-cyan-500/30 transition-all flex items-center justify-center gap-2"
+                >
+                    <span>🚀</span> Test: Dialogue Algorithm (Alpha)
+                </button>
+            )}
          </div>
       </div>
 
