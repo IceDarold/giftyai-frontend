@@ -34,7 +34,6 @@ export interface Gift {
   productUrl: string;
   merchant: string | null;
   category: string | null;
-  // Legacy support or internal UI scoring
   tags?: string[];
   reason?: string;
   reviews?: GiftReviews;
@@ -46,7 +45,6 @@ export interface RecommendationsResponse {
   featuredGift: Gift;
   gifts: Gift[];
   debug?: any | null;
-  // Enhanced debug info
   requestPayload?: any;
   serverError?: any;
 }
@@ -63,25 +61,20 @@ export interface QuizAnswers {
   city: string;
   
   // New Deep Profile Fields
-  roles: string[]; // Top 3 roles
+  roles: string[]; 
   roleConfidence: 'sure' | 'guessing';
-  
   archetype: string;
-  selfWorth: string; // What they value in themselves
-  
+  selfWorth: string;
   conversationTopics: string;
-  topicDuration: 'long_term' | 'temporary'; // "It's been a while" vs "New hype"
-  
-  painPoints: string[]; // Daily irritants
-  painStyle: 'endurer' | 'optimizer'; // Tolerates vs Optimizes
-  riskyTopics: boolean; // True if weight/hygiene/order are sensitive topics (Risk Check)
+  topicDuration: 'long_term' | 'temporary';
+  painPoints: string[];
+  painStyle: 'endurer' | 'optimizer';
+  riskyTopics: boolean;
 
-  // Gifty Express / Psychology Fields
   effortLevel?: string;
   idealWeekend?: string;
   materialAttitude?: string;
 
-  // Legacy/General
   interests: string;
   budget: string;
   exclude?: string;
@@ -141,24 +134,23 @@ export interface TeamMember {
   sort_order?: number;
 }
 
-// --- Dialogue Algorithm Types ---
+// --- GUTG Dialogue Types (Updated for Real API) ---
 
 export interface DialogueProbeOption {
     id: string;
     label: string;
-    icon: string;
+    // API might return icon, if not we fallback
+    icon?: string; 
     description?: string;
 }
 
 export interface DialogueHypothesis {
     id: string;
-    title: string; // e.g. "Эстетика звука"
-    gutgType: 'Mirror' | 'Optimizer' | 'Anchor' | 'Catalyst' | 'Permission';
-    description: string; // "Он ценит красоту момента..."
-    previewGifts: Gift[]; // 3 items to show "meat"
+    title: string;
+    gutgType: string; // 'Mirror' | 'Optimizer' | 'Anchor' | 'Catalyst'
+    description: string; // The reasoning from AI
+    previewGifts: Gift[];
 }
-
-// --- GUTG API Types ---
 
 export type GUTGState = 'BRANCHING' | 'SHOWING_HYPOTHESES' | 'DEEP_DIVE' | 'DEAD_END';
 
@@ -166,6 +158,7 @@ export interface RecommendationSession {
     session_id: string;
     state: GUTGState;
     selected_topic?: string;
+    language?: string;
     current_probe?: {
         question: string;
         subtitle?: string;
