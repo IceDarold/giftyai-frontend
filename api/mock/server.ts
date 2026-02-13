@@ -1,6 +1,7 @@
+
 import { MOCK_DB_GIFTS } from './data';
 import { GiftDTO, RecommendationResponseDTO } from '../dto/types';
-import { QuizAnswers, Gift, UserProfile, CalendarEvent, TeamMember } from '../../domain/types';
+import { QuizAnswers, Gift, UserProfile, CalendarEvent, TeamMember, RecommendationSession, DialogueHypothesis, RecommendationTrack } from '../../domain/types';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -40,35 +41,30 @@ const DEFAULT_PROFILE: UserProfile = {
   events: []
 };
 
-// Mock Team Data with placeholders for public_id
 const MOCK_TEAM: TeamMember[] = [
+  { name: 'Александр', role: 'CEO', bio: 'AI Visionary', linkedin_url: '#', photo_public_id: null },
+  { name: 'Елизавета', role: 'CTO', bio: 'Tech Lead', linkedin_url: '#', photo_public_id: null }
+];
+
+const GET_MOCK_TRACKS = (): RecommendationTrack[] => [
     {
-        name: "Alexey",
-        role: "CEO & Product",
-        bio: "Visionary with 10+ years in AI.",
-        linkedin_url: "https://linkedin.com",
-        photo_public_id: null // Will trigger fallback
+        topicId: 't_vibe',
+        topicName: 'Вайб',
+        title: 'Эстетика момента',
+        status: 'ready',
+        hypotheses: [
+            { id: 'h_est_1', title: 'Утренний гедонизм', gutgType: 'Mirror', description: 'Вещи для тех, кто превращает завтрак в ритуал. Красивая посуда, редкий кофе.', previewGifts: [MOCK_DB_GIFTS[20], MOCK_DB_GIFTS[21], MOCK_DB_GIFTS[16], MOCK_DB_GIFTS[10]] },
+            { id: 'h_est_2', title: 'Мягкий вечер', gutgType: 'Anchor', description: 'Создаем уютное убежище от внешнего мира. Свет, текстиль, ароматы.', previewGifts: [MOCK_DB_GIFTS[5], MOCK_DB_GIFTS[31], MOCK_DB_GIFTS[13], MOCK_DB_GIFTS[18]] }
+        ]
     },
     {
-        name: "Maria",
-        role: "CMO",
-        bio: "Marketing strategist.",
-        linkedin_url: "https://linkedin.com",
-        photo_public_id: null
-    },
-    {
-        name: "Dmitry",
-        role: "CTO",
-        bio: "Tech Lead & Architect.",
-        linkedin_url: null,
-        photo_public_id: null
-    },
-    {
-        name: "Anna",
-        role: "AI Researcher",
-        bio: "LLM tuning specialist.",
-        linkedin_url: null,
-        photo_public_id: null
+        topicId: 't_tech',
+        topicName: 'Гаджеты',
+        title: 'Умный комфорт',
+        status: 'ready',
+        hypotheses: [
+            { id: 'h_tech_1', title: 'Цифровой дзен', gutgType: 'Optimizer', description: 'Девайсы, которые убирают лишнее трение в жизни. Порядок и эффективность.', previewGifts: [MOCK_DB_GIFTS[22], MOCK_DB_GIFTS[27], MOCK_DB_GIFTS[23], MOCK_DB_GIFTS[14]] }
+        ]
     }
 ];
 
@@ -76,78 +72,18 @@ export const MockServer = {
   async getGifts(params?: { limit?: number; tag?: string; category?: string }): Promise<GiftDTO[]> {
     await delay(300);
     let results = [...MOCK_DB_GIFTS];
-    
-    if (params?.category) {
-        results = results.filter(g => g.category?.toLowerCase() === params.category?.toLowerCase());
-    }
-
-    if (params?.tag) {
-        results = results.filter(g => g.tags?.some(t => t.toLowerCase().includes(params.tag!.toLowerCase())));
-    }
-
-    if (params?.limit) {
-        results = results.slice(0, params.limit);
-    }
-    
-    // If filtering returned nothing (e.g. strict tag match fail), return generic mix to avoid empty screen
-    if (results.length === 0) {
-        results = MOCK_DB_GIFTS.slice(0, params?.limit || 10);
-    }
-
+    if (params?.limit) results = results.slice(0, params.limit);
     return results.map(toDTO);
   },
 
   async getGiftsByIds(ids: string[]): Promise<GiftDTO[]> {
-    await delay(400);
     return MOCK_DB_GIFTS.filter(g => ids.includes(g.id)).map(toDTO);
   },
 
   async getGiftById(id: string): Promise<GiftDTO> {
-    await delay(200);
     const gift = MOCK_DB_GIFTS.find(g => g.id === id);
     if (!gift) throw new Error("Gift not found");
     return toDTO(gift);
-  },
-
-  async getSimilarGifts(id: string): Promise<GiftDTO[]> {
-    await delay(400);
-    const currentGift = MOCK_DB_GIFTS.find(g => g.id === id);
-    if (!currentGift) return [];
-    let candidates = MOCK_DB_GIFTS.filter(g => g.id !== id);
-    return candidates.slice(0, 4).map(toDTO);
-  },
-
-  async getRecommendations(answers: QuizAnswers): Promise<RecommendationResponseDTO> {
-    await delay(1200);
-    // Simple mock logic: filter by gender/budget if possible, otherwise shuffle
-    let filtered = [...MOCK_DB_GIFTS];
-    
-    // Rough budget filter
-    const budget = parseInt(answers.budget.replace(/\D/g, ''));
-    if (budget > 0) {
-       filtered = filtered.filter(g => (g.price || 0) <= budget * 1.2); // +20% tolerance
-    }
-
-    // Gender check (simple heuristic via tags or category)
-    if (answers.recipientGender === 'female') {
-       // deprioritize overly masculine items (not strict in mock)
-    }
-
-    // Shuffle
-    filtered = filtered.sort(() => 0.5 - Math.random());
-    
-    // Fallback if filter too aggressive
-    if (filtered.length < 5) filtered = [...MOCK_DB_GIFTS].sort(() => 0.5 - Math.random());
-
-    const resultGifts = filtered.slice(0, 12).map(toDTO);
-    
-    return {
-      quiz_run_id: 'mock-uuid-' + Date.now(),
-      engine_version: 'ranker_v1_mock',
-      featured_gift: resultGifts[0],
-      gifts: resultGifts,
-      debug: { note: "Generated by MockServer" }
-    };
   },
 
   async getWishlist(): Promise<string[]> {
@@ -167,17 +103,12 @@ export const MockServer = {
   async removeFromWishlist(giftId: string): Promise<void> {
     const stored = localStorage.getItem('gifty_wishlist');
     const list: string[] = stored ? JSON.parse(stored) : [];
-    const newList = list.filter(id => id !== giftId);
-    localStorage.setItem('gifty_wishlist', JSON.stringify(newList));
+    localStorage.setItem('gifty_wishlist', JSON.stringify(list.filter(id => id !== giftId)));
   },
 
   async getUserProfile(): Promise<UserProfile> {
     const stored = localStorage.getItem('gifty_profile');
-    if (!stored) {
-       localStorage.setItem('gifty_profile', JSON.stringify(DEFAULT_PROFILE));
-       return DEFAULT_PROFILE;
-    }
-    return JSON.parse(stored);
+    return stored ? JSON.parse(stored) : DEFAULT_PROFILE;
   },
 
   async updateUserProfile(data: Partial<UserProfile>): Promise<UserProfile> {
@@ -190,19 +121,73 @@ export const MockServer = {
   async addEvent(event: Omit<CalendarEvent, 'id'>): Promise<CalendarEvent> {
     const profile = await this.getUserProfile();
     const newEvent = { ...event, id: Date.now().toString() };
-    const updatedEvents = [...profile.events, newEvent].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    await this.updateUserProfile({ events: updatedEvents });
+    await this.updateUserProfile({ events: [...profile.events, newEvent] });
     return newEvent;
   },
 
   async removeEvent(id: string): Promise<void> {
     const profile = await this.getUserProfile();
-    const updatedEvents = profile.events.filter(e => e.id !== id);
-    await this.updateUserProfile({ events: updatedEvents });
+    await this.updateUserProfile({ events: profile.events.filter(e => e.id !== id) });
+  },
+
+  async getGUTGSession(variant: 'BRANCHING' | 'TRACKS' | 'FEED' | 'DEAD_END' | 'REFINE' = 'BRANCHING'): Promise<RecommendationSession> {
+    await delay(500);
+    
+    if (variant === 'BRANCHING') {
+        return {
+          session_id: 'mock_session_probe',
+          state: 'BRANCHING',
+          current_probe: {
+            question: 'Что для получателя важнее всего в вещах?',
+            subtitle: 'Это поможет мне выбрать правильный вектор поиска',
+            options: [
+              { id: 'opt_util', label: 'Польза и удобство', icon: '⚙️', description: 'Главное чтобы работало' },
+              { id: 'opt_aest', label: 'Эстетика и стиль', icon: '🎨', description: 'Важно как выглядит' },
+              { id: 'opt_wow', label: 'Вау-эффект', icon: '✨', description: 'Хочу удивить' }
+            ]
+          }
+        } as any;
+    }
+
+    if (variant === 'REFINE') {
+        return {
+            session_id: 'mock_session_refine',
+            state: 'SHOWING_HYPOTHESES', // Keeps showing results
+            tracks: GET_MOCK_TRACKS(),
+            current_probe: {
+                question: 'Как насчет виниловых проигрывателей?',
+                subtitle: 'Я заметил интерес к музыке. Это актуально?',
+                options: [
+                    { id: 'yes', label: 'Да, он обожает винил', icon: '💿' },
+                    { id: 'no', label: 'Нет, предпочитает цифру', icon: '📱' }
+                ]
+            }
+        } as any;
+    }
+
+    if (variant === 'TRACKS') {
+        return {
+            session_id: 'mock_session_tracks',
+            state: 'SHOWING_HYPOTHESES',
+            tracks: GET_MOCK_TRACKS()
+        } as any;
+    }
+
+    if (variant === 'FEED') {
+        return {
+            session_id: 'mock_session_feed',
+            state: 'DEEP_DIVE',
+            deep_dive_products: MOCK_DB_GIFTS.slice(0, 10)
+        } as any;
+    }
+
+    return {
+        session_id: 'mock_session_dead',
+        state: 'DEAD_END'
+    } as any;
   },
 
   async getTeam(): Promise<TeamMember[]> {
-      await delay(500);
       return MOCK_TEAM;
   }
 };
