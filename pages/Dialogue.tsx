@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mascot } from '../components/Mascot';
@@ -24,7 +23,6 @@ const VisionCard: React.FC<{
     const [viewGift, setViewGift] = useState<Gift | null>(null);
 
     const handleToggleExpand = (e: React.MouseEvent) => {
-        // Don't expand if clicking on reaction buttons
         if ((e.target as HTMLElement).closest('button')) return;
         const newExpanded = !isExpanded;
         setIsExpanded(newExpanded);
@@ -61,7 +59,6 @@ const VisionCard: React.FC<{
                     isExpanded ? 'ring-4 ring-white/20 border-white/20' : 'border-white/10'
                 }`}
             >
-                {/* Image Stack Preview (Hidden when expanded) */}
                 {!isExpanded && (
                     <div className="relative h-64 md:h-80 flex items-center justify-center p-6 overflow-hidden">
                          <div className={`absolute inset-0 bg-gradient-to-br ${badgeColors[data.primary_gap] || 'from-gray-500'} opacity-10`}></div>
@@ -83,7 +80,6 @@ const VisionCard: React.FC<{
                     </div>
                 )}
 
-                {/* Content Overlay */}
                 <div className={`p-8 md:p-12 transition-all duration-500 ${isExpanded ? 'bg-black/40' : ''}`}>
                     <div className="flex items-center gap-3 mb-4">
                         <span className={`px-3 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider text-white bg-gradient-to-r ${badgeColors[data.primary_gap]}`}>
@@ -99,7 +95,6 @@ const VisionCard: React.FC<{
                         «{data.description}»
                     </p>
 
-                    {/* Catalog Expansion Area */}
                     <div className={`grid transition-all duration-700 ease-in-out ${isExpanded ? 'grid-rows-[1fr] opacity-100 mt-10' : 'grid-rows-[0fr] opacity-0'}`}>
                         <div className="overflow-hidden">
                             <div className="grid grid-cols-2 gap-4 pb-10">
@@ -154,13 +149,13 @@ export const Dialogue: React.FC = () => {
     const [activeCardIndex, setActiveCardIndex] = useState(0);
     const [phase, setPhase] = useState<'probe' | 'overview' | 'feed' | 'dead_end'>('probe');
     const [mascotMood, setMascotMood] = useState<'happy' | 'thinking' | 'excited' | 'surprised'>('happy');
+    const [customAnswer, setCustomAnswer] = useState('');
 
     const scrollRef = useRef<HTMLDivElement>(null);
     const initialized = useRef(false);
 
     const updateInternalState = useCallback((res: RecommendationSession) => {
         setSession(prev => {
-            // Only update tracks if they are actually provided in the response
             const mergedTracks = (res.tracks && res.tracks.length > 0) ? res.tracks : (prev?.tracks || []);
             return { ...res, tracks: mergedTracks };
         });
@@ -171,9 +166,9 @@ export const Dialogue: React.FC = () => {
         else setPhase('overview');
 
         if (res.tracks && res.tracks.length > 0) {
-            if (!activeTrackId || !res.tracks.find(t => t.topic_id === activeTrackId)) {
-                setActiveTrackId(res.tracks[0].topic_id);
-            }
+            /* Fix: Property name changed from selected_topic_id to selected_topic to match RecommendationSession interface definition */
+            const targetId = res.selected_topic || activeTrackId || res.tracks[0].topic_id;
+            setActiveTrackId(targetId);
         }
     }, [activeTrackId]);
 
@@ -193,19 +188,10 @@ export const Dialogue: React.FC = () => {
     }, [navigate, useMockData, updateInternalState]);
 
     const handleInteract = async (action: string, value: string) => {
-        // Track switches and load more are lightweight interactions
         if (action === 'select_track') {
-            setLoading(true);
             setActiveTrackId(value);
             setActiveCardIndex(0);
-            setMascotMood('thinking');
-            // Select track doesn't always need a full backend wait for UI update
-            // but we call it to notify the engine
-            api.gutg.interact(session?.session_id || '', action, value);
-            setTimeout(() => {
-                setLoading(false);
-                setMascotMood('happy');
-            }, 600);
+            setCustomAnswer('');
             return;
         }
 
@@ -213,23 +199,16 @@ export const Dialogue: React.FC = () => {
         setMascotMood('thinking');
         
         try {
-            let res: RecommendationSession;
-            if (useMockData) {
-                if (action === 'answer_probe') res = await MockServer.getGUTGSession('TRACKS');
-                else if (action === 'like_hypothesis') res = await MockServer.getGUTGSession('FEED');
-                else res = await MockServer.getGUTGSession();
-            } else {
-                res = await api.gutg.interact(session?.session_id || '', action, value);
-            }
+            const res = await api.gutg.interact(session?.session_id || '', action, value);
             updateInternalState(res);
+            setCustomAnswer('');
         } catch (e) { console.error(e); } finally { setLoading(false); }
     };
 
-    // Card scroll tracking for Mascot reactions
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
         if (!scrollRef.current) return;
         const scrollLeft = e.currentTarget.scrollLeft;
-        const itemWidth = e.currentTarget.offsetWidth * 0.85; // Roughly the snap width
+        const itemWidth = e.currentTarget.offsetWidth * 0.85;
         const index = Math.round(scrollLeft / itemWidth);
         if (index !== activeCardIndex) {
             setActiveCardIndex(index);
@@ -245,13 +224,11 @@ export const Dialogue: React.FC = () => {
     return (
         <div className="min-h-screen bg-[#1A050D] relative overflow-x-hidden flex flex-col font-sans pb-32">
             
-            {/* Background Atmosphere */}
             <div className="fixed inset-0 pointer-events-none z-0">
-                <div className={`absolute top-[-10%] right-[-10%] w-[100vw] h-[100vw] rounded-full blur-[120px] opacity-20 transition-all duration-1000 ${activeTrackId === 't_vibe' ? 'bg-purple-600' : 'bg-cyan-600'}`}></div>
+                <div className={`absolute top-[-10%] right-[-10%] w-[100vw] h-[100vw] rounded-full blur-[120px] opacity-20 transition-all duration-1000 ${activeTrackId ? 'bg-purple-600' : 'bg-cyan-600'}`}></div>
                 <div className="absolute bottom-[-10%] left-[-10%] w-[80vw] h-[80vw] bg-brand-pink/20 rounded-full blur-[140px] opacity-10"></div>
             </div>
 
-            {/* Header / Nav */}
             <div className="fixed top-0 left-0 right-0 z-[60] p-4 flex justify-between items-center bg-[#1A050D]/60 backdrop-blur-xl border-b border-white/5">
                 <button onClick={() => navigate('/quiz')} className="bg-white/5 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest text-white border border-white/5">← Назад</button>
                 <div className="flex items-center gap-3">
@@ -261,10 +238,8 @@ export const Dialogue: React.FC = () => {
                 <button onClick={() => navigate('/')} className="bg-white/5 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest text-white border border-white/5">Домой</button>
             </div>
 
-            {/* Content Area */}
             <div className="flex-grow flex flex-col pt-24 px-0 relative z-10 w-full overflow-hidden">
                 
-                {/* AI Concierge Focus Unit */}
                 <div className="w-full flex flex-col items-center text-center mb-8 px-6">
                     <div className="relative mb-4">
                         <div className="absolute inset-0 bg-brand-pink/40 blur-3xl rounded-full scale-125"></div>
@@ -273,59 +248,49 @@ export const Dialogue: React.FC = () => {
                     
                     <h1 className="text-white text-2xl md:text-3xl font-black leading-tight tracking-tight mb-2 max-w-lg">
                         {loading ? 'Настраиваю видения...' : (
-                            phase === 'overview' ? `Тема: «${activeTrack?.topic_name}»` :
-                            phase === 'feed' ? 'Блестящий выбор. Смотри:' :
+                            phase === 'overview' && activeTrack?.status === 'question' ? 
+                                activeTrack.question?.question :
+                            phase === 'overview' ? 
+                                `Тема: «${activeTrack?.topic_name}»` :
+                            phase === 'feed' ? 
+                                'Блестящий выбор. Смотри:' :
                             session?.current_probe?.question
                         )}
                     </h1>
-                    {phase === 'overview' && !loading && (
+                    {phase === 'overview' && activeTrack?.status === 'ready' && !loading && (
                         <p className="text-white/30 text-[10px] font-black uppercase tracking-[0.4em] animate-pulse">Листайте вбок</p>
                     )}
                 </div>
 
-                {/* --- PHASE: PROBE (Vertical Options) --- */}
-                {phase === 'probe' && !loading && session?.current_probe && (
-                    <div className="w-full max-w-2xl mx-auto px-6 animate-fade-in-up space-y-4">
-                        {session.current_probe.options.map((opt) => (
-                            <button key={opt.id} onClick={() => handleInteract('answer_probe', opt.label)} className="group bg-white/5 hover:bg-white backdrop-blur-md border border-white/5 p-6 rounded-[2rem] text-left transition-all active:scale-[0.98] flex items-center gap-5 w-full">
-                                <span className="text-4xl transition-transform group-hover:scale-110">{opt.icon || '✨'}</span>
-                                <div>
-                                    <div className="font-black text-white group-hover:text-brand-dark text-lg leading-tight mb-1">{opt.label}</div>
-                                    <div className="text-white/30 group-hover:text-slate-500 text-[10px] font-bold uppercase tracking-widest">{opt.description}</div>
-                                </div>
-                            </button>
-                        ))}
+                {/* --- TRACK SELECTOR (Common for all Overview status) --- */}
+                {phase === 'overview' && session?.tracks && (
+                    <div className="flex gap-2 overflow-x-auto no-scrollbar px-6 mb-8 relative z-20">
+                        {session.tracks.map(t => {
+                            const isActive = t.topic_id === activeTrackId;
+                            return (
+                                <button 
+                                    key={t.topic_id} 
+                                    onClick={() => handleInteract('select_track', t.topic_id)} 
+                                    className={`shrink-0 flex items-center gap-3 px-6 py-3 rounded-full border transition-all duration-300 ${isActive ? 'bg-white text-brand-dark border-white shadow-xl' : 'bg-white/5 text-white/30 border-white/5'}`}
+                                >
+                                    <span className="text-[10px] font-black uppercase tracking-wider">{t.topic_name}</span>
+                                    {isActive && <div className="w-1.5 h-1.5 bg-brand-pink rounded-full"></div>}
+                                    {t.status === 'question' && !isActive && <span className="text-[10px]">❓</span>}
+                                </button>
+                            );
+                        })}
                     </div>
                 )}
 
-                {/* --- PHASE: OVERVIEW (Horizontal Cards) --- */}
-                {phase === 'overview' && (
+                {/* --- PHASE: OVERVIEW - READY (Existing Vision Cards) --- */}
+                {phase === 'overview' && activeTrack?.status === 'ready' && (
                     <div className={`transition-all duration-700 w-full ${loading ? 'opacity-0 scale-95 blur-xl' : 'opacity-100 scale-100 blur-0'}`}>
-                        
-                        {/* Track Switcher (Horizontal Pills) */}
-                        <div className="flex gap-2 overflow-x-auto no-scrollbar px-6 mb-8">
-                            {session?.tracks?.map(t => {
-                                const isActive = t.topic_id === activeTrackId;
-                                return (
-                                    <button 
-                                        key={t.topic_id} 
-                                        onClick={() => handleInteract('select_track', t.topic_id)} 
-                                        className={`shrink-0 flex items-center gap-3 px-6 py-3 rounded-full border transition-all duration-300 ${isActive ? 'bg-white text-brand-dark border-white shadow-xl' : 'bg-white/5 text-white/30 border-white/5'}`}
-                                    >
-                                        <span className="text-[10px] font-black uppercase tracking-wider">{t.topic_name}</span>
-                                        {isActive && <div className="w-1.5 h-1.5 bg-brand-pink rounded-full"></div>}
-                                    </button>
-                                );
-                            })}
-                        </div>
-
-                        {/* The Snapping Slider */}
                         <div 
                             ref={scrollRef}
                             onScroll={handleScroll}
-                            className="flex gap-6 overflow-x-auto snap-x snap-mandatory no-scrollbar px-[7.5vw] md:px-[calc(50vw-300px)] pb-20 items-start h-full scroll-smooth"
+                            className="flex gap-6 overflow-x-auto snap-x snap-mandatory no-scrollbar px-[7.5vw] md:px-[calc(50vw-300px)] pb-10 items-start h-full scroll-smooth"
                         >
-                            {activeTrack && activeTrack.hypotheses.map((h, idx) => (
+                            {activeTrack.hypotheses.map((h, idx) => (
                                 <VisionCard 
                                     key={h.id} 
                                     data={h} 
@@ -337,11 +302,10 @@ export const Dialogue: React.FC = () => {
                                 />
                             ))}
 
-                            {/* Load More as a terminal card */}
                             <div className="shrink-0 w-[85vw] md:w-[600px] snap-center">
                                 <button 
                                     onClick={() => handleInteract('load_more_hypotheses', activeTrackId)}
-                                    className="w-full h-full min-h-[300px] bg-white/5 border-2 border-dashed border-white/10 rounded-[3rem] transition-all flex flex-col items-center justify-center gap-6 active:scale-95"
+                                    className="w-full h-full min-h-[400px] bg-white/5 border-2 border-dashed border-white/10 rounded-[3rem] transition-all flex flex-col items-center justify-center gap-6 active:scale-95"
                                 >
                                     <div className="text-5xl opacity-20 grayscale group-hover:grayscale-0 transition-all">🔮</div>
                                     <span className="text-white/20 font-black tracking-[0.4em] text-[10px] uppercase">Больше видений</span>
@@ -349,27 +313,65 @@ export const Dialogue: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Navigation Dot Indicators */}
                         <div className="flex justify-center gap-2 mb-10">
-                            {activeTrack && activeTrack.hypotheses.map((_, i) => (
+                            {activeTrack.hypotheses.map((_, i) => (
                                 <div key={i} className={`h-1 rounded-full transition-all duration-500 ${i === activeCardIndex ? 'w-8 bg-brand-pink' : 'w-1.5 bg-white/10'}`}></div>
                             ))}
-                        </div>
-
-                        {/* Rescue Loop Footer */}
-                        <div className="px-6 pb-20 text-center border-t border-white/5 pt-12">
-                             <p className="text-white/20 mb-6 text-sm font-medium">Ничего не откликнулось?</p>
-                             <button 
-                                onClick={() => handleInteract('suggest_topics', '')}
-                                className="py-5 px-10 rounded-full bg-white text-brand-dark font-black active:scale-95 text-lg shadow-2xl"
-                             >
-                                Сменить направления
-                             </button>
                         </div>
                     </div>
                 )}
 
-                {/* --- PHASE: FEED (Product Feed Mode) --- */}
+                {/* --- PHASE: OVERVIEW - QUESTION (New Chat View) --- */}
+                {phase === 'overview' && activeTrack?.status === 'question' && !loading && (
+                    <div className="w-full max-w-2xl mx-auto px-6 animate-fade-in-up space-y-4">
+                        {activeTrack.question?.options.map((opt, i) => (
+                            <button 
+                                key={i} 
+                                onClick={() => handleInteract('answer_probe', opt)} 
+                                className="w-full group bg-white/5 hover:bg-white backdrop-blur-md border border-white/5 p-6 rounded-[2rem] text-left transition-all active:scale-[0.98] flex items-center justify-between"
+                            >
+                                <span className="font-bold text-white group-hover:text-brand-dark text-lg leading-snug">{opt}</span>
+                                <span className="text-white/20 group-hover:text-brand-dark/40 text-xl">→</span>
+                            </button>
+                        ))}
+                        
+                        <div className="pt-4 relative group">
+                            <div className="absolute inset-0 bg-brand-pink/10 blur-xl rounded-full opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
+                            <div className="relative bg-white/5 border border-white/10 rounded-[2rem] flex items-center p-2 focus-within:bg-white/10 transition-all">
+                                <input 
+                                    type="text"
+                                    value={customAnswer}
+                                    onChange={(e) => setCustomAnswer(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && customAnswer.trim() && handleInteract('answer_probe', customAnswer)}
+                                    placeholder="Свой вариант..."
+                                    className="w-full bg-transparent border-none outline-none text-white font-bold text-lg px-6 py-4 placeholder-white/20"
+                                />
+                                <button 
+                                    onClick={() => customAnswer.trim() && handleInteract('answer_probe', customAnswer)}
+                                    disabled={!customAnswer.trim()}
+                                    className="mr-2 w-12 h-12 bg-white text-brand-dark rounded-2xl flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-30"
+                                >
+                                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 12h14M12 5l7 7-7 7" /></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* --- RESCUE INTERACTION (Show if in Overview) --- */}
+                {phase === 'overview' && !loading && (
+                    <div className="px-6 pb-20 text-center border-t border-white/5 pt-12 mt-12">
+                         <p className="text-white/20 mb-6 text-sm font-medium">Ничего не откликнулось?</p>
+                         <button 
+                            onClick={() => handleInteract('suggest_topics', '')}
+                            className="py-5 px-10 rounded-full bg-white text-brand-dark font-black active:scale-95 text-lg shadow-2xl"
+                         >
+                            Сменить направления
+                         </button>
+                    </div>
+                )}
+
+                {/* --- OTHER PHASES --- */}
                 {phase === 'feed' && (
                     <div className="w-full animate-fade-in-up px-6">
                         <button 
@@ -388,7 +390,6 @@ export const Dialogue: React.FC = () => {
                     </div>
                 )}
 
-                {/* --- PHASE: DEAD END --- */}
                 {phase === 'dead_end' && (
                     <div className="w-full max-w-md mx-auto px-6 text-center animate-pop bg-white p-12 rounded-[3rem] shadow-2xl relative overflow-hidden">
                         <h2 className="text-5xl font-black text-brand-dark mb-6 tracking-tighter">Упс.</h2>
