@@ -24,9 +24,13 @@ const parseBudget = (input: string): number => {
 
 // Mapper for GUTG Responses to Domain Types
 const mapSessionResponse = (data: any): RecommendationSession => {
+    // 1. Normalize State (API might return lowercase 'branching')
+    const rawState = data.state || 'BRANCHING';
+    const state = rawState.toUpperCase() as any;
+
     return {
         session_id: data.session_id,
-        state: data.state, // BRANCHING, SHOWING_HYPOTHESES, DEEP_DIVE, DEAD_END
+        state: state, // BRANCHING, SHOWING_HYPOTHESES, DEEP_DIVE, DEAD_END
         selected_topic: data.selected_topic,
         language: data.language,
         
@@ -35,12 +39,23 @@ const mapSessionResponse = (data: any): RecommendationSession => {
             question: data.current_probe.question || data.current_probe.text,
             subtitle: data.current_probe.subtitle,
             options: Array.isArray(data.current_probe.options) 
-                ? data.current_probe.options.map((opt: any) => ({
-                    id: opt.id || opt.text || opt.value, // Robust ID fallback
-                    label: opt.text || opt.label || opt.value,
-                    icon: opt.icon, 
-                    description: opt.description
-                  }))
+                ? data.current_probe.options.map((opt: any) => {
+                    // Handle case where options are just strings
+                    if (typeof opt === 'string') {
+                        return {
+                            id: opt,
+                            label: opt,
+                            icon: '👉' // Default icon if none provided
+                        };
+                    }
+                    // Handle object structure
+                    return {
+                        id: opt.id || opt.text || opt.value, 
+                        label: opt.text || opt.label || opt.value,
+                        icon: opt.icon, 
+                        description: opt.description
+                    };
+                  })
                 : []
         } : undefined,
 
@@ -49,7 +64,7 @@ const mapSessionResponse = (data: any): RecommendationSession => {
             ? data.current_hypotheses.map((h: any) => ({
                 id: h.id,
                 title: h.title,
-                gutgType: h.type || 'Strategy',
+                gutgType: h.type || h.primary_gap || 'Strategy',
                 description: h.reasoning || h.description, // Mapping reasoning to description for UI
                 previewGifts: Array.isArray(h.preview_products) 
                     ? h.preview_products.map((p: any) => mapGiftDTOToGift(p)) 
