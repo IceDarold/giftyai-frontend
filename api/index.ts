@@ -91,27 +91,21 @@ export const api = {
   },
   gutg: {
       init: async (answers: any): Promise<RecommendationSession> => {
-          // Map frontend keys to backend snake_case keys as required by the validation rules
+          // Prepare payload strictly according to the backend schema
           const mappedPayload = {
-              name: answers.name,
-              recipient_age: answers.age,
-              recipient_gender: answers.recipientGender,
-              relationship: answers.relationship,
-              occasion: answers.occasion,
-              interests: answers.interests,
-              budget: answers.budget,
-              goal: answers.goal,
-              deadline: answers.deadline,
-              effort_level: answers.effortLevel,
-              pain_points: answers.painPoints,
-              pain_style: answers.painStyle,
-              vibe: answers.vibe,
-              city: answers.city,
-              archetype: answers.archetype,
-              role_confidence: answers.roleConfidence,
-              conversation_topics: answers.conversationTopics,
-              topic_duration: answers.topicDuration,
-              risky_topics: answers.riskyTopics
+              relationship: answers.relationship || "",
+              gifting_goal: answers.goal || "care",
+              effort_level: answers.effortLevel || "low",
+              session_mode: answers.sessionMode || "thoughtful",
+              budget: parseInt(answers.budget) || 0,
+              deadline_days: parseInt(answers.deadline) || 7,
+              language: "ru",
+              recipient_age: parseInt(answers.age) || 0,
+              recipient_gender: answers.recipientGender || "unisex",
+              occasion: answers.occasion || "",
+              vibe: answers.vibe || "",
+              interests: answers.interests ? answers.interests.split(',').map((s: string) => s.trim()) : [],
+              interests_description: answers.interests || ""
           };
 
           if (isMockEnabled()) {
