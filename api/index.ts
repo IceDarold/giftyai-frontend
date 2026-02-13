@@ -91,21 +91,44 @@ export const api = {
   },
   gutg: {
       init: async (answers: any): Promise<RecommendationSession> => {
-          // Prepare payload strictly according to the backend schema
+          // --- Mapping logic to match backend strict schema ---
+          
+          // Map relationship labels to backend enums
+          const relMapping: Record<string, string> = {
+              'Партнер': 'partner',
+              'Друг': 'friend',
+              'Коллега': 'colleague',
+              'Ребенок': 'child',
+              'Родитель': 'relative',
+              'Родственник': 'relative',
+              'Бабушка/Дед': 'relative',
+              'Брат/Сестра': 'relative'
+          };
+
+          // Map goal labels to backend enums
+          const goalMapping: Record<string, string> = {
+              'impress': 'impress',
+              'care': 'care',
+              'check': 'protocol',
+              'protocol': 'protocol',
+              'apology': 'apology',
+              'joke': 'joke',
+              'growth': 'growth'
+          };
+
           const mappedPayload = {
-              relationship: answers.relationship || "",
-              gifting_goal: answers.goal || "care",
+              recipient_age: parseInt(answers.age) || 30,
+              budget: answers.budget ? parseInt(answers.budget.replace(/[^0-9]/g, '')) : null,
+              deadline_days: answers.deadline ? parseInt(answers.deadline) : 7,
               effort_level: answers.effortLevel || "low",
-              session_mode: answers.sessionMode || "thoughtful",
-              budget: parseInt(answers.budget) || 0,
-              deadline_days: parseInt(answers.deadline) || 7,
+              gifting_goal: goalMapping[answers.goal] || "care",
+              interests: answers.interests ? answers.interests.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
+              interests_description: answers.interests || "",
               language: "ru",
-              recipient_age: parseInt(answers.age) || 0,
-              recipient_gender: answers.recipientGender || "unisex",
               occasion: answers.occasion || "",
-              vibe: answers.vibe || "",
-              interests: answers.interests ? answers.interests.split(',').map((s: string) => s.trim()) : [],
-              interests_description: answers.interests || ""
+              recipient_gender: answers.recipientGender || "unisex",
+              relationship: relMapping[answers.relationship] || "unknown",
+              session_mode: answers.sessionMode || "thoughtful"
           };
 
           if (isMockEnabled()) {
