@@ -58,23 +58,23 @@ export const apiFetch = async (endpoint: string, options: ApiFetchOptions = {}) 
 export const api = {
   auth: {
     getMe: async (): Promise<User | null> => {
-        try { return await apiFetch('/api/v1/auth/me', { skipErrorLog: true }); } catch (e) { return null; }
+        try { return await apiFetch('/auth/me', { skipErrorLog: true }); } catch (e) { return null; }
     },
-    logout: async () => apiFetch('/api/v1/auth/logout', { method: 'POST' }),
+    logout: async () => apiFetch('/auth/logout', { method: 'POST' }),
     getLoginUrl: (provider: string, returnTo: string) =>
-        `${API_BASE}/api/v1/auth/${provider}/start?redirect_url=${encodeURIComponent(returnTo)}`
+        `${API_BASE}/auth/${provider}/start?redirect_url=${encodeURIComponent(returnTo)}`
   },
   gifts: {
     getById: async (id: string): Promise<Gift> => {
       try {
-        const dto = await apiFetch(`/api/v1/gifts/${id}`, { skipErrorLog: true });
+        const dto = await apiFetch(`/gifts/${id}`, { skipErrorLog: true });
         return mapGiftDTOToGift(dto);
       } catch (e) {
         return mapGiftDTOToGift(await MockServer.getGiftById(id));
       }
     },
     getMany: async (ids: string[]): Promise<Gift[]> => {
-      logRequest('GET', `/api/v1/gifts/batch?ids=${ids.join(',')}`);
+      logRequest('GET', `/gifts/batch?ids=${ids.join(',')}`);
       const dtos = await MockServer.getGiftsByIds(ids);
       return dtos.map(mapGiftDTOToGift);
     },
@@ -82,7 +82,7 @@ export const api = {
         try {
             const query = new URLSearchParams();
             if (params?.limit) query.append('limit', params.limit.toString());
-            const dtos = await apiFetch(`/api/v1/gifts?${query.toString()}`, { skipErrorLog: true });
+            const dtos = await apiFetch(`/gifts?${query.toString()}`, { skipErrorLog: true });
             return dtos.map(mapGiftDTOToGift);
         } catch (e) {
             return (await MockServer.getGifts(params)).map(mapGiftDTOToGift);
@@ -91,18 +91,18 @@ export const api = {
   },
   gutg: {
       init: async (answers: any): Promise<RecommendationSession> => {
-          logRequest('POST', '/api/v1/recommendations/init', { answers });
+          logRequest('POST', '/recommendations/init', { answers });
           if (isMockEnabled()) {
               await new Promise(r => setTimeout(r, 1000));
               return MockServer.getGUTGSession();
           }
-          return await apiFetch('/api/v1/recommendations/init', { 
+          return await apiFetch('/recommendations/init', { 
               method: 'POST', 
               body: JSON.stringify({ answers }) 
           });
       },
       interact: async (sessionId: string, action: string, value: string): Promise<RecommendationSession> => {
-          logRequest('POST', '/api/v1/recommendations/interact', { session_id: sessionId, action, value });
+          logRequest('POST', '/recommendations/interact', { session_id: sessionId, action, value });
           if (isMockEnabled()) {
               await new Promise(r => setTimeout(r, 600));
               if (action === 'answer_probe') return MockServer.getGUTGSession('TRACKS');
@@ -110,66 +110,66 @@ export const api = {
               if (action === 'load_more_hypotheses') return MockServer.getGUTGSession('LOAD_MORE');
               return MockServer.getGUTGSession('TRACKS');
           }
-          return await apiFetch('/api/v1/recommendations/interact', { 
+          return await apiFetch('/recommendations/interact', { 
               method: 'POST', 
               body: JSON.stringify({ session_id: sessionId, action, value }) 
           });
       },
       react: async (hypothesisId: string, reaction: 'like' | 'dislike' | 'shortlist'): Promise<void> => {
-          logRequest('POST', `/api/v1/recommendations/hypothesis/${hypothesisId}/react`, { reaction });
+          logRequest('POST', `/recommendations/hypothesis/${hypothesisId}/react`, { reaction });
           if (isMockEnabled()) return;
-          return await apiFetch(`/api/v1/recommendations/hypothesis/${hypothesisId}/react`, {
+          return await apiFetch(`/recommendations/hypothesis/${hypothesisId}/react`, {
               method: 'POST',
               body: JSON.stringify({ reaction })
           });
       },
       getProducts: async (hypothesisId: string): Promise<Gift[]> => {
-          logRequest('GET', `/api/v1/recommendations/hypothesis/${hypothesisId}/products`);
+          logRequest('GET', `/recommendations/hypothesis/${hypothesisId}/products`);
           if (isMockEnabled()) {
               const dtos = await MockServer.getGifts({ limit: 10 });
               return dtos.map(mapGiftDTOToGift);
           }
-          const dtos = await apiFetch(`/api/v1/recommendations/hypothesis/${hypothesisId}/products`);
+          const dtos = await apiFetch(`/recommendations/hypothesis/${hypothesisId}/products`);
           return dtos.map(mapGiftDTOToGift);
       }
   },
   wishlist: {
     getAll: async (): Promise<string[]> => {
-        try { return await apiFetch('/api/v1/wishlist'); } catch (e) { return MockServer.getWishlist(); }
+        try { return await apiFetch('/wishlist'); } catch (e) { return MockServer.getWishlist(); }
     },
     add: async (id: string): Promise<void> => {
-        try { await apiFetch('/api/v1/wishlist', { method: 'POST', body: JSON.stringify({ gift_id: id }) }); } 
+        try { await apiFetch('/wishlist', { method: 'POST', body: JSON.stringify({ gift_id: id }) }); } 
         catch (e) { await MockServer.addToWishlist(id); }
     },
     remove: async (id: string): Promise<void> => {
-        try { await apiFetch(`/api/v1/wishlist/${id}`, { method: 'DELETE' }); } 
+        try { await apiFetch(`/wishlist/${id}`, { method: 'DELETE' }); } 
         catch (e) { await MockServer.removeFromWishlist(id); }
     }
   },
   user: {
     get: async (): Promise<UserProfile> => {
-        try { return await apiFetch('/api/v1/users/me/profile'); } catch (e) { return MockServer.getUserProfile(); }
+        try { return await apiFetch('/users/me/profile'); } catch (e) { return MockServer.getUserProfile(); }
     },
     update: async (data: Partial<UserProfile>): Promise<UserProfile> => {
-        try { return await apiFetch('/api/v1/users/me/profile', { method: 'PATCH', body: JSON.stringify(data) }); } 
+        try { return await apiFetch('/users/me/profile', { method: 'PATCH', body: JSON.stringify(data) }); } 
         catch (e) { return MockServer.updateUserProfile(data); }
     },
     addEvent: async (event: Omit<CalendarEvent, 'id'>): Promise<CalendarEvent> => {
-        try { return await apiFetch('/api/v1/users/me/events', { method: 'POST', body: JSON.stringify(event) }); } 
+        try { return await apiFetch('/users/me/events', { method: 'POST', body: JSON.stringify(event) }); } 
         catch (e) { return MockServer.addEvent(event); }
     },
     removeEvent: async (id: string): Promise<void> => {
-        try { await apiFetch(`/api/v1/users/me/events/${id}`, { method: 'DELETE' }); } 
+        try { await apiFetch(`/users/me/events/${id}`, { method: 'DELETE' }); } 
         catch (e) { return MockServer.removeEvent(id); }
     }
   },
   public: {
     team: {
         list: async (): Promise<TeamMember[]> => {
-            try { return await apiFetch('/api/v1/public/team'); } catch (e) { return MockServer.getTeam(); }
+            try { return await apiFetch('/public/team'); } catch (e) { return MockServer.getTeam(); }
         }
     },
-    investorContact: { create: async (data: any) => apiFetch('/api/v1/public/investor-contact', { method: 'POST', body: JSON.stringify(data) }) },
-    partnerContact: { create: async (data: any) => apiFetch('/api/v1/public/partner-contact', { method: 'POST', body: JSON.stringify(data) }) }
+    investorContact: { create: async (data: any) => apiFetch('/public/investor-contact', { method: 'POST', body: JSON.stringify(data) }) },
+    partnerContact: { create: async (data: any) => apiFetch('/public/partner-contact', { method: 'POST', body: JSON.stringify(data) }) }
   }
 };

@@ -5,7 +5,7 @@ import { Mascot } from '../components/Mascot';
 import { GiftCard } from '../components/GiftCard';
 import { GiftDetailsModal } from '../components/GiftDetailsModal';
 import { Gift, QuizAnswers, RecommendationSession, RecommendationTrack, DialogueHypothesis } from '../domain/types';
-import { api, setGlobalLogger } from '../api';
+import { api } from '../api';
 import { useDevMode } from '../components/DevModeContext';
 import { MockServer } from '../api/mock/server';
 
@@ -15,9 +15,10 @@ const VisionCard: React.FC<{
     data: DialogueHypothesis; 
     onLike: (id: string) => void;
     onDislike: (id: string) => void;
+    onExpand: (id: string) => void;
     index: number;
     isActive: boolean;
-}> = ({ data, onLike, onDislike, index, isActive }) => {
+}> = ({ data, onLike, onDislike, onExpand, index, isActive }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [reaction, setReaction] = useState<'none' | 'liked' | 'disliked'>('none');
     const [viewGift, setViewGift] = useState<Gift | null>(null);
@@ -25,7 +26,11 @@ const VisionCard: React.FC<{
     const handleToggleExpand = (e: React.MouseEvent) => {
         // Don't expand if clicking on reaction buttons
         if ((e.target as HTMLElement).closest('button')) return;
-        setIsExpanded(!isExpanded);
+        const newExpanded = !isExpanded;
+        setIsExpanded(newExpanded);
+        if (newExpanded) {
+            onExpand(data.id);
+        }
     };
 
     const handleLike = (e: React.MouseEvent) => {
@@ -147,7 +152,7 @@ export const Dialogue: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [activeTrackId, setActiveTrackId] = useState<string>('');
     const [activeCardIndex, setActiveCardIndex] = useState(0);
-    const [phase, setPhase] = useState<'probe' | 'overview' | 'dead_end'>('probe');
+    const [phase, setPhase] = useState<'probe' | 'overview' | 'feed' | 'dead_end'>('probe');
     const [mascotMood, setMascotMood] = useState<'happy' | 'thinking' | 'excited' | 'surprised'>('happy');
 
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -155,12 +160,14 @@ export const Dialogue: React.FC = () => {
 
     const updateInternalState = useCallback((res: RecommendationSession) => {
         setSession(prev => {
+            // Only update tracks if they are actually provided in the response
             const mergedTracks = (res.tracks && res.tracks.length > 0) ? res.tracks : (prev?.tracks || []);
             return { ...res, tracks: mergedTracks };
         });
 
         if (res.state === 'BRANCHING') setPhase('probe');
         else if (res.state === 'DEAD_END') setPhase('dead_end');
+        else if (res.state === 'DEEP_DIVE') setPhase('feed');
         else setPhase('overview');
 
         if (res.tracks && res.tracks.length > 0) {
@@ -186,11 +193,15 @@ export const Dialogue: React.FC = () => {
     }, [navigate, useMockData, updateInternalState]);
 
     const handleInteract = async (action: string, value: string) => {
+        // Track switches and load more are lightweight interactions
         if (action === 'select_track') {
             setLoading(true);
             setActiveTrackId(value);
             setActiveCardIndex(0);
             setMascotMood('thinking');
+            // Select track doesn't always need a full backend wait for UI update
+            // but we call it to notify the engine
+            api.gutg.interact(session?.session_id || '', action, value);
             setTimeout(() => {
                 setLoading(false);
                 setMascotMood('happy');
@@ -205,6 +216,7 @@ export const Dialogue: React.FC = () => {
             let res: RecommendationSession;
             if (useMockData) {
                 if (action === 'answer_probe') res = await MockServer.getGUTGSession('TRACKS');
+                else if (action === 'like_hypothesis') res = await MockServer.getGUTGSession('FEED');
                 else res = await MockServer.getGUTGSession();
             } else {
                 res = await api.gutg.interact(session?.session_id || '', action, value);
@@ -262,6 +274,7 @@ export const Dialogue: React.FC = () => {
                     <h1 className="text-white text-2xl md:text-3xl font-black leading-tight tracking-tight mb-2 max-w-lg">
                         {loading ? 'Настраиваю видения...' : (
                             phase === 'overview' ? `Тема: «${activeTrack?.topic_name}»` :
+                            phase === 'feed' ? 'Блестящий выбор. Смотри:' :
                             session?.current_probe?.question
                         )}
                     </h1>
@@ -318,15 +331,9 @@ export const Dialogue: React.FC = () => {
                                     data={h} 
                                     index={idx}
                                     isActive={idx === activeCardIndex}
-                                    onLike={(id) => api.gutg.react(id, 'like')}
-                                    onDislike={(id) => {
-                                        api.gutg.react(id, 'dislike');
-                                        // Simple removal logic for mock/demo
-                                        setSession(prev => prev ? ({
-                                            ...prev,
-                                            tracks: prev.tracks?.map(t => t.topic_id === activeTrackId ? { ...t, hypotheses: t.hypotheses.filter(hyp => hyp.id !== id) } : t)
-                                        }) : null);
-                                    }}
+                                    onLike={(id) => handleInteract('like_hypothesis', id)}
+                                    onDislike={(id) => handleInteract('dislike_hypothesis', id)}
+                                    onExpand={(id) => api.gutg.interact(session?.session_id || '', 'view_hypothesis', id)}
                                 />
                             ))}
 
@@ -358,6 +365,25 @@ export const Dialogue: React.FC = () => {
                              >
                                 Сменить направления
                              </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* --- PHASE: FEED (Product Feed Mode) --- */}
+                {phase === 'feed' && (
+                    <div className="w-full animate-fade-in-up px-6">
+                        <button 
+                            onClick={() => setPhase('overview')}
+                            className="mb-8 bg-white/10 text-white px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border border-white/10"
+                        >
+                            ← К идеям
+                        </button>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pb-32">
+                            {session?.deep_dive_products?.map((g, i) => (
+                                <div key={g.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 100}ms` }}>
+                                    <GiftCard gift={g} rank={i} />
+                                </div>
+                            ))}
                         </div>
                     </div>
                 )}
