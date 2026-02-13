@@ -91,14 +91,38 @@ export const api = {
   },
   gutg: {
       init: async (answers: any): Promise<RecommendationSession> => {
-          logRequest('POST', '/recommendations/init', { answers });
+          // Map frontend keys to backend snake_case keys as required by the validation rules
+          const mappedPayload = {
+              name: answers.name,
+              recipient_age: answers.age,
+              recipient_gender: answers.recipientGender,
+              relationship: answers.relationship,
+              occasion: answers.occasion,
+              interests: answers.interests,
+              budget: answers.budget,
+              goal: answers.goal,
+              deadline: answers.deadline,
+              effort_level: answers.effortLevel,
+              pain_points: answers.painPoints,
+              pain_style: answers.painStyle,
+              vibe: answers.vibe,
+              city: answers.city,
+              archetype: answers.archetype,
+              role_confidence: answers.roleConfidence,
+              conversation_topics: answers.conversationTopics,
+              topic_duration: answers.topicDuration,
+              risky_topics: answers.riskyTopics
+          };
+
           if (isMockEnabled()) {
+              logRequest('POST', '/recommendations/init', mappedPayload);
               await new Promise(r => setTimeout(r, 1000));
               return MockServer.getGUTGSession();
           }
+
           return await apiFetch('/recommendations/init', { 
               method: 'POST', 
-              body: JSON.stringify({ answers }) 
+              body: JSON.stringify(mappedPayload) 
           });
       },
       interact: async (sessionId: string, action: string, value: string): Promise<RecommendationSession> => {
