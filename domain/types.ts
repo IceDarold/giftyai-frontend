@@ -53,14 +53,12 @@ export type RecipientGender = 'male' | 'female' | 'unisex';
 
 export interface QuizAnswers {
   name: string;
-  age: number; // Changed from ageGroup string to number
+  age: number;
   recipientGender: RecipientGender | null;
   occasion: string;
   relationship: string;
   vibe: string;
   city: string;
-  
-  // New Deep Profile Fields
   roles: string[]; 
   roleConfidence: 'sure' | 'guessing';
   archetype: string;
@@ -70,76 +68,17 @@ export interface QuizAnswers {
   painPoints: string[];
   painStyle: 'endurer' | 'optimizer';
   riskyTopics: boolean;
-
   effortLevel?: 'no_effort' | 'low' | 'medium' | 'high';
-  deadline?: number; // days
+  deadline?: number; 
   goal?: string; 
-
   interests: string;
   budget: string;
   exclude?: string;
 }
 
-export type StepId = 'name' | 'age' | 'gender' | 'occasion' | 'relationship' | 'vibe' | 'city' | 'roles' | 'archetype' | 'topics' | 'pain' | 'interests' | 'budget';
-
-export interface FilterState {
-  budget: string;
-  category: string;
-  marketplace: string;
-}
-
-export interface CalendarEvent {
-  id: string;
-  title: string;
-  date: string;
-  personName: string;
-  relationship: string;
-}
-
-export interface UserProfile {
-  name: string;
-  avatarEmoji: string;
-  level: string;
-  events: CalendarEvent[];
-}
-
-export interface BlogContentBlock {
-  type: 'paragraph' | 'h2' | 'quote' | 'list';
-  text?: string;
-  items?: string[];
-}
-
-export interface BlogPost {
-  id: string;
-  title: string;
-  metaTitle?: string;
-  metaDescription?: string;
-  excerpt: string;
-  image: string;
-  category: string;
-  readTime: string;
-  date: string;
-  author: string;
-  authorAvatar: string;
-  featured?: boolean;
-  content: BlogContentBlock[];
-}
-
-export interface TeamMember {
-  name: string;
-  role: string;
-  bio: string | null;
-  linkedin_url: string | null;
-  photo_public_id: string | null;
-  sort_order?: number;
-}
-
-// --- GUTG Dialogue Types (Updated for Real API) ---
-
 export interface DialogueProbeOption {
     id: string;
     label: string;
-    // API might return icon, if not we fallback
     icon?: string; 
     description?: string;
 }
@@ -147,35 +86,83 @@ export interface DialogueProbeOption {
 export interface DialogueHypothesis {
     id: string;
     title: string;
-    gutgType: string; // 'Mirror' | 'Optimizer' | 'Anchor' | 'Catalyst'
-    description: string; // The reasoning from AI
-    previewGifts: Gift[];
+    primary_gap: string; // 'the_mirror' | 'the_optimizer' | 'the_anchor' | 'the_catalyst'
+    description: string;
+    preview_products: Gift[];
 }
 
 export interface RecommendationTrack {
-    topicId: string;
-    topicName: string;
+    topic_id: string;
+    topic_name: string;
     title: string;
     status: 'ready' | 'pending' | 'failed';
-    previewText?: string;
+    preview_text?: string;
     hypotheses: DialogueHypothesis[];
 }
 
-export type GUTGState = 'BRANCHING' | 'SHOWING_HYPOTHESES' | 'DEEP_DIVE' | 'DEAD_END' | 'QUIZ'; // Added QUIZ per new schema if needed
+export type GUTGState = 'BRANCHING' | 'SHOWING_HYPOTHESES' | 'DEEP_DIVE' | 'DEAD_END';
 
 export interface RecommendationSession {
     session_id: string;
     state: GUTGState;
     selected_topic?: string;
-    language?: string;
-    
-    tracks?: RecommendationTrack[]; // NEW: Multiple tracks
-
+    tracks?: RecommendationTrack[];
     current_probe?: {
         question: string;
         subtitle?: string;
         options: DialogueProbeOption[];
     };
-    current_hypotheses?: DialogueHypothesis[];
     deep_dive_products?: Gift[];
+    // Fix: Added topic_hints for experimental dialogue page
+    topic_hints?: { id: string; title: string; description: string }[];
+}
+
+// Fix: Added UserProfile interface
+export interface UserProfile {
+    name: string;
+    avatarEmoji: string;
+    level: string;
+    events: CalendarEvent[];
+}
+
+// Fix: Added CalendarEvent interface
+export interface CalendarEvent {
+    id: string;
+    title: string;
+    date: string;
+    personName?: string;
+    relationship?: string;
+}
+
+// Fix: Added TeamMember interface
+export interface TeamMember {
+    name: string;
+    role: string;
+    bio: string;
+    linkedin_url: string | null;
+    photo_public_id: string | null;
+}
+
+// Fix: Added BlogContentBlock interface
+export interface BlogContentBlock {
+    type: 'paragraph' | 'h2' | 'quote' | 'list';
+    text?: string;
+    items?: string[];
+}
+
+// Fix: Added BlogPost interface
+export interface BlogPost {
+    id: string;
+    title: string;
+    metaTitle?: string;
+    metaDescription?: string;
+    excerpt: string;
+    image: string;
+    category: string;
+    readTime: string;
+    date: string;
+    author: string;
+    authorAvatar: string;
+    content: BlogContentBlock[];
+    featured?: boolean;
 }

@@ -25,27 +25,28 @@ const getMockProbe = (): RecommendationSession => ({
 } as any);
 
 const getMockTracks = (): RecommendationSession => {
+    // Fix: Using correct property names from domain types
     const tracks: RecommendationTrack[] = [
         {
-            topicId: 't_music',
-            topicName: 'Музыка',
+            topic_id: 't_music',
+            topic_name: 'Музыка',
             title: 'Аудиофил',
             status: 'ready',
             hypotheses: [
-                { id: 'h_tone', title: 'В поисках звука', gutgType: 'Catalyst', description: 'Оборудование для тех, кто не просто слушает, а создает. Педали, процессоры, кабели.', previewGifts: [MOCK_DB_GIFTS[16], MOCK_DB_GIFTS[17], MOCK_DB_GIFTS[8]] },
-                { id: 'h_vinyl', title: 'Виниловый ритуал', gutgType: 'Mirror', description: 'Эстетика аналогового звука. Аксессуары для ухода и хранения пластинок.', previewGifts: [MOCK_DB_GIFTS[7], MOCK_DB_GIFTS[19], MOCK_DB_GIFTS[31]] },
-                { id: 'h_acoustic', title: 'Акустический уют', gutgType: 'Anchor', description: 'Компактные девайсы для создания атмосферы дома через звук.', previewGifts: [MOCK_DB_GIFTS[30], MOCK_DB_GIFTS[2], MOCK_DB_GIFTS[6]] }
+                { id: 'h_tone', title: 'В поисках звука', primary_gap: 'the_catalyst', description: 'Оборудование для тех, кто не просто слушает, а создает. Педали, процессоры, кабели.', preview_products: [MOCK_DB_GIFTS[16], MOCK_DB_GIFTS[17], MOCK_DB_GIFTS[8]] },
+                { id: 'h_vinyl', title: 'Виниловый ритуал', primary_gap: 'the_mirror', description: 'Эстетика аналогового звука. Аксессуары для ухода и хранения пластинок.', preview_products: [MOCK_DB_GIFTS[7], MOCK_DB_GIFTS[19], MOCK_DB_GIFTS[31]] },
+                { id: 'h_acoustic', title: 'Акустический уют', primary_gap: 'the_anchor', description: 'Компактные девайсы для создания атмосферы дома через звук.', preview_products: [MOCK_DB_GIFTS[30], MOCK_DB_GIFTS[2], MOCK_DB_GIFTS[6]] }
             ]
         },
         {
-            topicId: 't_cozy',
-            topicName: 'Дом',
+            topic_id: 't_cozy',
+            topic_name: 'Дом',
             title: 'Уютное гнездо',
             status: 'ready',
             hypotheses: [
-                { id: 'h_warmth', title: 'Тактильное тепло', gutgType: 'Anchor', description: 'Вещи, к которым хочется прикасаться. Пледы, халаты, шелк.', previewGifts: [MOCK_DB_GIFTS[4], MOCK_DB_GIFTS[12], MOCK_DB_GIFTS[8]] },
-                { id: 'h_light', title: 'Световой сценарий', gutgType: 'Optimizer', description: 'Умный свет и биокамины для изменения пространства под настроение.', previewGifts: [MOCK_DB_GIFTS[1], MOCK_DB_GIFTS[13], MOCK_DB_GIFTS[18]] },
-                { id: 'h_garden', title: 'Зеленый оазис', gutgType: 'Catalyst', description: 'Наборы для выращивания и умные горшки для тех, кто любит жизнь.', previewGifts: [MOCK_DB_GIFTS[11], MOCK_DB_GIFTS[20], MOCK_DB_GIFTS[5]] }
+                { id: 'h_warmth', title: 'Тактильное тепло', primary_gap: 'the_anchor', description: 'Вещи, к которым хочется прикасаться. Пледы, халаты, шелк.', preview_products: [MOCK_DB_GIFTS[4], MOCK_DB_GIFTS[12], MOCK_DB_GIFTS[8]] },
+                { id: 'h_light', title: 'Световой сценарий', primary_gap: 'the_optimizer', description: 'Умный свет и биокамины для изменения пространства под настроение.', preview_products: [MOCK_DB_GIFTS[1], MOCK_DB_GIFTS[13], MOCK_DB_GIFTS[18]] },
+                { id: 'h_garden', title: 'Зеленый оазис', primary_gap: 'the_catalyst', description: 'Наборы для выращивания и умные горшки для тех, кто любит жизнь.', preview_products: [MOCK_DB_GIFTS[11], MOCK_DB_GIFTS[20], MOCK_DB_GIFTS[5]] }
             ]
         }
     ];
@@ -83,16 +84,17 @@ const HypothesisCard: React.FC<{
         <div className="bg-slate-800/80 backdrop-blur-md border border-white/10 rounded-[2rem] overflow-hidden mb-4 shadow-lg animate-pop transition-all hover:border-white/20">
             <div className="p-6 pb-4">
                 <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded text-black mb-2 inline-block ${
-                    data.gutgType === 'Mirror' ? 'bg-purple-300' : 
-                    data.gutgType === 'Optimizer' ? 'bg-blue-300' : 
-                    data.gutgType === 'Catalyst' ? 'bg-orange-300' : 'bg-green-300'
-                }`}>{data.gutgType}</span>
+                    data.primary_gap === 'the_mirror' ? 'bg-purple-300' : 
+                    data.primary_gap === 'the_optimizer' ? 'bg-blue-300' : 
+                    data.primary_gap === 'the_catalyst' ? 'bg-orange-300' : 'bg-green-300'
+                }`}>{data.primary_gap.replace('the_', '')}</span>
                 <h3 className="text-xl font-black text-white mb-2">{data.title}</h3>
                 <p className="text-white/60 text-sm leading-relaxed">{data.description}</p>
             </div>
-            {data.previewGifts.length > 0 && (
+            {/* Fix: Property name changed from previewGifts to preview_products */}
+            {data.preview_products.length > 0 && (
                 <div className="px-6 pb-4 flex gap-3 overflow-x-auto no-scrollbar" onClick={onSelect}>
-                    {data.previewGifts.map((gift, i) => (
+                    {data.preview_products.map((gift, i) => (
                         <div key={gift.id || i} className="w-20 shrink-0 cursor-pointer">
                             <div className="aspect-square rounded-xl overflow-hidden mb-1.5 bg-slate-900 border border-white/5">
                                 <img src={gift.imageUrl || ''} className="w-full h-full object-cover opacity-80" alt="" />
@@ -151,8 +153,9 @@ export const ExperimentDialogue: React.FC = () => {
                 const res = await api.gutg.init(answers);
                 setSession(res);
                 
+                // Fix: Access topic_id instead of topicId
                 if (res.tracks && res.tracks.length > 0) {
-                    setActiveTrackId(res.tracks[0].topicId);
+                    setActiveTrackId(res.tracks[0].topic_id);
                 }
 
                 // Initial phase mapping
@@ -170,7 +173,8 @@ export const ExperimentDialogue: React.FC = () => {
     }, []);
 
     const activeTrack = useMemo(() => 
-        session?.tracks?.find(t => t.topicId === activeTrackId), 
+        // Fix: Use topic_id instead of topicId
+        session?.tracks?.find(t => t.topic_id === activeTrackId), 
         [session, activeTrackId]
     );
 
@@ -183,7 +187,8 @@ export const ExperimentDialogue: React.FC = () => {
                 const next = getMockTracks();
                 setSession(next);
                 setPhase('overview');
-                if (next.tracks && next.tracks.length > 0) setActiveTrackId(next.tracks[0].topicId);
+                // Fix: Use topic_id instead of topicId
+                if (next.tracks && next.tracks.length > 0) setActiveTrackId(next.tracks[0].topic_id);
             } else {
                 const res = await api.gutg.interact(session?.session_id || '', action, value);
                 setSession(res);
@@ -192,8 +197,9 @@ export const ExperimentDialogue: React.FC = () => {
                 else if (res.state === 'DEAD_END') setPhase('dead_end');
                 else setPhase('overview');
                 
+                // Fix: Use topic_id instead of topicId
                 if (res.tracks && res.tracks.length > 0 && !activeTrackId) {
-                    setActiveTrackId(res.tracks[0].topicId);
+                    setActiveTrackId(res.tracks[0].topic_id);
                 }
             }
         } catch (e) {
@@ -221,7 +227,8 @@ export const ExperimentDialogue: React.FC = () => {
         setPhase(p);
         if (s) {
             setSession(s);
-            if (s.tracks && s.tracks.length > 0) setActiveTrackId(s.tracks[0].topicId);
+            // Fix: Use topic_id instead of topicId
+            if (s.tracks && s.tracks.length > 0) setActiveTrackId(s.tracks[0].topic_id);
         }
     };
 
@@ -252,7 +259,8 @@ export const ExperimentDialogue: React.FC = () => {
                             phase === 'dialogue' ? session?.current_probe?.question :
                             phase === 'feed' ? 'Отличная стратегия. Вот подходящие товары:' :
                             phase === 'dead_end' ? 'Ой! Кажется, мы зашли в тупик в этой ветке.' :
-                            `Я нашел несколько векторов в теме «${activeTrack?.topicName}». Как тебе?`
+                            // Fix: Use topic_name instead of topicName
+                            `Я нашел несколько векторов в теме «${activeTrack?.topic_name}». Как тебе?`
                         )}
                     </ChatBubble>
                 </div>
@@ -284,14 +292,15 @@ export const ExperimentDialogue: React.FC = () => {
                         {/* Track Switcher */}
                         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
                             {session.tracks?.map(t => {
-                                const isActive = t.topicId === activeTrackId;
+                                // Fix: Use topic_id and topic_name
+                                const isActive = t.topic_id === activeTrackId;
                                 return (
                                     <button 
-                                        key={t.topicId} 
-                                        onClick={() => setActiveTrackId(t.topicId)} 
+                                        key={t.topic_id} 
+                                        onClick={() => setActiveTrackId(t.topic_id)} 
                                         className={`shrink-0 flex flex-col items-start px-5 py-3 rounded-[1.5rem] border transition-all duration-300 min-w-[140px] relative ${isActive ? 'bg-white text-slate-900 border-white shadow-2xl scale-105 z-10' : 'bg-white/5 text-white/50 border-white/10 hover:bg-white/10'}`}
                                     >
-                                        <span className="text-[9px] font-black uppercase opacity-60 mb-0.5">{t.topicName}</span>
+                                        <span className="text-[9px] font-black uppercase opacity-60 mb-0.5">{t.topic_name}</span>
                                         <span className="text-sm font-bold truncate w-full">{t.title}</span>
                                         {isActive && <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-cyan-400 rounded-full"></div>}
                                     </button>
@@ -302,7 +311,8 @@ export const ExperimentDialogue: React.FC = () => {
                         {/* Active Hypotheses */}
                         <div className="relative min-h-[400px] w-full">
                             {activeTrack && (
-                                <div key={activeTrack.topicId} className="animate-pop">
+                                // Fix: Use topic_id
+                                <div key={activeTrack.topic_id} className="animate-pop">
                                     <div className="space-y-4">
                                         {activeTrack.hypotheses.map(h => (
                                             <HypothesisCard 

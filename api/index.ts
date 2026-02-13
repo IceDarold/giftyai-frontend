@@ -13,7 +13,6 @@ const API_BASE = (() => {
 
 const isMockEnabled = () => localStorage.getItem('gifty_use_mock_data') === 'true';
 
-// Global singleton logger helper to bridge between non-react and react context
 let globalLogger: ((log: any) => void) | null = null;
 export const setGlobalLogger = (logger: any) => { globalLogger = logger; };
 
@@ -106,9 +105,10 @@ export const api = {
           logRequest('POST', '/api/v1/recommendations/interact', { session_id: sessionId, action, value });
           if (isMockEnabled()) {
               await new Promise(r => setTimeout(r, 600));
-              // Simulation of walkthrough
               if (action === 'answer_probe') return MockServer.getGUTGSession('TRACKS');
-              return MockServer.getGUTGSession();
+              if (action === 'like_hypothesis') return MockServer.getGUTGSession('FEED');
+              if (action === 'load_more_hypotheses') return MockServer.getGUTGSession('LOAD_MORE');
+              return MockServer.getGUTGSession('TRACKS');
           }
           return await apiFetch('/api/v1/recommendations/interact', { 
               method: 'POST', 

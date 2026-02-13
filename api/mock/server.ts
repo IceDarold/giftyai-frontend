@@ -34,36 +34,24 @@ const toDTO = (gift: Gift): GiftDTO => ({
   } : undefined
 });
 
-const DEFAULT_PROFILE: UserProfile = {
-  name: 'Друг',
-  avatarEmoji: '😎',
-  level: 'Новичок',
-  events: []
-};
-
-const MOCK_TEAM: TeamMember[] = [
-  { name: 'Александр', role: 'CEO', bio: 'AI Visionary', linkedin_url: '#', photo_public_id: null },
-  { name: 'Елизавета', role: 'CTO', bio: 'Tech Lead', linkedin_url: '#', photo_public_id: null }
-];
-
 const GET_MOCK_TRACKS = (): RecommendationTrack[] => [
     {
-        topicId: 't_vibe',
-        topicName: 'Вайб',
+        topic_id: 't_vibe',
+        topic_name: 'Вайб',
         title: 'Эстетика момента',
         status: 'ready',
         hypotheses: [
-            { id: 'h_est_1', title: 'Утренний гедонизм', gutgType: 'Mirror', description: 'Вещи для тех, кто превращает завтрак в ритуал. Красивая посуда, редкий кофе.', previewGifts: [MOCK_DB_GIFTS[20], MOCK_DB_GIFTS[21], MOCK_DB_GIFTS[16], MOCK_DB_GIFTS[10]] },
-            { id: 'h_est_2', title: 'Мягкий вечер', gutgType: 'Anchor', description: 'Создаем уютное убежище от внешнего мира. Свет, текстиль, ароматы.', previewGifts: [MOCK_DB_GIFTS[5], MOCK_DB_GIFTS[31], MOCK_DB_GIFTS[13], MOCK_DB_GIFTS[18]] }
+            { id: 'h_est_1', title: 'Утренний гедонизм', primary_gap: 'the_mirror', description: 'Вещи для тех, кто превращает завтрак в ритуал. Красивая посуда, редкий кофе.', preview_products: [MOCK_DB_GIFTS[20], MOCK_DB_GIFTS[21], MOCK_DB_GIFTS[16]] },
+            { id: 'h_est_2', title: 'Мягкий вечер', primary_gap: 'the_anchor', description: 'Создаем уютное убежище от внешнего мира. Свет, текстиль, ароматы.', preview_products: [MOCK_DB_GIFTS[5], MOCK_DB_GIFTS[31]] }
         ]
     },
     {
-        topicId: 't_tech',
-        topicName: 'Гаджеты',
+        topic_id: 't_tech',
+        topic_name: 'Гаджеты',
         title: 'Умный комфорт',
         status: 'ready',
         hypotheses: [
-            { id: 'h_tech_1', title: 'Цифровой дзен', gutgType: 'Optimizer', description: 'Девайсы, которые убирают лишнее трение в жизни. Порядок и эффективность.', previewGifts: [MOCK_DB_GIFTS[22], MOCK_DB_GIFTS[27], MOCK_DB_GIFTS[23], MOCK_DB_GIFTS[14]] }
+            { id: 'h_tech_1', title: 'Цифровой дзен', primary_gap: 'the_optimizer', description: 'Девайсы, которые убирают лишнее трение в жизни. Порядок и эффективность.', preview_products: [MOCK_DB_GIFTS[22], MOCK_DB_GIFTS[27]] }
         ]
     }
 ];
@@ -107,30 +95,23 @@ export const MockServer = {
   },
 
   async getUserProfile(): Promise<UserProfile> {
-    const stored = localStorage.getItem('gifty_profile');
-    return stored ? JSON.parse(stored) : DEFAULT_PROFILE;
+    return { name: 'Друг', avatarEmoji: '😎', level: 'Новичок', events: [] };
   },
 
   async updateUserProfile(data: Partial<UserProfile>): Promise<UserProfile> {
-     const current = await this.getUserProfile();
-     const updated = { ...current, ...data };
-     localStorage.setItem('gifty_profile', JSON.stringify(updated));
-     return updated;
+    const current = await this.getUserProfile();
+    return { ...current, ...data };
   },
 
   async addEvent(event: Omit<CalendarEvent, 'id'>): Promise<CalendarEvent> {
-    const profile = await this.getUserProfile();
-    const newEvent = { ...event, id: Date.now().toString() };
-    await this.updateUserProfile({ events: [...profile.events, newEvent] });
-    return newEvent;
+    return { ...event, id: Math.random().toString(36).substr(2, 9) };
   },
 
   async removeEvent(id: string): Promise<void> {
-    const profile = await this.getUserProfile();
-    await this.updateUserProfile({ events: profile.events.filter(e => e.id !== id) });
+    return Promise.resolve();
   },
 
-  async getGUTGSession(variant: 'BRANCHING' | 'TRACKS' | 'FEED' | 'DEAD_END' | 'REFINE' = 'BRANCHING'): Promise<RecommendationSession> {
+  async getGUTGSession(variant: 'BRANCHING' | 'TRACKS' | 'FEED' | 'DEAD_END' | 'REFINE' | 'LOAD_MORE' = 'BRANCHING'): Promise<RecommendationSession> {
     await delay(500);
     
     if (variant === 'BRANCHING') {
@@ -141,9 +122,9 @@ export const MockServer = {
             question: 'Что для получателя важнее всего в вещах?',
             subtitle: 'Это поможет мне выбрать правильный вектор поиска',
             options: [
-              { id: 'opt_util', label: 'Польза и удобство', icon: '⚙️', description: 'Главное чтобы работало' },
-              { id: 'opt_aest', label: 'Эстетика и стиль', icon: '🎨', description: 'Важно как выглядит' },
-              { id: 'opt_wow', label: 'Вау-эффект', icon: '✨', description: 'Хочу удивить' }
+              { id: 'opt_util', label: 'Польза и удобство', icon: '⚙️' },
+              { id: 'opt_aest', label: 'Эстетика и стиль', icon: '🎨' },
+              { id: 'opt_wow', label: 'Вау-эффект', icon: '✨' }
             ]
           }
         } as any;
@@ -152,7 +133,7 @@ export const MockServer = {
     if (variant === 'REFINE') {
         return {
             session_id: 'mock_session_refine',
-            state: 'SHOWING_HYPOTHESES', // Keeps showing results
+            state: 'SHOWING_HYPOTHESES',
             tracks: GET_MOCK_TRACKS(),
             current_probe: {
                 question: 'Как насчет виниловых проигрывателей?',
@@ -162,6 +143,23 @@ export const MockServer = {
                     { id: 'no', label: 'Нет, предпочитает цифру', icon: '📱' }
                 ]
             }
+        } as any;
+    }
+
+    if (variant === 'LOAD_MORE') {
+        const randomId = Math.random().toString(36).substr(2, 4);
+        return {
+            session_id: 'mock_session_more',
+            state: 'SHOWING_HYPOTHESES',
+            tracks: [
+                {
+                    topic_id: 't_vibe',
+                    hypotheses: [
+                        { id: `h_more_${randomId}_1`, title: 'Ужин при свечах', primary_gap: 'the_anchor', description: 'Наборы для романтики на двоих. Красивая подача и атмосфера.', preview_products: [MOCK_DB_GIFTS[13], MOCK_DB_GIFTS[31]] },
+                        { id: `h_more_${randomId}_2`, title: 'Дзен в ванной', primary_gap: 'the_optimizer', description: 'Аксессуары для водных процедур. Релакс как в SPA.', preview_products: [MOCK_DB_GIFTS[25], MOCK_DB_GIFTS[29]] }
+                    ]
+                } as any
+            ]
         } as any;
     }
 
@@ -177,17 +175,15 @@ export const MockServer = {
         return {
             session_id: 'mock_session_feed',
             state: 'DEEP_DIVE',
-            deep_dive_products: MOCK_DB_GIFTS.slice(0, 10)
+            tracks: GET_MOCK_TRACKS(), // Keep tracks here so "Back" doesn't crash
+            deep_dive_products: MOCK_DB_GIFTS.slice(0, 12)
         } as any;
     }
 
-    return {
-        session_id: 'mock_session_dead',
-        state: 'DEAD_END'
-    } as any;
+    return { session_id: 'mock_session_dead', state: 'DEAD_END' } as any;
   },
 
   async getTeam(): Promise<TeamMember[]> {
-      return MOCK_TEAM;
+      return [{ name: 'Александр', role: 'CEO', bio: 'AI Visionary', linkedin_url: '#', photo_public_id: null }];
   }
 };

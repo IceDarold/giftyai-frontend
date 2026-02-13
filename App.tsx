@@ -4,7 +4,7 @@ import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Home } from './pages/Home';
 import { Quiz } from './pages/Quiz';
-import { Results } from './pages/Results';
+import { Dialogue } from './pages/Dialogue';
 import { Wishlist } from './pages/Wishlist';
 import { Profile } from './pages/Profile';
 import { Blog } from './pages/Blog';
@@ -36,7 +36,7 @@ const PageTracker = () => {
     
     if (path === '/') pageName = 'home';
     else if (path.startsWith('/quiz')) pageName = 'quiz';
-    else if (path.startsWith('/results')) pageName = 'results';
+    else if (path.startsWith('/results')) pageName = 'dialogue';
     else if (path.startsWith('/blog')) pageName = 'blog';
     else if (path.startsWith('/wishlist')) pageName = 'wishlist';
     else if (path.startsWith('/profile')) pageName = 'profile';
@@ -82,8 +82,8 @@ const AppRoutes = () => {
                 <Route path="/partners" element={<Partners />} />
                 <Route path="/investors" element={<Investors />} />
                 
-                {/* Results are now public for a better UX */}
-                <Route path="/results" element={<Results />} />
+                {/* Results are now mapped to Dialogue component */}
+                <Route path="/results" element={<Dialogue />} />
                 
                 {/* Protected Routes that strictly need user data */}
                 <Route path="/wishlist" element={

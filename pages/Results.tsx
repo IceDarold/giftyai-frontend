@@ -11,19 +11,17 @@ import { MockServer } from '../api/mock/server';
 
 // --- COMPONENTS ---
 
-const TypingIndicator = () => (
-    <div className="flex gap-1.5 p-2 px-4">
-        <div className="w-2 h-2 bg-brand-pink/50 rounded-full animate-[bounce_1s_infinite_0ms]"></div>
-        <div className="w-2 h-2 bg-brand-pink/50 rounded-full animate-[bounce_1s_infinite_200ms]"></div>
-        <div className="w-2 h-2 bg-brand-pink/50 rounded-full animate-[bounce_1s_infinite_400ms]"></div>
-    </div>
-);
-
 const ChatBubble: React.FC<{ children: React.ReactNode; isTyping?: boolean }> = ({ children, isTyping }) => (
     <div className="relative bg-white/90 backdrop-blur-xl text-brand-dark rounded-2xl rounded-tl-none p-6 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] max-w-xl animate-pop border border-white/50 transition-all">
         <div className="absolute top-0 left-[-8px] w-4 h-4 bg-white/90 transform skew-x-[20deg]"></div>
         <div className="relative z-10 text-lg font-bold leading-snug">
-            {isTyping ? <TypingIndicator /> : children}
+            {isTyping ? (
+                <div className="flex gap-1.5 p-2 px-4">
+                    <div className="w-2 h-2 bg-brand-pink/50 rounded-full animate-[bounce_1s_infinite_0ms]"></div>
+                    <div className="w-2 h-2 bg-brand-pink/50 rounded-full animate-[bounce_1s_infinite_200ms]"></div>
+                    <div className="w-2 h-2 bg-brand-pink/50 rounded-full animate-[bounce_1s_infinite_400ms]"></div>
+                </div>
+            ) : children}
         </div>
     </div>
 );
@@ -48,19 +46,22 @@ const HypothesisCard: React.FC<{
         onDislike(data.id);
     };
 
+    const badgeColors: Record<string, string> = {
+        'the_mirror': 'bg-purple-400',
+        'the_optimizer': 'bg-blue-400',
+        'the_catalyst': 'bg-orange-400',
+        'the_anchor': 'bg-green-400'
+    };
+
     if (status === 'disliked') return null;
 
     return (
-        <div className={`bg-white/90 backdrop-blur-md border rounded-[2.5rem] overflow-hidden shadow-xl animate-pop group transition-all hover:shadow-2xl ${status === 'liked' ? 'ring-4 ring-brand-pink border-brand-pink' : 'border-white/50'}`}>
+        <div className={`bg-white/90 backdrop-blur-md border rounded-[2.5rem] overflow-hidden shadow-xl animate-pop group transition-all hover:shadow-2xl ${status === 'liked' ? 'ring-4 ring-brand-pink border-brand-pink scale-[1.01]' : 'border-white/50'}`}>
             <div onClick={onOpenFeed} className="cursor-pointer">
                 <div className="p-8 pb-4">
                     <div className="flex justify-between items-start mb-3">
-                        <span className={`text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-full text-white shadow-sm ${
-                            data.gutgType === 'Mirror' ? 'bg-purple-400' : 
-                            data.gutgType === 'Optimizer' ? 'bg-blue-400' : 
-                            data.gutgType === 'Catalyst' ? 'bg-orange-400' : 'bg-green-400'
-                        }`}>
-                            {data.gutgType}
+                        <span className={`text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-full text-white shadow-sm ${badgeColors[data.primary_gap] || 'bg-gray-400'}`}>
+                            {data.primary_gap.replace('the_', '')}
                         </span>
                         {status === 'liked' && <span className="text-xl animate-pop">❤️</span>}
                     </div>
@@ -68,12 +69,12 @@ const HypothesisCard: React.FC<{
                     <p className="text-gray-600 text-sm leading-relaxed font-medium">{data.description}</p>
                 </div>
 
-                {data.previewGifts.length > 0 && (
+                {data.preview_products.length > 0 && (
                     <div className="px-8 pb-6 relative">
                         <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 mask-gradient-right snap-x">
-                            {data.previewGifts.map((gift, i) => (
-                                <div key={i} className="w-24 shrink-0 snap-start group/gift">
-                                    <div className="aspect-[4/5] rounded-2xl bg-gray-100 overflow-hidden mb-2 border border-white shadow-sm transition-transform group-hover/gift:scale-105">
+                            {data.preview_products.map((gift, i) => (
+                                <div key={i} className="w-24 shrink-0 snap-start">
+                                    <div className="aspect-[4/5] rounded-2xl bg-gray-100 overflow-hidden mb-2 border border-white shadow-sm">
                                         <img src={gift.imageUrl || ''} className="w-full h-full object-cover" alt="" />
                                     </div>
                                     <div className="text-[10px] font-black text-brand-dark/40 text-center">{gift.price} ₽</div>
@@ -135,7 +136,7 @@ const ProbeOverlay: React.FC<{ probe: RecommendationSession['current_probe'], on
     );
 };
 
-// --- DRAGGABLE DEV CONSOLE ---
+// --- DRAGGABLE CONSOLE LOGS ---
 const NetworkLog = ({ logs, clear }: { logs: any[], clear: () => void }) => (
     <div className="flex flex-col h-full bg-black/40 rounded-xl overflow-hidden font-mono text-[9px]">
         <div className="flex justify-between items-center p-2 bg-black/20 border-b border-white/5">
@@ -150,7 +151,7 @@ const NetworkLog = ({ logs, clear }: { logs: any[], clear: () => void }) => (
                         <span className="text-white/20">{log.timestamp}</span>
                     </div>
                     {log.payload && (
-                        <div className="text-green-400 mt-1 opacity-60">
+                        <div className="text-green-400 mt-1 opacity-60 truncate">
                             Payload: {JSON.stringify(log.payload)}
                         </div>
                     )}
@@ -207,30 +208,36 @@ export const Results: React.FC = () => {
         else if (res.state === 'DEEP_DIVE') setPhase('feed');
         else setPhase('overview');
 
-        if (res.tracks && res.tracks.length > 0 && (!activeTrackId || !res.tracks.find(t => t.topicId === activeTrackId))) {
-            setActiveTrackId(res.tracks[0].topicId);
+        if (res.tracks && res.tracks.length > 0 && (!activeTrackId || !res.tracks.find(t => t.topic_id === activeTrackId))) {
+            setActiveTrackId(res.tracks[0].topic_id);
         }
     };
 
     const activeTrack = useMemo(() => 
-        session?.tracks?.find(t => t.topicId === activeTrackId), 
+        session?.tracks?.find(t => t.topic_id === activeTrackId), 
         [session, activeTrackId]
     );
 
     const handleInteract = async (action: string, value: string) => {
-        if (action !== 'load_more_hypotheses') setLoading(true);
+        // "Load more" and "select track" shouldn't show heavy loading spinner usually for better UX
+        if (action !== 'load_more_hypotheses' && action !== 'select_track') setLoading(true);
+        
         try {
-            const res = await api.gutg.interact(session?.session_id || '', action, value);
-            updateInternalState(res);
+            if (useMockData && action === 'refine_topic') {
+                const res = await MockServer.getGUTGSession('REFINE');
+                updateInternalState(res);
+            } else {
+                const res = await api.gutg.interact(session?.session_id || '', action, value);
+                updateInternalState(res);
+            }
         } catch (e) { console.error(e); } finally { setLoading(false); }
     };
 
     const handleDeepDive = async (hId: string) => {
         setLoading(true);
         try {
-            const products = await api.gutg.getProducts(hId);
-            setSession(prev => prev ? ({ ...prev, state: 'DEEP_DIVE', deep_dive_products: products }) : null);
-            setPhase('feed');
+            const res = await api.gutg.interact(session?.session_id || '', 'like_hypothesis', hId);
+            updateInternalState(res);
         } catch (e) { console.error(e); } finally { setLoading(false); }
     };
 
@@ -271,115 +278,6 @@ export const Results: React.FC = () => {
         };
     }, [isDragging]);
 
-    // --- RENDERERS ---
-
-    const renderProbe = () => {
-        const probe = session?.current_probe;
-        if (!probe) return null;
-        return (
-            <div className="w-full max-w-2xl animate-fade-in-up">
-                <div className="mb-6 relative group z-10">
-                    <input 
-                        type="text" 
-                        value={customAnswer}
-                        onChange={(e) => setCustomAnswer(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && customAnswer.trim() && handleInteract('answer_probe', customAnswer)}
-                        placeholder="Напишите свой вариант..."
-                        className="w-full relative bg-white/80 hover:bg-white backdrop-blur-xl border border-white/50 rounded-2xl py-4 pl-6 pr-14 text-brand-dark font-bold placeholder-gray-400 outline-none focus:ring-4 focus:ring-brand-pink/20 transition-all shadow-lg text-lg"
-                    />
-                    <button 
-                        onClick={() => customAnswer.trim() && handleInteract('answer_probe', customAnswer)}
-                        disabled={!customAnswer.trim()}
-                        className="absolute right-2 top-2 bottom-2 aspect-square bg-brand-pink text-white rounded-xl flex items-center justify-center shadow-md hover:bg-brand-love transition-all active:scale-90 z-20"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clipRule="evenodd" /></svg>
-                    </button>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {probe.options.map((opt) => (
-                        <button key={opt.id} onClick={() => handleInteract('answer_probe', opt.label)} className="bg-white/80 hover:bg-white border border-white/40 p-5 rounded-[2rem] text-left transition-all group flex items-center gap-4 shadow-lg active:scale-[0.98]">
-                            <span className="text-3xl group-hover:scale-110 transition-transform">{opt.icon || '👉'}</span>
-                            <div>
-                                <div className="font-black text-brand-dark text-sm leading-tight">{opt.label}</div>
-                                {opt.description && <div className="text-[10px] text-gray-500 font-bold mt-1 opacity-60">{opt.description}</div>}
-                            </div>
-                        </button>
-                    ))}
-                </div>
-            </div>
-        );
-    };
-
-    const renderOverview = () => {
-        if (!session?.tracks) return null;
-        return (
-            <div className="w-full flex flex-col gap-8 animate-fade-in-up">
-                {/* Track Switcher */}
-                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 mask-gradient-right px-2">
-                    {session.tracks.map(t => {
-                        const isActive = t.topicId === activeTrackId;
-                        return (
-                            <div key={t.topicId} className="relative shrink-0 flex flex-col gap-1 items-center group">
-                                <button 
-                                    onClick={() => {
-                                        setActiveTrackId(t.topicId);
-                                        handleInteract('select_track', t.topicId);
-                                    }} 
-                                    className={`flex flex-col items-start px-6 py-4 rounded-[2.5rem] border transition-all duration-300 min-w-[150px] relative ${isActive ? 'bg-white text-brand-dark border-white shadow-xl scale-105 z-10' : 'bg-white/30 text-brand-dark/50 border-white/20 hover:bg-white/50'}`}
-                                >
-                                    <span className="text-[9px] font-black uppercase opacity-60 mb-0.5">{t.topicName}</span>
-                                    <span className="text-sm font-black truncate w-full">{t.title}</span>
-                                    {isActive && <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2 h-2 bg-brand-pink rounded-full shadow-[0_0_10px_#FF4D6D]"></div>}
-                                </button>
-                                
-                                {isActive && (
-                                    <button 
-                                        onClick={(e) => { e.stopPropagation(); handleInteract('refine_topic', t.topicId); }}
-                                        className="mt-2 bg-white/20 hover:bg-white/40 backdrop-blur-sm px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter text-brand-dark transition-all flex items-center gap-1"
-                                    >
-                                        ⚙️ Уточнить тему
-                                    </button>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-
-                {/* Hypotheses List */}
-                <div className="w-full max-w-xl mx-auto space-y-6">
-                    {activeTrack && activeTrack.hypotheses.map(h => (
-                        <HypothesisCard 
-                            key={h.id} 
-                            data={h} 
-                            onOpenFeed={() => handleDeepDive(h.id)} 
-                            onLike={(id) => api.gutg.react(id, 'like')}
-                            onDislike={(id) => api.gutg.react(id, 'dislike')}
-                        />
-                    ))}
-                    
-                    <button 
-                        onClick={() => handleInteract('load_more_hypotheses', activeTrackId)}
-                        className="w-full py-10 border-4 border-dashed border-white/30 hover:border-white/50 bg-white/5 rounded-[3rem] text-brand-dark/40 font-black transition-all text-sm flex flex-col items-center gap-3 group active:scale-95"
-                    >
-                        <span className="text-4xl group-hover:rotate-12 transition-transform">➕</span>
-                        ПОКАЗАТЬ ЕЩЕ ГИПОТЕЗЫ
-                    </button>
-                </div>
-
-                {/* Rescue Interaction */}
-                <div className="mt-12 border-t border-white/20 pt-10 text-center">
-                    <p className="text-[10px] font-black text-brand-dark/30 uppercase tracking-[0.4em] mb-6">Ничего не подошло?</p>
-                    <button 
-                        onClick={() => handleInteract('suggest_topics', '')}
-                        className="py-5 px-10 rounded-[2rem] bg-white/40 border border-white/40 text-brand-dark font-black hover:bg-white transition-all shadow-md active:scale-95"
-                    >
-                        ПОПРОБОВАТЬ ДРУГИЕ НАПРАВЛЕНИЯ
-                    </button>
-                </div>
-            </div>
-        );
-    };
-
     return (
         <div className="min-h-screen relative overflow-x-hidden flex flex-col font-sans pb-48">
             {/* Header */}
@@ -410,7 +308,7 @@ export const Results: React.FC = () => {
                                     </>
                                 )}
                                 {phase === 'overview' && (
-                                    <p>Я проанализировал профиль. Нашел несколько крутых векторов в теме «{activeTrack?.topicName}»:</p>
+                                    <p>Я проанализировал профиль. Нашел несколько крутых векторов в теме «{activeTrack?.topic_name}»:</p>
                                 )}
                                 {phase === 'feed' && <p>Супер! Вот подборка, которая попадет точно в цель:</p>}
                                 {phase === 'dead_end' && <p>Хм, кажется мы перебрали всё. Куда двинемся дальше?</p>}
@@ -422,8 +320,106 @@ export const Results: React.FC = () => {
                 <div className="w-full flex-grow flex flex-col items-center">
                     {!loading && !error && (
                         <>
-                            {phase === 'probe' && renderProbe()}
-                            {phase === 'overview' && renderOverview()}
+                            {phase === 'probe' && session?.current_probe && (
+                                <div className="w-full max-w-2xl animate-fade-in-up">
+                                    <div className="mb-6 relative group z-10">
+                                        <input 
+                                            type="text" 
+                                            value={customAnswer}
+                                            onChange={(e) => setCustomAnswer(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && customAnswer.trim() && handleInteract('answer_probe', customAnswer)}
+                                            placeholder="Напишите свой вариант..."
+                                            className="w-full relative bg-white/80 hover:bg-white backdrop-blur-xl border border-white/50 rounded-2xl py-4 pl-6 pr-14 text-brand-dark font-bold placeholder-gray-400 outline-none focus:ring-4 focus:ring-brand-pink/20 transition-all shadow-lg text-lg"
+                                        />
+                                        <button 
+                                            onClick={() => customAnswer.trim() && handleInteract('answer_probe', customAnswer)}
+                                            disabled={!customAnswer.trim()}
+                                            className="absolute right-2 top-2 bottom-2 aspect-square bg-brand-pink text-white rounded-xl flex items-center justify-center shadow-md hover:bg-brand-love transition-all active:scale-90 z-20"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clipRule="evenodd" /></svg>
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {session.current_probe.options.map((opt) => (
+                                            <button key={opt.id} onClick={() => handleInteract('answer_probe', opt.label)} className="bg-white/80 hover:bg-white border border-white/40 p-5 rounded-[2rem] text-left transition-all group flex items-center gap-4 shadow-lg active:scale-[0.98]">
+                                                <span className="text-3xl group-hover:scale-110 transition-transform">{opt.icon || '👉'}</span>
+                                                <div>
+                                                    <div className="font-black text-brand-dark text-sm leading-tight">{opt.label}</div>
+                                                    {opt.description && <div className="text-[10px] text-gray-500 font-bold mt-1 opacity-60">{opt.description}</div>}
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {phase === 'overview' && session?.tracks && (
+                                <div className="w-full flex flex-col gap-8 animate-fade-in-up">
+                                    {/* Track Switcher */}
+                                    <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 mask-gradient-right px-2">
+                                        {session.tracks.map(t => {
+                                            const isActive = t.topic_id === activeTrackId;
+                                            return (
+                                                <div key={t.topic_id} className="relative shrink-0 flex flex-col gap-1 items-center group">
+                                                    <button 
+                                                        onClick={() => {
+                                                            setActiveTrackId(t.topic_id);
+                                                            handleInteract('select_track', t.topic_id);
+                                                        }} 
+                                                        className={`flex flex-col items-start px-6 py-4 rounded-[2.5rem] border transition-all duration-300 min-w-[150px] relative ${isActive ? 'bg-white text-brand-dark border-white shadow-xl scale-105 z-10' : 'bg-white/30 text-brand-dark/50 border-white/20 hover:bg-white/50'}`}
+                                                    >
+                                                        <span className="text-[9px] font-black uppercase opacity-60 mb-0.5">{t.topic_name}</span>
+                                                        <span className="text-sm font-black truncate w-full">{t.title}</span>
+                                                        {isActive && <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2 h-2 bg-brand-pink rounded-full shadow-[0_0_10px_#FF4D6D]"></div>}
+                                                    </button>
+                                                    
+                                                    {isActive && (
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); handleInteract('refine_topic', t.topic_id); }}
+                                                            className="mt-2 bg-white/20 hover:bg-white/40 backdrop-blur-sm px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter text-brand-dark transition-all flex items-center gap-1"
+                                                        >
+                                                            ⚙️ Уточнить тему
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Hypotheses List */}
+                                    <div className="w-full max-w-xl mx-auto space-y-6">
+                                        {activeTrack && activeTrack.hypotheses.map(h => (
+                                            <HypothesisCard 
+                                                key={h.id} 
+                                                data={h} 
+                                                onOpenFeed={() => handleDeepDive(h.id)} 
+                                                onLike={(id) => api.gutg.react(id, 'like')}
+                                                onDislike={(id) => api.gutg.react(id, 'dislike')}
+                                            />
+                                        ))}
+                                        
+                                        <button 
+                                            onClick={() => handleInteract('load_more_hypotheses', activeTrackId)}
+                                            className="w-full py-10 border-4 border-dashed border-white/30 hover:border-white/50 bg-white/5 rounded-[3rem] text-brand-dark/40 font-black transition-all text-sm flex flex-col items-center gap-3 group active:scale-95"
+                                        >
+                                            <span className="text-4xl group-hover:rotate-12 transition-transform">➕</span>
+                                            ПОКАЗАТЬ ЕЩЕ ГИПОТЕЗЫ
+                                        </button>
+                                    </div>
+
+                                    {/* Rescue Interaction */}
+                                    <div className="mt-12 border-t border-white/20 pt-10 text-center">
+                                        <p className="text-[10px] font-black text-brand-dark/30 uppercase tracking-[0.4em] mb-6">Ничего не подошло?</p>
+                                        <button 
+                                            onClick={() => handleInteract('suggest_topics', '')}
+                                            className="py-5 px-10 rounded-[2rem] bg-white/40 border border-white/40 text-brand-dark font-black hover:bg-white transition-all shadow-md active:scale-95"
+                                        >
+                                            ПОПРОБОВАТЬ ДРУГИЕ НАПРАВЛЕНИЯ
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
                             {phase === 'feed' && (
                                 <div className="w-full animate-fade-in-up px-2">
                                     <button 
@@ -437,6 +433,7 @@ export const Results: React.FC = () => {
                                     </div>
                                 </div>
                             )}
+
                             {phase === 'dead_end' && (
                                 <div className="w-full max-w-md text-center animate-pop bg-white/90 backdrop-blur-xl p-12 rounded-[3rem] shadow-2xl border border-white/50">
                                     <h2 className="text-3xl font-black text-brand-dark mb-4">Тут пусто 🛑</h2>
@@ -449,7 +446,7 @@ export const Results: React.FC = () => {
                 </div>
             </div>
 
-            {/* Probe Overlay handling */}
+            {/* Probe Overlay handling (from Refine action) */}
             {session?.current_probe && (
                 <ProbeOverlay 
                     probe={session.current_probe} 
@@ -458,7 +455,7 @@ export const Results: React.FC = () => {
                 />
             )}
 
-            {/* --- GIFTY ENGINE CONSOLE 3.0 (DRAGGABLE) --- */}
+            {/* --- GIFTY ENGINE CONSOLE 4.0 (DRAGGABLE & LIVE LOGS) --- */}
             {isDevMode && (
                 <div 
                     className="fixed z-[100] w-[95%] max-w-lg select-none"
@@ -466,7 +463,7 @@ export const Results: React.FC = () => {
                         transform: `translate(${consolePos.x}px, ${consolePos.y}px)`,
                         bottom: '2rem',
                         left: '50%',
-                        marginLeft: '-237.5px' // Center based on max-w-lg (approx)
+                        marginLeft: '-237.5px' 
                     }}
                 >
                     <div className="bg-[#0F172A]/95 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_30px_70px_-15px_rgba(0,0,0,0.8)] border border-white/10 overflow-hidden h-[360px] flex flex-col">
