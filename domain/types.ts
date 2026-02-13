@@ -4,6 +4,8 @@ export interface User {
   name: string | null;
   email: string | null;
   avatar_url: string | null;
+  bio?: string | null;
+  telegram_connected?: boolean;
 }
 
 export interface ReviewItem {
@@ -37,6 +39,15 @@ export interface Gift {
   tags?: string[];
   reason?: string;
   reviews?: GiftReviews;
+}
+
+export interface Friend {
+    id: string;
+    name: string;
+    avatar: string;
+    birthDate: string;
+    daysUntilBirthday: number;
+    quizPassed: boolean; // Badge indicator
 }
 
 export interface RecommendationsResponse {
@@ -94,16 +105,10 @@ export interface DialogueHypothesis {
 export interface RecommendationTrack {
     topic_id: string;
     topic_name: string;
-    title: string | null;
-    status: 'ready' | 'pending' | 'failed' | 'question';
-    preview_text?: string | null;
+    title: string;
+    status: 'ready' | 'pending' | 'failed';
+    preview_text?: string;
     hypotheses: DialogueHypothesis[];
-    question?: {
-        question: string;
-        options: string[];
-        can_skip?: boolean;
-        context_tags?: string[];
-    } | null;
 }
 
 export type GUTGState = 'BRANCHING' | 'SHOWING_HYPOTHESES' | 'DEEP_DIVE' | 'DEAD_END';
@@ -119,9 +124,11 @@ export interface RecommendationSession {
         options: DialogueProbeOption[];
     };
     deep_dive_products?: Gift[];
+    // Fix: Added topic_hints for experimental dialogue page
     topic_hints?: { id: string; title: string; description: string }[];
 }
 
+// Fix: Added UserProfile interface
 export interface UserProfile {
     name: string;
     avatarEmoji: string;
@@ -129,6 +136,7 @@ export interface UserProfile {
     events: CalendarEvent[];
 }
 
+// Fix: Added CalendarEvent interface
 export interface CalendarEvent {
     id: string;
     title: string;
@@ -137,6 +145,7 @@ export interface CalendarEvent {
     relationship?: string;
 }
 
+// Fix: Added TeamMember interface
 export interface TeamMember {
     name: string;
     role: string;
@@ -145,12 +154,14 @@ export interface TeamMember {
     photo_public_id: string | null;
 }
 
+// Fix: Added BlogContentBlock interface
 export interface BlogContentBlock {
     type: 'paragraph' | 'h2' | 'quote' | 'list';
     text?: string;
     items?: string[];
 }
 
+// Fix: Added BlogPost interface
 export interface BlogPost {
     id: string;
     title: string;

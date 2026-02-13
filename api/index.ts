@@ -58,9 +58,24 @@ export const apiFetch = async (endpoint: string, options: ApiFetchOptions = {}) 
 export const api = {
   auth: {
     getMe: async (): Promise<User | null> => {
+        // --- BACKDOOR FOR TESTING ---
+        if (localStorage.getItem('gifty_auth_token') === 'demo_admin') {
+            return {
+                id: 'admin_user',
+                name: 'Александр (Admin)',
+                email: 'admin123@test.test',
+                avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+                bio: 'Тестовый аккаунт администратора',
+                telegram_connected: true
+            };
+        }
+        // ----------------------------
         try { return await apiFetch('/auth/me', { skipErrorLog: true }); } catch (e) { return null; }
     },
-    logout: async () => apiFetch('/auth/logout', { method: 'POST' }),
+    logout: async () => {
+        localStorage.removeItem('gifty_auth_token');
+        return apiFetch('/auth/logout', { method: 'POST' });
+    },
     getLoginUrl: (provider: string, returnTo: string) =>
         `${API_BASE}/auth/${provider}/start?redirect_url=${encodeURIComponent(returnTo)}`
   },
