@@ -53,7 +53,7 @@ export type RecipientGender = 'male' | 'female' | 'unisex';
 
 export interface QuizAnswers {
   name: string;
-  ageGroup: string;
+  age: number; // Changed from ageGroup string to number
   recipientGender: RecipientGender | null;
   occasion: string;
   relationship: string;
@@ -71,9 +71,9 @@ export interface QuizAnswers {
   painStyle: 'endurer' | 'optimizer';
   riskyTopics: boolean;
 
-  effortLevel?: string;
-  idealWeekend?: string;
-  materialAttitude?: string;
+  effortLevel?: 'no_effort' | 'low' | 'medium' | 'high';
+  deadline?: number; // days
+  goal?: string; 
 
   interests: string;
   budget: string;
@@ -152,13 +152,25 @@ export interface DialogueHypothesis {
     previewGifts: Gift[];
 }
 
-export type GUTGState = 'BRANCHING' | 'SHOWING_HYPOTHESES' | 'DEEP_DIVE' | 'DEAD_END';
+export interface RecommendationTrack {
+    topicId: string;
+    topicName: string;
+    title: string;
+    status: 'ready' | 'pending' | 'failed';
+    previewText?: string;
+    hypotheses: DialogueHypothesis[];
+}
+
+export type GUTGState = 'BRANCHING' | 'SHOWING_HYPOTHESES' | 'DEEP_DIVE' | 'DEAD_END' | 'QUIZ'; // Added QUIZ per new schema if needed
 
 export interface RecommendationSession {
     session_id: string;
     state: GUTGState;
     selected_topic?: string;
     language?: string;
+    
+    tracks?: RecommendationTrack[]; // NEW: Multiple tracks
+
     current_probe?: {
         question: string;
         subtitle?: string;

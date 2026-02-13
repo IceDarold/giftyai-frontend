@@ -1,5 +1,5 @@
 
-import { QuizAnswers, Gift, UserProfile, CalendarEvent, User, RecommendationsResponse, TeamMember, RecommendationSession } from '../domain/types';
+import { QuizAnswers, Gift, UserProfile, CalendarEvent, User, RecommendationsResponse, TeamMember, RecommendationSession, DialogueHypothesis, RecommendationTrack } from '../domain/types';
 import { mapGiftDTOToGift, mapRecommendationsResponse } from '../mappers/gift';
 import { MockServer } from './mock/server';
 import { analytics } from '../utils/analytics';
@@ -22,6 +22,38 @@ const parseBudget = (input: string): number => {
   return isNaN(val) ? 5000 : val;
 };
 
+// Map UI goal IDs to API enums
+const mapGoalToApi = (goalId?: string): string | null => {
+    switch (goalId) {
+        case 'impress': return 'impress';
+        case 'care': return 'care';
+        case 'check': return 'protocol'; // "Закрыть вопрос" -> protocol
+        case 'growth': return 'growth';
+        case 'apology': return 'apology';
+        case 'joke': return 'joke';
+        default: return null; // Custom input or undefined
+    }
+};
+
+const mapHypothesis = (h: any): DialogueHypothesis => ({
+    id: h.id,
+    title: h.title,
+    gutgType: h.type || h.primary_gap || 'Strategy',
+    description: h.reasoning || h.description, 
+    previewGifts: Array.isArray(h.preview_products) 
+        ? h.preview_products.map((p: any) => mapGiftDTOToGift(p)) 
+        : []
+});
+
+const mapTrack = (t: any): RecommendationTrack => ({
+    topicId: t.topic_id,
+    topicName: t.topic_name,
+    title: t.title,
+    status: t.status,
+    previewText: t.preview_text,
+    hypotheses: Array.isArray(t.hypotheses) ? t.hypotheses.map(mapHypothesis) : []
+});
+
 // Mapper for GUTG Responses to Domain Types
 const mapSessionResponse = (data: any): RecommendationSession => {
     // 1. Normalize State (API might return lowercase 'branching')
@@ -34,6 +66,9 @@ const mapSessionResponse = (data: any): RecommendationSession => {
         selected_topic: data.selected_topic,
         language: data.language,
         
+        // Map Tracks
+        tracks: Array.isArray(data.tracks) ? data.tracks.map(mapTrack) : [],
+
         // Map Probe (Question)
         current_probe: data.current_probe ? {
             question: data.current_probe.question || data.current_probe.text,
@@ -59,17 +94,9 @@ const mapSessionResponse = (data: any): RecommendationSession => {
                 : []
         } : undefined,
 
-        // Map Hypotheses (Strategies)
+        // Map Legacy/Fallback Hypotheses (if tracks are empty)
         current_hypotheses: Array.isArray(data.current_hypotheses) 
-            ? data.current_hypotheses.map((h: any) => ({
-                id: h.id,
-                title: h.title,
-                gutgType: h.type || h.primary_gap || 'Strategy',
-                description: h.reasoning || h.description, // Mapping reasoning to description for UI
-                previewGifts: Array.isArray(h.preview_products) 
-                    ? h.preview_products.map((p: any) => mapGiftDTOToGift(p)) 
-                    : []
-              })) 
+            ? data.current_hypotheses.map(mapHypothesis) 
             : undefined,
 
         // Map Final Products
@@ -175,18 +202,18 @@ export const api = {
           if (answers.recipientGender === 'male') gender = 'male';
           if (answers.recipientGender === 'female') gender = 'female';
 
-          let age = parseInt(answers.ageGroup);
-          if (isNaN(age)) age = 30;
-
           // Cleaning up interests string to array
           const interestsArray = answers.interests 
             ? answers.interests.split(/[,.;]+/).map(i => i.trim()).filter(Boolean)
             : ['General'];
 
           const payload = {
-              recipient_age: age,
+              recipient_age: answers.age || 30,
               interests: interestsArray,
               budget: parseBudget(answers.budget),
+              deadline_days: answers.deadline ?? null,
+              effort_level: answers.effortLevel || 'low',
+              gifting_goal: mapGoalToApi(answers.goal),
               language: 'ru',
               // Passing full context for better AI reasoning
               context: {

@@ -190,7 +190,7 @@ export const ExperimentQuiz: React.FC = () => {
         // Map to standard QuizAnswers
         const standardAnswers: QuizAnswers = {
             name: data.name || 'Друг',
-            ageGroup: '30',
+            age: 30, // Default to 30 for experiment as age selection was skipped
             recipientGender: data.gender,
             relationship: data.relationship,
             occasion: data.occasion,

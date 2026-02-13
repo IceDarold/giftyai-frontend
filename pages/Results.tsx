@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mascot } from '../components/Mascot';
 import { GiftCard } from '../components/GiftCard';
@@ -34,18 +34,27 @@ export const Results: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
     
-    // UI State for Feed
+    // UI State
     const [viewGift, setViewGift] = useState<Gift | null>(null);
+    const [customAnswer, setCustomAnswer] = useState('');
+    
+    // Refs
+    const initialized = useRef(false);
 
     // Initial Load: Create Session
     useEffect(() => {
         const initSession = async () => {
+            // Prevent double init in Strict Mode
+            if (initialized.current) return;
+            
             const stored = localStorage.getItem('gifty_answers');
             if (!stored) {
                 navigate('/quiz');
                 return;
             }
             
+            initialized.current = true; // Mark as started
+
             try {
                 const answers: QuizAnswers = JSON.parse(stored);
                 // Call GUTG API
@@ -66,6 +75,7 @@ export const Results: React.FC = () => {
     const handleAnswerProbe = async (value: string) => {
         if (!session) return;
         setLoading(true);
+        setCustomAnswer(''); // Clear input
         try {
             const updated = await api.gutg.interact(session.session_id, 'answer_probe', value);
             setSession(updated);
@@ -115,17 +125,50 @@ export const Results: React.FC = () => {
 
         return (
             <div className="w-full max-w-2xl animate-fade-in-up">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6">
+                
+                {/* Custom Input */}
+                <div className="mb-6 relative group z-10">
+                    <div className="absolute inset-0 bg-white/40 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <input 
+                        type="text" 
+                        value={customAnswer}
+                        onChange={(e) => setCustomAnswer(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && customAnswer.trim()) {
+                                handleAnswerProbe(customAnswer);
+                            }
+                        }}
+                        placeholder="Напишите свой вариант..."
+                        className="w-full relative bg-white/80 hover:bg-white backdrop-blur-xl border border-white/50 rounded-2xl py-4 pl-6 pr-14 text-brand-dark font-bold placeholder-gray-400 outline-none focus:ring-4 focus:ring-brand-pink/20 transition-all shadow-[0_4px_20px_-5px_rgba(0,0,0,0.1)] text-lg"
+                    />
+                    <button 
+                        onClick={() => customAnswer.trim() && handleAnswerProbe(customAnswer)}
+                        disabled={!customAnswer.trim()}
+                        className="absolute right-2 top-2 bottom-2 aspect-square bg-brand-pink text-white rounded-xl flex items-center justify-center shadow-md hover:bg-brand-love disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-90 z-20"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clipRule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+
+                {/* Divider */}
+                <div className="text-center mb-6 opacity-60">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-brand-dark bg-white/30 px-3 py-1 rounded-full backdrop-blur-sm">Или выберите</span>
+                </div>
+
+                {/* Options Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {probe.options.map((opt) => (
                         <button
                             key={opt.id}
-                            onClick={() => handleAnswerProbe(opt.label)} // Sending label text as value
-                            className="bg-white/80 hover:bg-white border border-white/40 p-4 rounded-2xl text-left transition-all group flex items-center gap-3 shadow-lg hover:shadow-xl hover:-translate-y-1"
+                            onClick={() => handleAnswerProbe(opt.label)} 
+                            className="bg-white/80 hover:bg-white border border-white/40 p-4 rounded-2xl text-left transition-all group flex items-center gap-3 shadow-lg hover:shadow-xl hover:-translate-y-1 active:scale-[0.98]"
                         >
                             <span className="text-3xl group-hover:scale-110 transition-transform filter drop-shadow-sm">{opt.icon || '👉'}</span>
                             <div>
-                                <div className="font-bold text-brand-dark text-sm">{opt.label}</div>
-                                {opt.description && <div className="text-[10px] text-gray-500 font-medium">{opt.description}</div>}
+                                <div className="font-bold text-brand-dark text-sm leading-tight">{opt.label}</div>
+                                {opt.description && <div className="text-[10px] text-gray-500 font-medium mt-0.5">{opt.description}</div>}
                             </div>
                         </button>
                     ))}
