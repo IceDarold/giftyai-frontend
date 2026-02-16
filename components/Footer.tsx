@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
@@ -48,10 +49,22 @@ const DevLoginModal = ({ onClose, onLogin }: { onClose: () => void, onLogin: (p:
     );
 };
 
-export const Footer: React.FC = () => {
+interface FooterProps {
+    variant?: 'default' | 'light';
+}
+
+export const Footer: React.FC<FooterProps> = ({ variant = 'default' }) => {
   const { isDevMode, enableDevMode, disableDevMode, isInfoOpen, setInfoOpen } = useDevMode();
   const [showAuth, setShowAuth] = useState(false);
   const navigate = useNavigate();
+
+  const isLight = variant === 'light';
+  
+  // Dynamic Styles
+  const textColor = isLight ? 'text-slate-400' : 'text-indigo-200/60';
+  const hoverColor = isLight ? 'hover:text-brand-blue' : 'hover:text-white';
+  const dividerColor = isLight ? 'via-slate-200' : 'via-indigo-200/20';
+  const copyrightColor = isLight ? 'text-slate-400/60' : 'text-indigo-200/40';
 
   const handleDevTrigger = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -67,17 +80,17 @@ export const Footer: React.FC = () => {
   return (
     <>
         <footer className="w-full py-8 text-center relative z-20 mt-auto">
-           <div className="w-full h-px bg-gradient-to-r from-transparent via-indigo-200/20 to-transparent mb-6"></div>
+           <div className={`w-full h-px bg-gradient-to-r from-transparent ${dividerColor} to-transparent mb-6`}></div>
            
            <div className="flex flex-wrap items-center justify-center gap-6 mb-4 px-6">
-              <a href="#" className="text-indigo-200/60 hover:text-white text-[10px] font-bold uppercase tracking-widest transition-colors">О сервисе</a>
-              <Link to="/blog" className="text-indigo-200/60 hover:text-white text-[10px] font-bold uppercase tracking-widest transition-colors">Блог</Link>
-              <Link to="/partners" className="text-indigo-200/60 hover:text-white text-[10px] font-bold uppercase tracking-widest transition-colors">Партнерам</Link>
-              <Link to="/investors" className="text-indigo-200/60 hover:text-white text-[10px] font-bold uppercase tracking-widest transition-colors">Инвесторам</Link>
-              <a href="#" className="text-indigo-200/60 hover:text-white text-[10px] font-bold uppercase tracking-widest transition-colors">Политика</a>
+              <a href="#" className={`${textColor} ${hoverColor} text-[10px] font-bold uppercase tracking-widest transition-colors`}>О сервисе</a>
+              <Link to="/blog" className={`${textColor} ${hoverColor} text-[10px] font-bold uppercase tracking-widest transition-colors`}>Блог</Link>
+              <Link to="/partners" className={`${textColor} ${hoverColor} text-[10px] font-bold uppercase tracking-widest transition-colors`}>Партнерам</Link>
+              <Link to="/investors" className={`${textColor} ${hoverColor} text-[10px] font-bold uppercase tracking-widest transition-colors`}>Инвесторам</Link>
+              <a href="#" className={`${textColor} ${hoverColor} text-[10px] font-bold uppercase tracking-widest transition-colors`}>Политика</a>
            </div>
            
-           <div className="text-indigo-200/40 text-[10px] px-8 leading-relaxed font-medium flex flex-col items-center">
+           <div className={`${copyrightColor} text-[10px] px-8 leading-relaxed font-medium flex flex-col items-center`}>
               <p className="mb-2">© 2025 Gifty AI</p>
               <p>Мы используем магию и алгоритмы,<br/>чтобы вы дарили лучшие подарки.</p>
               
@@ -87,7 +100,7 @@ export const Footer: React.FC = () => {
                     className={`font-mono text-[10px] transition-all duration-300 cursor-pointer select-none px-3 py-1 rounded-full ${
                         isDevMode 
                         ? 'text-green-400 bg-green-400/10 font-bold opacity-100 hover:bg-red-500/20 hover:text-red-400' 
-                        : 'text-white/30 hover:text-white hover:bg-white/10 opacity-0 hover:opacity-100' 
+                        : (isLight ? 'text-slate-300 hover:text-slate-500 hover:bg-slate-100' : 'text-white/30 hover:text-white hover:bg-white/10') + ' opacity-0 hover:opacity-100'
                     }`}
                     title={isDevMode ? "Exit Dev Mode" : "Dev Mode"}
                 >
@@ -98,7 +111,7 @@ export const Footer: React.FC = () => {
                     <>
                         <button 
                             onClick={() => setInfoOpen(true)}
-                            className="w-6 h-6 rounded-full bg-white/10 text-white/50 hover:bg-white/20 hover:text-white flex items-center justify-center font-serif italic text-xs transition-all"
+                            className={`w-6 h-6 rounded-full flex items-center justify-center font-serif italic text-xs transition-all ${isLight ? 'bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600' : 'bg-white/10 text-white/50 hover:bg-white/20 hover:text-white'}`}
                             title="Dev Mode Info"
                         >
                             i

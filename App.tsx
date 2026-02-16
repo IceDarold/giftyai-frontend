@@ -67,6 +67,7 @@ const AppRoutes = () => {
                     && location.pathname !== '/login'
                     && location.pathname !== '/partners'
                     && location.pathname !== '/investors'
+                    && location.pathname !== '/profile'
                     && !location.pathname.startsWith('/experiments');
 
     return (

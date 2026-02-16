@@ -34,6 +34,14 @@ const EFFORT_LEVELS = [
     { id: 'hard', label: 'Maker', desc: 'Готов собрать квест или сложный набор' }
 ];
 
+const BUDGET_OPTIONS = [
+    { id: '1000', label: '💸 До 1 000 ₽', desc: 'Чисто символически' },
+    { id: '3000', label: '💰 1 000 - 3 000 ₽', desc: 'Золотая середина' },
+    { id: '5000', label: '🎁 3 000 - 5 000 ₽', desc: 'Хороший подарок' },
+    { id: '10000', label: '💎 5 000 - 10 000 ₽', desc: 'Значимый повод' },
+    { id: 'unlimited', label: '💳 Не важно', desc: 'Главное — эмоции' }
+];
+
 const DEADLINES = [
     { id: 'today', label: 'Сегодня / Завтра 🔥' },
     { id: 'week', label: 'В течение недели 📅' },
@@ -433,12 +441,53 @@ export const ExperimentQuiz: React.FC = () => {
                     </StepWrapper>
                 )}
 
-                {/* STEP 6-9 are similar to the provided logic, keep it clean for brevity */}
-                {step >= 6 && step <= 8 && (
-                    <StepWrapper title="Финальные штрихи" subtitle="Ещё пара секунд...">
-                        <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/10 text-center">
-                            <p className="text-white/60 mb-6">Шаги 6-8 находятся в разработке UI. Нажмите ниже, чтобы пропустить к результату.</p>
-                            <button onClick={() => setStep(9)} className="px-10 py-4 bg-cyan-500 text-white font-black rounded-2xl shadow-lg">К финишу</button>
+                {/* STEP 6: GOAL */}
+                {step === 6 && (
+                    <StepWrapper title="Миссия" subtitle="Чего хотим добиться подарком?">
+                        <div className="grid grid-cols-1 gap-3">
+                            {GOALS.map(g => (
+                                <OptionButton
+                                    key={g.id}
+                                    label={g.label}
+                                    desc={g.desc}
+                                    selected={goal === g.id}
+                                    onClick={() => { setGoal(g.id); next(); }}
+                                />
+                            ))}
+                        </div>
+                    </StepWrapper>
+                )}
+
+                {/* STEP 7: EFFORT */}
+                {step === 7 && (
+                    <StepWrapper title="Ваш ресурс" subtitle="Сколько сил готовы потратить?">
+                        <div className="grid grid-cols-1 gap-3">
+                            {EFFORT_LEVELS.map(e => (
+                                <OptionButton
+                                    key={e.id}
+                                    label={e.label}
+                                    desc={e.desc}
+                                    selected={effort === e.id}
+                                    onClick={() => { setEffort(e.id); next(); }}
+                                />
+                            ))}
+                        </div>
+                    </StepWrapper>
+                )}
+
+                {/* STEP 8: BUDGET */}
+                {step === 8 && (
+                    <StepWrapper title="Бюджет" subtitle="В какие рамки укладываемся?">
+                        <div className="grid grid-cols-1 gap-3">
+                            {BUDGET_OPTIONS.map(b => (
+                                <OptionButton
+                                    key={b.id}
+                                    label={b.label}
+                                    desc={b.desc}
+                                    selected={budget === b.id}
+                                    onClick={() => { setBudget(b.id); next(); }}
+                                />
+                            ))}
                         </div>
                     </StepWrapper>
                 )}
@@ -464,7 +513,7 @@ export const ExperimentQuiz: React.FC = () => {
                                 </div>
                                 <div className="flex justify-between border-b border-white/5 pb-2">
                                     <span className="text-white/30 uppercase text-[10px] font-bold">Бюджет</span>
-                                    <span className="font-black text-green-400">{budget || '5000'} ₽</span>
+                                    <span className="font-black text-green-400">{budget || 'Не важно'} ₽</span>
                                 </div>
                             </div>
                         </div>

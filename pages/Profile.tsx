@@ -6,6 +6,7 @@ import { Friend, Gift } from '../domain/types';
 import { GiftCard } from '../components/GiftCard';
 import { GiftDetailsModal } from '../components/GiftDetailsModal';
 import { Button } from '../components/Button';
+import { Footer } from '../components/Footer';
 
 // --- MOCK DATA ---
 const MOCK_FRIENDS: Friend[] = [
@@ -41,7 +42,7 @@ export const Profile: React.FC = () => {
     const [selectedGift, setSelectedGift] = useState<Gift | null>(null);
 
     return (
-        <div className="min-h-screen bg-[#F8F9FE] pb-24 pt-20">
+        <div className="min-h-screen bg-[#F8F9FE] pb-0 pt-20">
             {/* Header / Nav Mock */}
             <div className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-xl border-b border-gray-100 z-50 flex items-center justify-between px-6">
                 <button onClick={() => navigate('/')} className="text-sm font-bold text-gray-500 hover:text-black transition-colors">← Назад</button>
@@ -191,6 +192,10 @@ export const Profile: React.FC = () => {
                             />
                         ))}
                     </div>
+                </div>
+
+                <div className="mt-20">
+                    <Footer variant="light" />
                 </div>
 
             </div>

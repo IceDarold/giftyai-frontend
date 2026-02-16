@@ -5,9 +5,11 @@ import { MockServer } from './mock/server';
 
 const API_BASE = (() => {
     try {
-        return (import.meta as any).env?.VITE_API_BASE || 'https://api.giftyai.ru';
+        const base = (import.meta as any).env?.VITE_API_BASE || 'https://api.giftyai.ru';
+        // Remove trailing slash if present and append the version prefix
+        return `${base.replace(/\/$/, '')}/api/v1`;
     } catch {
-        return 'https://api.giftyai.ru';
+        return 'https://api.giftyai.ru/api/v1';
     }
 })();
 
@@ -27,7 +29,9 @@ interface ApiFetchOptions extends RequestInit {
 }
 
 export const apiFetch = async (endpoint: string, options: ApiFetchOptions = {}) => {
-  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
+  // Ensure endpoint starts with a slash for consistent joining
+  const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${formattedEndpoint}`;
   const method = options.method || 'GET';
   
   logRequest(method, endpoint, options.body ? JSON.parse(options.body as string) : undefined);
