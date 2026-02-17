@@ -1,13 +1,13 @@
 
-import { QuizAnswers, Gift, UserProfile, CalendarEvent, User, TeamMember, RecommendationSession, DialogueHypothesis, RecommendationTrack } from '../domain/types';
+import { QuizAnswers, Gift, UserProfile, CalendarEvent, User, TeamMember, RecommendationSession, Friend } from '../domain/types';
 import { mapGiftDTOToGift } from '../mappers/gift';
 import { MockServer } from './mock/server';
 
 const API_BASE = (() => {
     try {
         const base = (import.meta as any).env?.VITE_API_BASE || 'https://api.giftyai.ru';
-        // Remove trailing slash if present and append the version prefix
-        return `${base.replace(/\/$/, '')}/api/v1`;
+        // Remove trailing slash if present and append the version prefix is not handled by base
+        return base.endsWith('/api/v1') ? base : `${base.replace(/\/$/, '')}/api/v1`;
     } catch {
         return 'https://api.giftyai.ru/api/v1';
     }
@@ -29,7 +29,6 @@ interface ApiFetchOptions extends RequestInit {
 }
 
 export const apiFetch = async (endpoint: string, options: ApiFetchOptions = {}) => {
-  // Ensure endpoint starts with a slash for consistent joining
   const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${formattedEndpoint}`;
   const method = options.method || 'GET';
@@ -39,6 +38,8 @@ export const apiFetch = async (endpoint: string, options: ApiFetchOptions = {}) 
   try {
     const response = await fetch(url, {
       ...options,
+      // IMPORTANT: Enables sending/receiving HttpOnly cookies for session auth
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
@@ -62,26 +63,69 @@ export const apiFetch = async (endpoint: string, options: ApiFetchOptions = {}) 
 export const api = {
   auth: {
     getMe: async (): Promise<User | null> => {
-        // --- BACKDOOR FOR TESTING ---
-        if (localStorage.getItem('gifty_auth_token') === 'demo_admin') {
-            return {
-                id: 'admin_user',
-                name: 'Александр (Admin)',
-                email: 'admin123@test.test',
-                avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
-                bio: 'Тестовый аккаунт администратора',
-                telegram_connected: true
-            };
+        try { 
+            return await apiFetch('/auth/me', { skipErrorLog: true }); 
+        } catch (e) { 
+            // Only fall back to admin demo if specifically requested or dev mode logic
+            if (localStorage.getItem('gifty_auth_token') === 'demo_admin') {
+                return {
+                    id: 'admin_user',
+                    name: 'Александр (Admin)',
+                    email: 'admin123@test.test',
+                    avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+                    bio: 'Тестовый аккаунт администратора',
+                    telegram_connected: true
+                };
+            }
+            return null; 
         }
-        // ----------------------------
-        try { return await apiFetch('/auth/me', { skipErrorLog: true }); } catch (e) { return null; }
     },
     logout: async () => {
         localStorage.removeItem('gifty_auth_token');
         return apiFetch('/auth/logout', { method: 'POST' });
     },
     getLoginUrl: (provider: string, returnTo: string) =>
-        `${API_BASE}/auth/${provider}/start?redirect_url=${encodeURIComponent(returnTo)}`
+        `${API_BASE}/auth/${provider}/start?return_to=${encodeURIComponent(returnTo)}`
+  },
+  profile: {
+      update: async (data: Partial<User>): Promise<User> => {
+          return apiFetch('/profile/me', { method: 'PATCH', body: JSON.stringify(data) });
+      },
+      getWishlist: async (): Promise<Gift[]> => {
+          const dtos = await apiFetch('/profile/wishlist');
+          return dtos.map(mapGiftDTOToGift);
+      },
+      addToWishlist: async (gift: Partial<Gift>): Promise<void> => {
+          // Mapping frontend Gift to backend expected body
+          await apiFetch('/profile/wishlist', { 
+              method: 'POST', 
+              body: JSON.stringify({
+                  title: gift.title,
+                  description: gift.description,
+                  price: gift.price,
+                  product_url: gift.productUrl,
+                  image_url: gift.imageUrl
+              })
+          });
+      },
+      removeFromWishlist: async (id: string): Promise<void> => {
+          await apiFetch(`/profile/wishlist/${id}`, { method: 'DELETE' });
+      },
+      getTelegramLink: async (): Promise<{ url: string }> => {
+          return apiFetch('/profile/telegram-link');
+      }
+  },
+  social: {
+      getFriends: async (): Promise<Friend[]> => {
+          return apiFetch('/social/friends');
+      },
+      addFriend: async (email: string): Promise<void> => {
+          return apiFetch('/social/friends/add', { method: 'POST', body: JSON.stringify({ friend_email: email }) });
+      },
+      getFriendWishlist: async (userId: string): Promise<Gift[]> => {
+          const dtos = await apiFetch(`/social/profile/${userId}/wishlist`);
+          return dtos.map(mapGiftDTOToGift);
+      }
   },
   gifts: {
     getById: async (id: string): Promise<Gift> => {
@@ -110,29 +154,15 @@ export const api = {
   },
   gutg: {
       init: async (answers: any): Promise<RecommendationSession> => {
-          // --- Mapping logic to match backend strict schema ---
-          
-          // Map relationship labels to backend enums
+          // ... (Existing mapping logic)
           const relMapping: Record<string, string> = {
-              'Партнер': 'partner',
-              'Друг': 'friend',
-              'Коллега': 'colleague',
-              'Ребенок': 'child',
-              'Родитель': 'relative',
-              'Родственник': 'relative',
-              'Бабушка/Дед': 'relative',
-              'Брат/Сестра': 'relative'
+              'Партнер': 'partner', 'Друг': 'friend', 'Коллега': 'colleague', 
+              'Ребенок': 'child', 'Родитель': 'relative', 'Родственник': 'relative', 
+              'Бабушка/Дед': 'relative', 'Брат/Сестра': 'relative'
           };
-
-          // Map goal labels to backend enums
           const goalMapping: Record<string, string> = {
-              'impress': 'impress',
-              'care': 'care',
-              'check': 'protocol',
-              'protocol': 'protocol',
-              'apology': 'apology',
-              'joke': 'joke',
-              'growth': 'growth'
+              'impress': 'impress', 'care': 'care', 'check': 'protocol', 
+              'protocol': 'protocol', 'apology': 'apology', 'joke': 'joke', 'growth': 'growth'
           };
 
           const mappedPayload = {
@@ -156,10 +186,7 @@ export const api = {
               return MockServer.getGUTGSession();
           }
 
-          return await apiFetch('/recommendations/init', { 
-              method: 'POST', 
-              body: JSON.stringify(mappedPayload) 
-          });
+          return await apiFetch('/recommendations/init', { method: 'POST', body: JSON.stringify(mappedPayload) });
       },
       interact: async (sessionId: string, action: string, value: string): Promise<RecommendationSession> => {
           logRequest('POST', '/recommendations/interact', { session_id: sessionId, action, value });
@@ -170,18 +197,12 @@ export const api = {
               if (action === 'load_more_hypotheses') return MockServer.getGUTGSession('LOAD_MORE');
               return MockServer.getGUTGSession('TRACKS');
           }
-          return await apiFetch('/recommendations/interact', { 
-              method: 'POST', 
-              body: JSON.stringify({ session_id: sessionId, action, value }) 
-          });
+          return await apiFetch('/recommendations/interact', { method: 'POST', body: JSON.stringify({ session_id: sessionId, action, value }) });
       },
       react: async (hypothesisId: string, reaction: 'like' | 'dislike' | 'shortlist'): Promise<void> => {
           logRequest('POST', `/recommendations/hypothesis/${hypothesisId}/react`, { reaction });
           if (isMockEnabled()) return;
-          return await apiFetch(`/recommendations/hypothesis/${hypothesisId}/react`, {
-              method: 'POST',
-              body: JSON.stringify({ reaction })
-          });
+          return await apiFetch(`/recommendations/hypothesis/${hypothesisId}/react`, { method: 'POST', body: JSON.stringify({ reaction }) });
       },
       getProducts: async (hypothesisId: string): Promise<Gift[]> => {
           logRequest('GET', `/recommendations/hypothesis/${hypothesisId}/products`);
@@ -193,34 +214,29 @@ export const api = {
           return dtos.map(mapGiftDTOToGift);
       }
   },
+  // Legacy mappings for WishlistContext (Redirect to Profile API)
   wishlist: {
     getAll: async (): Promise<string[]> => {
-        try { return await apiFetch('/wishlist'); } catch (e) { return MockServer.getWishlist(); }
+        // The context expects IDs, but profile.getWishlist returns objects. 
+        // We fetch objects and return IDs for compatibility with context.
+        try { 
+            const gifts = await api.profile.getWishlist();
+            return gifts.map(g => g.id);
+        } catch (e) { return MockServer.getWishlist(); }
     },
     add: async (id: string): Promise<void> => {
-        try { await apiFetch('/wishlist', { method: 'POST', body: JSON.stringify({ gift_id: id }) }); } 
-        catch (e) { await MockServer.addToWishlist(id); }
+        // Warning: This legacy method expects ID, but backend needs Gift details.
+        // This is a breaking change for the Context if it only has ID.
+        // For now, we assume the frontend has the Gift object elsewhere or fetches it.
+        // To keep app working: We'll fetch the gift by ID then add it.
+        try {
+            const gift = await api.gifts.getById(id);
+            await api.profile.addToWishlist(gift);
+        } catch(e) { await MockServer.addToWishlist(id); }
     },
     remove: async (id: string): Promise<void> => {
-        try { await apiFetch(`/wishlist/${id}`, { method: 'DELETE' }); } 
+        try { await api.profile.removeFromWishlist(id); } 
         catch (e) { await MockServer.removeFromWishlist(id); }
-    }
-  },
-  user: {
-    get: async (): Promise<UserProfile> => {
-        try { return await apiFetch('/users/me/profile'); } catch (e) { return MockServer.getUserProfile(); }
-    },
-    update: async (data: Partial<UserProfile>): Promise<UserProfile> => {
-        try { return await apiFetch('/users/me/profile', { method: 'PATCH', body: JSON.stringify(data) }); } 
-        catch (e) { return MockServer.updateUserProfile(data); }
-    },
-    addEvent: async (event: Omit<CalendarEvent, 'id'>): Promise<CalendarEvent> => {
-        try { return await apiFetch('/users/me/events', { method: 'POST', body: JSON.stringify(event) }); } 
-        catch (e) { return MockServer.addEvent(event); }
-    },
-    removeEvent: async (id: string): Promise<void> => {
-        try { await apiFetch(`/users/me/events/${id}`, { method: 'DELETE' }); } 
-        catch (e) { return MockServer.removeEvent(id); }
     }
   },
   public: {

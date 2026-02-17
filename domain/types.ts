@@ -5,7 +5,9 @@ export interface User {
   email: string | null;
   avatar_url: string | null;
   bio?: string | null;
+  birth_date?: string | null; // ISO Date string
   telegram_connected?: boolean;
+  quiz_results?: any;
 }
 
 export interface ReviewItem {
@@ -42,12 +44,7 @@ export interface Gift {
 }
 
 export interface Friend {
-    id: string;
-    name: string;
-    avatar: string;
-    birthDate: string;
-    daysUntilBirthday: number;
-    quizPassed: boolean; // Badge indicator
+    friend: User; // Backend wrapper structure
 }
 
 export interface RecommendationsResponse {
@@ -124,11 +121,9 @@ export interface RecommendationSession {
         options: DialogueProbeOption[];
     };
     deep_dive_products?: Gift[];
-    // Fix: Added topic_hints for experimental dialogue page
     topic_hints?: { id: string; title: string; description: string }[];
 }
 
-// Fix: Added UserProfile interface
 export interface UserProfile {
     name: string;
     avatarEmoji: string;
@@ -136,7 +131,6 @@ export interface UserProfile {
     events: CalendarEvent[];
 }
 
-// Fix: Added CalendarEvent interface
 export interface CalendarEvent {
     id: string;
     title: string;
@@ -145,7 +139,6 @@ export interface CalendarEvent {
     relationship?: string;
 }
 
-// Fix: Added TeamMember interface
 export interface TeamMember {
     name: string;
     role: string;
@@ -154,14 +147,12 @@ export interface TeamMember {
     photo_public_id: string | null;
 }
 
-// Fix: Added BlogContentBlock interface
 export interface BlogContentBlock {
     type: 'paragraph' | 'h2' | 'quote' | 'list';
     text?: string;
     items?: string[];
 }
 
-// Fix: Added BlogPost interface
 export interface BlogPost {
     id: string;
     title: string;
