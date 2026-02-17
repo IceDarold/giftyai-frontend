@@ -11,133 +11,78 @@ import { MockServer } from '../api/mock/server';
 
 // --- SUB-COMPONENTS ---
 
-const VisionCard: React.FC<{ 
+const HypothesisInspoCard: React.FC<{ 
     data: DialogueHypothesis; 
+    onOpenFeed: () => void;
     onLike: (id: string) => void;
-    onDislike: (id: string) => void;
-    onExpand: (id: string) => void;
     index: number;
-    isActive: boolean;
-}> = ({ data, onLike, onDislike, onExpand, index, isActive }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
-    const [reaction, setReaction] = useState<'none' | 'liked' | 'disliked'>('none');
-    const [viewGift, setViewGift] = useState<Gift | null>(null);
-
-    const handleToggleExpand = (e: React.MouseEvent) => {
-        // Don't expand if clicking on reaction buttons
-        if ((e.target as HTMLElement).closest('button')) return;
-        const newExpanded = !isExpanded;
-        setIsExpanded(newExpanded);
-        if (newExpanded) {
-            onExpand(data.id);
-        }
-    };
+}> = ({ data, onOpenFeed, onLike, index }) => {
+    const [isLiked, setIsLiked] = useState(false);
 
     const handleLike = (e: React.MouseEvent) => {
         e.stopPropagation();
-        const newState = reaction === 'liked' ? 'none' : 'liked';
-        setReaction(newState);
+        setIsLiked(!isLiked);
         onLike(data.id);
     };
 
-    const badgeColors: Record<string, string> = {
-        'the_mirror': 'from-purple-500 to-indigo-600',
-        'the_optimizer': 'from-blue-500 to-cyan-600',
-        'the_catalyst': 'from-orange-500 to-amber-600',
-        'the_anchor': 'from-emerald-500 to-teal-600'
-    };
-
-    if (reaction === 'disliked') return null;
-
     return (
         <div 
-            className={`shrink-0 w-[85vw] md:w-[600px] snap-center transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${
-                isActive ? 'scale-100 opacity-100' : 'scale-90 opacity-40 blur-sm'
-            }`}
+            onClick={onOpenFeed}
+            className="group relative w-full aspect-[3/4] rounded-[2.5rem] overflow-hidden bg-white/5 border border-white/10 cursor-pointer transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl animate-fade-in-up"
+            style={{ animationDelay: `${index * 100}ms` }}
         >
-            <div 
-                onClick={handleToggleExpand}
-                className={`relative bg-white/5 backdrop-blur-3xl rounded-[3rem] border-2 transition-all duration-500 overflow-hidden shadow-2xl ${
-                    isExpanded ? 'ring-4 ring-white/20 border-white/20' : 'border-white/10'
-                }`}
+            {/* Main Background Image */}
+            <img 
+                src={data.preview_products[0]?.imageUrl || ''} 
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                alt="" 
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+
+            {/* Top Badge: AI Persona */}
+            <div className="absolute top-4 left-4 flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center p-1.5 overflow-hidden">
+                    <Mascot emotion="happy" className="w-full h-full" floating={false} variant="cupid" />
+                </div>
+                <div className="bg-black/20 backdrop-blur-xl border border-white/10 px-3 py-1 rounded-full">
+                    <span className="text-[9px] font-black text-white/90 uppercase tracking-wider">AI Selection</span>
+                </div>
+            </div>
+
+            {/* Favorite Button */}
+            <button 
+                onClick={handleLike}
+                className={`absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-all ${isLiked ? 'bg-brand-pink text-white' : 'bg-white/10 text-white/60 backdrop-blur-md hover:bg-white/20'}`}
             >
-                {/* Image Stack Preview (Hidden when expanded) */}
-                {!isExpanded && (
-                    <div className="relative h-64 md:h-80 flex items-center justify-center p-6 overflow-hidden">
-                         <div className={`absolute inset-0 bg-gradient-to-br ${badgeColors[data.primary_gap] || 'from-gray-500'} opacity-10`}></div>
-                        {data.preview_products.slice(0, 3).map((gift, i) => (
-                            <div 
-                                key={gift.id} 
-                                className="absolute transition-all duration-1000 ease-out shadow-2xl"
-                                style={{
-                                    width: '160px',
-                                    height: '210px',
-                                    left: `${50 + (i - 1) * 22}%`,
-                                    transform: `translate(-50%, -10%) rotate(${(i - 1) * 12}deg) scale(${i === 1 ? 1.1 : 0.9})`,
-                                    zIndex: i === 1 ? 10 : 5,
-                                }}
-                            >
-                                <img src={gift.imageUrl || ''} className="w-full h-full object-cover rounded-2xl border-2 border-white/10" alt="" />
+                <svg className="w-5 h-5" fill={isLiked ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+            </button>
+
+            {/* Bottom Content Panel (Glass) */}
+            <div className="absolute bottom-3 left-3 right-3 p-5 rounded-[2rem] bg-white/10 backdrop-blur-2xl border border-white/20 shadow-xl overflow-hidden">
+                <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-white font-black text-lg leading-tight tracking-tight uppercase line-clamp-1">{data.title}</h3>
+                    <div className="bg-white/95 text-brand-dark px-2.5 py-0.5 rounded-lg text-[9px] font-black">
+                        {data.preview_products[0]?.price} ₽
+                    </div>
+                </div>
+                <p className="text-white/60 text-[10px] font-medium leading-relaxed line-clamp-2 italic">
+                    «{data.description}»
+                </p>
+                <div className="mt-4 flex justify-between items-center">
+                    <div className="flex -space-x-2">
+                        {data.preview_products.slice(1, 4).map((p, i) => (
+                            <div key={i} className="w-6 h-6 rounded-full border-2 border-brand-dark overflow-hidden bg-gray-800">
+                                <img src={p.imageUrl || ''} className="w-full h-full object-cover" alt="" />
                             </div>
                         ))}
                     </div>
-                )}
-
-                {/* Content Overlay */}
-                <div className={`p-8 md:p-12 transition-all duration-500 ${isExpanded ? 'bg-black/40' : ''}`}>
-                    <div className="flex items-center gap-3 mb-4">
-                        <span className={`px-3 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider text-white bg-gradient-to-r ${badgeColors[data.primary_gap]}`}>
-                            {data.primary_gap.replace('the_', '')}
-                        </span>
-                        {isExpanded && <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">● Нажмите для сворачивания</span>}
-                    </div>
-                    
-                    <h3 className="text-3xl md:text-5xl font-black text-white mb-4 leading-tight tracking-tighter uppercase italic">
-                        {data.title}
-                    </h3>
-                    <p className="text-white/60 text-base md:text-xl font-medium leading-relaxed mb-8">
-                        «{data.description}»
-                    </p>
-
-                    {/* Catalog Expansion Area */}
-                    <div className={`grid transition-all duration-700 ease-in-out ${isExpanded ? 'grid-rows-[1fr] opacity-100 mt-10' : 'grid-rows-[0fr] opacity-0'}`}>
-                        <div className="overflow-hidden">
-                            <div className="grid grid-cols-2 gap-4 pb-10">
-                                {data.preview_products.map((g, i) => (
-                                    <div key={g.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 100}ms` }}>
-                                        <GiftCard gift={g} onClick={setViewGift} rank={i} />
-                                    </div>
-                                ))}
-                                <div className="col-span-2 py-10 bg-white/5 rounded-[2rem] border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-2">
-                                    <span className="text-2xl">✨</span>
-                                    <span className="text-[10px] font-black text-white/30 uppercase">И еще 12 вариантов</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {!isExpanded && (
-                        <div className="flex gap-3">
-                            <button 
-                                onClick={(e) => { e.stopPropagation(); handleToggleExpand(e); }}
-                                className="flex-grow py-4 rounded-2xl bg-brand-pink text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-brand-pink/20 active:scale-95 transition-all"
-                            >
-                                Посмотреть подборку
-                            </button>
-                            <button 
-                                onClick={(e) => { e.stopPropagation(); onDislike(data.id); }}
-                                className="p-4 rounded-2xl bg-white/5 border border-white/10 text-white/30 hover:text-red-400 transition-all"
-                            >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
-                            </button>
-                        </div>
-                    )}
+                    <button className="bg-white text-brand-dark px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-brand-pink hover:text-white transition-colors">
+                        Подборка
+                    </button>
                 </div>
             </div>
-            
-            {viewGift && (
-                <GiftDetailsModal gift={viewGift} isOpen={!!viewGift} onClose={() => setViewGift(null)} answers={null} onWishlistChange={() => {}} />
-            )}
         </div>
     );
 };
@@ -151,16 +96,13 @@ export const Dialogue: React.FC = () => {
     const [session, setSession] = useState<RecommendationSession | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeTrackId, setActiveTrackId] = useState<string>('');
-    const [activeCardIndex, setActiveCardIndex] = useState(0);
     const [phase, setPhase] = useState<'probe' | 'overview' | 'feed' | 'dead_end'>('probe');
     const [mascotMood, setMascotMood] = useState<'happy' | 'thinking' | 'excited' | 'surprised'>('happy');
 
-    const scrollRef = useRef<HTMLDivElement>(null);
     const initialized = useRef(false);
 
     const updateInternalState = useCallback((res: RecommendationSession) => {
         setSession(prev => {
-            // Only update tracks if they are actually provided in the response
             const mergedTracks = (res.tracks && res.tracks.length > 0) ? res.tracks : (prev?.tracks || []);
             return { ...res, tracks: mergedTracks };
         });
@@ -193,14 +135,10 @@ export const Dialogue: React.FC = () => {
     }, [navigate, useMockData, updateInternalState]);
 
     const handleInteract = async (action: string, value: string) => {
-        // Track switches and load more are lightweight interactions
         if (action === 'select_track') {
             setLoading(true);
             setActiveTrackId(value);
-            setActiveCardIndex(0);
             setMascotMood('thinking');
-            // Select track doesn't always need a full backend wait for UI update
-            // but we call it to notify the engine
             api.gutg.interact(session?.session_id || '', action, value);
             setTimeout(() => {
                 setLoading(false);
@@ -225,160 +163,137 @@ export const Dialogue: React.FC = () => {
         } catch (e) { console.error(e); } finally { setLoading(false); }
     };
 
-    // Card scroll tracking for Mascot reactions
-    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-        if (!scrollRef.current) return;
-        const scrollLeft = e.currentTarget.scrollLeft;
-        const itemWidth = e.currentTarget.offsetWidth * 0.85; // Roughly the snap width
-        const index = Math.round(scrollLeft / itemWidth);
-        if (index !== activeCardIndex) {
-            setActiveCardIndex(index);
-            setMascotMood(index % 2 === 0 ? 'happy' : 'excited');
-        }
-    };
-
     const activeTrack = useMemo(() => 
         session?.tracks?.find(t => t.topic_id === activeTrackId), 
         [session, activeTrackId]
     );
 
     return (
-        <div className="min-h-screen bg-[#1A050D] relative overflow-x-hidden flex flex-col font-sans pb-32">
+        <div className="relative z-10 w-full min-h-screen overflow-x-hidden flex flex-col font-sans bg-[#080808]">
             
             {/* Background Atmosphere */}
             <div className="fixed inset-0 pointer-events-none z-0">
-                <div className={`absolute top-[-10%] right-[-10%] w-[100vw] h-[100vw] rounded-full blur-[120px] opacity-20 transition-all duration-1000 ${activeTrackId === 't_vibe' ? 'bg-purple-600' : 'bg-cyan-600'}`}></div>
-                <div className="absolute bottom-[-10%] left-[-10%] w-[80vw] h-[80vw] bg-brand-pink/20 rounded-full blur-[140px] opacity-10"></div>
+                <div className={`absolute top-[-20%] left-[-10%] w-[120vw] h-[120vw] rounded-full blur-[140px] opacity-20 transition-all duration-1000 ${activeTrackId === 't_vibe' ? 'bg-brand-pink/60' : 'bg-blue-600/40'}`}></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-[100vw] h-[100vw] bg-white/5 rounded-full blur-[120px] opacity-10"></div>
             </div>
 
-            {/* Header / Nav */}
-            <div className="fixed top-0 left-0 right-0 z-[60] p-4 flex justify-between items-center bg-[#1A050D]/60 backdrop-blur-xl border-b border-white/5">
-                <button onClick={() => navigate('/quiz')} className="bg-white/5 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest text-white border border-white/5">← Назад</button>
-                <div className="flex items-center gap-3">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-                    <span className="text-[9px] font-black text-white/40 uppercase tracking-[0.2em]">AI Concierge</span>
+            {/* Header: Inspiration Style */}
+            <div className="fixed top-0 left-0 right-0 z-[60] px-6 py-6 flex justify-between items-center bg-black/40 backdrop-blur-2xl border-b border-white/5">
+                <button onClick={() => navigate('/quiz')} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40 hover:text-white transition-colors">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                <div className="flex flex-col items-center">
+                    <h1 className="text-white text-xl font-black tracking-tight uppercase italic leading-none">Inspiration</h1>
+                    <span className="text-[8px] font-bold text-white/30 uppercase tracking-[0.3em] mt-1">Для: {session?.current_probe ? '...' : (JSON.parse(localStorage.getItem('gifty_answers') || '{}').name || 'Счастливчика')}</span>
                 </div>
-                <button onClick={() => navigate('/')} className="bg-white/5 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest text-white border border-white/5">Домой</button>
+                <div className="flex items-center gap-3">
+                    <button className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
+                    <button className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg></button>
+                </div>
             </div>
 
             {/* Content Area */}
-            <div className="flex-grow flex flex-col pt-24 px-0 relative z-10 w-full overflow-hidden">
+            <div className="flex-grow pt-32 px-4 relative z-10 w-full max-w-2xl mx-auto">
                 
-                {/* AI Concierge Focus Unit */}
-                <div className="w-full flex flex-col items-center text-center mb-8 px-6">
-                    <div className="relative mb-4">
-                        <div className="absolute inset-0 bg-brand-pink/40 blur-3xl rounded-full scale-125"></div>
-                        <Mascot emotion={mascotMood} className="w-24 h-24 md:w-32 md:h-32 relative z-10" variant="cupid" />
-                    </div>
-                    
-                    <h1 className="text-white text-2xl md:text-3xl font-black leading-tight tracking-tight mb-2 max-w-lg">
-                        {loading ? 'Настраиваю видения...' : (
-                            phase === 'overview' ? `Тема: «${activeTrack?.topic_name}»` :
-                            phase === 'feed' ? 'Блестящий выбор. Смотри:' :
-                            session?.current_probe?.question
-                        )}
-                    </h1>
-                    {phase === 'overview' && !loading && (
-                        <p className="text-white/30 text-[10px] font-black uppercase tracking-[0.4em] animate-pulse">Листайте вбок</p>
-                    )}
-                </div>
-
-                {/* --- PHASE: PROBE (Vertical Options) --- */}
+                {/* --- PHASE: PROBE --- */}
                 {phase === 'probe' && !loading && session?.current_probe && (
-                    <div className="w-full max-w-2xl mx-auto px-6 animate-fade-in-up space-y-4">
-                        {session.current_probe.options.map((opt) => (
-                            <button key={opt.id} onClick={() => handleInteract('answer_probe', opt.label)} className="group bg-white/5 hover:bg-white backdrop-blur-md border border-white/5 p-6 rounded-[2rem] text-left transition-all active:scale-[0.98] flex items-center gap-5 w-full">
-                                <span className="text-4xl transition-transform group-hover:scale-110">{opt.icon || '✨'}</span>
-                                <div>
-                                    <div className="font-black text-white group-hover:text-brand-dark text-lg leading-tight mb-1">{opt.label}</div>
-                                    <div className="text-white/30 group-hover:text-slate-500 text-[10px] font-bold uppercase tracking-widest">{opt.description}</div>
-                                </div>
-                            </button>
-                        ))}
+                    <div className="w-full flex flex-col items-center justify-center py-20 animate-fade-in">
+                        <div className="mb-10 relative">
+                            <div className="absolute inset-0 bg-brand-pink/30 blur-3xl rounded-full scale-150"></div>
+                            <Mascot emotion="thinking" className="w-24 h-24 relative z-10" />
+                        </div>
+                        <h2 className="text-3xl md:text-5xl font-black text-white text-center mb-12 tracking-tight uppercase italic leading-[1.1]">
+                            {session.current_probe.question}
+                        </h2>
+                        <div className="w-full space-y-3">
+                            {session.current_probe.options.map((opt) => (
+                                <button 
+                                    key={opt.id} 
+                                    onClick={() => handleInteract('answer_probe', opt.label)} 
+                                    className="w-full group bg-white/5 hover:bg-white backdrop-blur-md border border-white/10 p-6 rounded-[2rem] text-left transition-all active:scale-[0.98] flex items-center justify-between"
+                                >
+                                    <div className="flex items-center gap-5">
+                                        <span className="text-3xl grayscale group-hover:grayscale-0 transition-all">{opt.icon || '✨'}</span>
+                                        <span className="font-black text-white group-hover:text-brand-dark text-lg uppercase tracking-tight">{opt.label}</span>
+                                    </div>
+                                    <svg className="w-6 h-6 text-white/20 group-hover:text-brand-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 )}
 
-                {/* --- PHASE: OVERVIEW (Horizontal Cards) --- */}
+                {/* --- PHASE: OVERVIEW (The Inspiration Grid) --- */}
                 {phase === 'overview' && (
-                    <div className={`transition-all duration-700 w-full ${loading ? 'opacity-0 scale-95 blur-xl' : 'opacity-100 scale-100 blur-0'}`}>
+                    <div className={`transition-all duration-1000 ${loading ? 'opacity-0 scale-95 blur-xl' : 'opacity-100 scale-100 blur-0'}`}>
                         
-                        {/* Track Switcher (Horizontal Pills) */}
-                        <div className="flex gap-2 overflow-x-auto no-scrollbar px-6 mb-8">
+                        {/* Theme Pills */}
+                        <div className="flex gap-2 overflow-x-auto no-scrollbar mb-10 pb-2">
                             {session?.tracks?.map(t => {
                                 const isActive = t.topic_id === activeTrackId;
                                 return (
                                     <button 
                                         key={t.topic_id} 
                                         onClick={() => handleInteract('select_track', t.topic_id)} 
-                                        className={`shrink-0 flex items-center gap-3 px-6 py-3 rounded-full border transition-all duration-300 ${isActive ? 'bg-white text-brand-dark border-white shadow-xl' : 'bg-white/5 text-white/30 border-white/5'}`}
+                                        className={`shrink-0 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all duration-300 ${isActive ? 'bg-white text-brand-dark border-white shadow-lg' : 'bg-white/5 text-white/40 border-white/10 hover:bg-white/10'}`}
                                     >
-                                        <span className="text-[10px] font-black uppercase tracking-wider">{t.topic_name}</span>
-                                        {isActive && <div className="w-1.5 h-1.5 bg-brand-pink rounded-full"></div>}
+                                        {t.topic_name}
+                                        {isActive && <span className="ml-2 opacity-30">✕</span>}
                                     </button>
                                 );
                             })}
                         </div>
 
-                        {/* The Snapping Slider */}
-                        <div 
-                            ref={scrollRef}
-                            onScroll={handleScroll}
-                            className="flex gap-6 overflow-x-auto snap-x snap-mandatory no-scrollbar px-[7.5vw] md:px-[calc(50vw-300px)] pb-20 items-start h-full scroll-smooth"
-                        >
+                        {/* Visual Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-32">
                             {activeTrack && activeTrack.hypotheses.map((h, idx) => (
-                                <VisionCard 
+                                <HypothesisInspoCard 
                                     key={h.id} 
                                     data={h} 
                                     index={idx}
-                                    isActive={idx === activeCardIndex}
-                                    onLike={(id) => handleInteract('like_hypothesis', id)}
-                                    onDislike={(id) => handleInteract('dislike_hypothesis', id)}
-                                    onExpand={(id) => api.gutg.interact(session?.session_id || '', 'view_hypothesis', id)}
+                                    onOpenFeed={() => handleInteract('like_hypothesis', h.id)}
+                                    onLike={(id) => api.gutg.react(id, 'like')}
                                 />
                             ))}
-
-                            {/* Load More as a terminal card */}
-                            <div className="shrink-0 w-[85vw] md:w-[600px] snap-center">
-                                <button 
-                                    onClick={() => handleInteract('load_more_hypotheses', activeTrackId)}
-                                    className="w-full h-full min-h-[300px] bg-white/5 border-2 border-dashed border-white/10 rounded-[3rem] transition-all flex flex-col items-center justify-center gap-6 active:scale-95"
-                                >
-                                    <div className="text-5xl opacity-20 grayscale group-hover:grayscale-0 transition-all">🔮</div>
-                                    <span className="text-white/20 font-black tracking-[0.4em] text-[10px] uppercase">Больше видений</span>
-                                </button>
-                            </div>
+                            
+                            {/* Load More Visual Tile */}
+                            <button 
+                                onClick={() => handleInteract('load_more_hypotheses', activeTrackId)}
+                                className="relative aspect-[3/4] rounded-[2.5rem] border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-4 bg-white/5 hover:bg-white/10 transition-all group"
+                            >
+                                <div className="text-4xl group-hover:scale-125 transition-transform">🔮</div>
+                                <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.4em]">Больше идей</span>
+                            </button>
                         </div>
 
-                        {/* Navigation Dot Indicators */}
-                        <div className="flex justify-center gap-2 mb-10">
-                            {activeTrack && activeTrack.hypotheses.map((_, i) => (
-                                <div key={i} className={`h-1 rounded-full transition-all duration-500 ${i === activeCardIndex ? 'w-8 bg-brand-pink' : 'w-1.5 bg-white/10'}`}></div>
-                            ))}
-                        </div>
-
-                        {/* Rescue Loop Footer */}
-                        <div className="px-6 pb-20 text-center border-t border-white/5 pt-12">
-                             <p className="text-white/20 mb-6 text-sm font-medium">Ничего не откликнулось?</p>
-                             <button 
+                        {/* Deep Rescue Footer */}
+                        <div className="pb-40 text-center border-t border-white/5 pt-16">
+                            <p className="text-white/20 mb-8 text-[10px] font-black uppercase tracking-widest">Не нашли то, что искали?</p>
+                            <button 
                                 onClick={() => handleInteract('suggest_topics', '')}
-                                className="py-5 px-10 rounded-full bg-white text-brand-dark font-black active:scale-95 text-lg shadow-2xl"
-                             >
-                                Сменить направления
-                             </button>
+                                className="bg-white/5 border border-white/10 text-white hover:bg-white hover:text-brand-dark px-10 py-5 rounded-[2rem] font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-2xl"
+                            >
+                                Сменить все направления
+                            </button>
                         </div>
                     </div>
                 )}
 
-                {/* --- PHASE: FEED (Product Feed Mode) --- */}
+                {/* --- PHASE: FEED --- */}
                 {phase === 'feed' && (
-                    <div className="w-full animate-fade-in-up px-6">
-                        <button 
-                            onClick={() => setPhase('overview')}
-                            className="mb-8 bg-white/10 text-white px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border border-white/10"
-                        >
-                            ← К идеям
-                        </button>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pb-32">
+                    <div className="w-full animate-fade-in-up pb-32">
+                        <div className="flex justify-between items-center mb-10 pt-4">
+                            <button 
+                                onClick={() => setPhase('overview')}
+                                className="bg-white/10 text-white/60 hover:text-white px-5 py-2 rounded-full text-[9px] font-black uppercase tracking-widest border border-white/10 transition-colors"
+                            >
+                                ← Назад
+                            </button>
+                            <h2 className="text-white text-xl font-black italic tracking-tight uppercase">Top Selection</h2>
+                            <div className="w-10"></div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
                             {session?.deep_dive_products?.map((g, i) => (
                                 <div key={g.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 100}ms` }}>
                                     <GiftCard gift={g} rank={i} />
@@ -390,10 +305,11 @@ export const Dialogue: React.FC = () => {
 
                 {/* --- PHASE: DEAD END --- */}
                 {phase === 'dead_end' && (
-                    <div className="w-full max-w-md mx-auto px-6 text-center animate-pop bg-white p-12 rounded-[3rem] shadow-2xl relative overflow-hidden">
-                        <h2 className="text-5xl font-black text-brand-dark mb-6 tracking-tighter">Упс.</h2>
-                        <p className="text-slate-500 mb-10 text-lg font-medium leading-relaxed opacity-80">В этой ветке идеи закончились. Давай попробуем зайти с другой стороны?</p>
-                        <button onClick={() => window.location.reload()} className="w-full py-6 bg-brand-pink text-white rounded-2xl font-black shadow-xl active:scale-95 uppercase tracking-widest text-base">Перезагрузить</button>
+                    <div className="w-full min-h-[60vh] flex flex-col items-center justify-center text-center animate-pop">
+                        <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center text-6xl mb-8 border border-white/10">🕵️‍♂️</div>
+                        <h2 className="text-4xl font-black text-white mb-4 tracking-tighter uppercase italic">Пустота</h2>
+                        <p className="text-white/40 mb-10 text-base font-medium leading-relaxed max-w-[280px]">Мы обыскали все тайники, но в этой ветке больше нет сокровищ.</p>
+                        <button onClick={() => window.location.reload()} className="px-12 py-5 bg-white text-brand-dark rounded-full font-black uppercase tracking-widest shadow-2xl active:scale-95">Начать сначала</button>
                     </div>
                 )}
             </div>

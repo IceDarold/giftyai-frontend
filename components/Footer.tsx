@@ -63,7 +63,7 @@ export const Footer: React.FC<FooterProps> = ({ variant = 'default' }) => {
   // Dynamic Styles
   const textColor = isLight ? 'text-slate-400' : 'text-indigo-200/60';
   const hoverColor = isLight ? 'hover:text-brand-blue' : 'hover:text-white';
-  const dividerColor = isLight ? 'via-slate-200' : 'via-indigo-200/20';
+  const dividerColor = isLight ? 'via-slate-200' : 'via-indigo-200/10'; // More subtle divider
   const copyrightColor = isLight ? 'text-slate-400/60' : 'text-indigo-200/40';
 
   const handleDevTrigger = (e: React.MouseEvent) => {

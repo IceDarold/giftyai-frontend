@@ -118,7 +118,7 @@ const HypothesisCard: React.FC<{
                     </div>
                 ) : (
                     <div className="flex flex-col gap-2">
-                        <button onClick={() => { onSelect(); onReact(data.id, 'like'); }} className="w-full py-3 bg-white text-black font-bold rounded-xl text-sm shadow-lg active:scale-95 transition-transform">🎯 Посмотреть варианты</button>
+                        <button onClick={() => { onSelect(); onReact(data.id, 'like'); }} className="w-full py-3 bg-white text-black font-bold rounded-xl text-sm shadow-lg active:scale-[0.95] transition-transform">🎯 Посмотреть варианты</button>
                         <div className="flex gap-2">
                             <button onClick={() => setIsRejecting(true)} className="flex-1 py-2 bg-white/5 text-white/40 font-bold rounded-xl text-[10px] hover:bg-white/10">Не про него</button>
                             <button onClick={() => onReact(data.id, 'like')} className="flex-1 py-2 bg-white/5 text-white/40 font-bold rounded-xl text-[10px] hover:bg-white/10">❤️ В избранное</button>
@@ -290,7 +290,7 @@ export const ExperimentDialogue: React.FC = () => {
                 {phase === 'overview' && !loading && session && (
                     <div className="w-full flex flex-col gap-6 animate-fade-in-up">
                         {/* Track Switcher */}
-                        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                        <div className="flex justify-center gap-2 overflow-x-auto no-scrollbar pb-2 w-full">
                             {session.tracks?.map(t => {
                                 // Fix: Use topic_id and topic_name
                                 const isActive = t.topic_id === activeTrackId;
@@ -339,7 +339,7 @@ export const ExperimentDialogue: React.FC = () => {
                         {/* Topic Hints */}
                         {session.topic_hints && session.topic_hints.length > 0 && (
                             <div className="mt-8 border-t border-white/5 pt-8">
-                                <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] mb-4">Другие темы</p>
+                                <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] mb-4 text-center">Другие темы</p>
                                 <div className="grid grid-cols-1 gap-3">
                                     {session.topic_hints.map(hint => (
                                         <button 

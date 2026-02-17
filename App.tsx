@@ -70,8 +70,11 @@ const AppRoutes = () => {
                     && location.pathname !== '/profile'
                     && !location.pathname.startsWith('/experiments');
 
+    // Custom dark background for results pages to blend with footer
+    const resultsBgClass = location.pathname === '/results' ? 'bg-[#1A050D]' : '';
+
     return (
-        <Layout showNav={showNav} showFooter={showFooter}>
+        <Layout showNav={showNav} showFooter={showFooter} mainClassName={resultsBgClass}>
             <PageTracker />
             <Routes>
                 <Route path="/" element={<Home />} />
