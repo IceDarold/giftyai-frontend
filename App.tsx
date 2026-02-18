@@ -1,21 +1,28 @@
+
 import React, { useEffect } from 'react';
 import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Home } from './pages/Home';
 import { Quiz } from './pages/Quiz';
-import { Results } from './pages/Results';
+import { Dialogue } from './pages/Dialogue';
 import { Wishlist } from './pages/Wishlist';
 import { Profile } from './pages/Profile';
 import { Blog } from './pages/Blog';
 import { BlogPost } from './pages/BlogPost';
 import { Login } from './pages/Login';
 import { Partners } from './pages/Partners';
+import { Investors } from './pages/Investors';
 import { SnowProvider } from './components/SnowSystem';
 import { AuthProvider } from './components/AuthContext';
 import { DevModeProvider } from './components/DevModeContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Collections } from './pages/Collections';
 import { WishlistProvider } from './components/WishlistContext';
+import { ExperimentalCatalog } from './pages/ExperimentalCatalog';
+import { ExperimentSwipe } from './pages/ExperimentSwipe';
+import { ExperimentDecision } from './pages/ExperimentDecision';
+import { ExperimentQuiz } from './pages/ExperimentQuiz';
+import { ExperimentDialogue } from './pages/ExperimentDialogue';
 import { analytics } from './utils/analytics';
 
 // Component to track page views
@@ -29,11 +36,13 @@ const PageTracker = () => {
     
     if (path === '/') pageName = 'home';
     else if (path.startsWith('/quiz')) pageName = 'quiz';
-    else if (path.startsWith('/results')) pageName = 'results';
+    else if (path.startsWith('/results')) pageName = 'dialogue';
     else if (path.startsWith('/blog')) pageName = 'blog';
     else if (path.startsWith('/wishlist')) pageName = 'wishlist';
     else if (path.startsWith('/profile')) pageName = 'profile';
     else if (path.startsWith('/login')) pageName = 'login';
+    else if (path.startsWith('/investors')) pageName = 'investors';
+    else if (path.startsWith('/experiments')) pageName = 'experiments';
     else pageName = path.substring(1);
 
     analytics.pageView(pageName, window.location.href);
@@ -49,15 +58,23 @@ const AppRoutes = () => {
     const showNav = location.pathname !== '/quiz' 
                  && location.pathname !== '/login'
                  && location.pathname !== '/partners'
-                 && !location.pathname.startsWith('/blog/');
+                 && location.pathname !== '/investors'
+                 && !location.pathname.startsWith('/blog/')
+                 && !location.pathname.startsWith('/experiments'); // Hide nav in experiments for immersion
     
     // Logic for hiding Footer (Explicitly exclude Quiz and Partners to control footer placement manually)
     const showFooter = !location.pathname.startsWith('/quiz') 
                     && location.pathname !== '/login'
-                    && location.pathname !== '/partners';
+                    && location.pathname !== '/partners'
+                    && location.pathname !== '/investors'
+                    && location.pathname !== '/profile'
+                    && !location.pathname.startsWith('/experiments');
+
+    // Custom dark background for results pages to blend with footer
+    const resultsBgClass = location.pathname === '/results' ? 'bg-[#1A050D]' : '';
 
     return (
-        <Layout showNav={showNav} showFooter={showFooter}>
+        <Layout showNav={showNav} showFooter={showFooter} mainClassName={resultsBgClass}>
             <PageTracker />
             <Routes>
                 <Route path="/" element={<Home />} />
@@ -67,9 +84,10 @@ const AppRoutes = () => {
                 <Route path="/blog/:id" element={<BlogPost />} />
                 <Route path="/collections" element={<Collections />} />
                 <Route path="/partners" element={<Partners />} />
+                <Route path="/investors" element={<Investors />} />
                 
-                {/* Results are now public for a better UX */}
-                <Route path="/results" element={<Results />} />
+                {/* Results are now mapped to Dialogue component */}
+                <Route path="/results" element={<Dialogue />} />
                 
                 {/* Protected Routes that strictly need user data */}
                 <Route path="/wishlist" element={
@@ -78,12 +96,19 @@ const AppRoutes = () => {
                 <Route path="/profile" element={
                     <ProtectedRoute><Profile /></ProtectedRoute>
                 } />
+
+                {/* Experimental Routes */}
+                <Route path="/experiments" element={<ExperimentalCatalog />} />
+                <Route path="/experiments/swipe" element={<ExperimentSwipe />} />
+                <Route path="/experiments/decision" element={<ExperimentDecision />} />
+                <Route path="/experiments/new-quiz" element={<ExperimentQuiz />} />
+                <Route path="/experiments/dialogue" element={<ExperimentDialogue />} />
             </Routes>
         </Layout>
     );
 };
 
-const App: React.FC = () => {
+export const App: React.FC = () => {
   return (
     <AuthProvider>
         <DevModeProvider>
@@ -98,5 +123,3 @@ const App: React.FC = () => {
     </AuthProvider>
   );
 };
-
-export default App;

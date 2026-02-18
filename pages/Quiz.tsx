@@ -1,1147 +1,587 @@
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Button } from '../components/Button';
-import { Mascot } from '../components/Mascot';
-import { RELATIONSHIPS } from '../constants';
-import { QuizAnswers, StepId } from '../domain/types';
+
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { QuizAnswers } from '../domain/types';
 import { analytics } from '../utils/analytics';
-import { inclineName } from '../utils/stringUtils';
+import { Logo } from '../components/Logo';
+import { useDevMode } from '../components/DevModeContext';
 
-// --- Icons ---
+// --- ICONS (SVG Paths) ---
 const Icons = {
-  NewYear: () => <span className="text-3xl">🎄</span>,
-  Birthday: () => <span className="text-3xl">🎂</span>,
-  Wedding: () => <span className="text-3xl">💍</span>,
-  Anniversary: () => <span className="text-3xl">💑</span>,
-  JustBecause: () => <span className="text-3xl">🎁</span>,
-  School: () => <span className="text-3xl">🎒</span>,
-  Edit: () => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 20h9"></path>
-      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+    Heart: <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />,
+    User: <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />,
+    Users: <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />,
+    Briefcase: <path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z" />,
+    Smile: <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" />,
+    Cake: <path d="M12 6a2 2 0 00-2 2c0 .38.1.73.29 1.03l-.15.11C8.32 10.35 6 11.97 6 14v4h12v-4c0-2.03-2.32-3.65-4.14-4.86l-.15-.11A1.99 1.99 0 0014 8a2 2 0 00-2-2zm-6 10h12v2H6v-2z" />,
+    Star: <path d="M12 17.27L18.18 21l-1.64-703L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />,
+    Home: <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />,
+    Gift: <path d="M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V9h2v2zm-4 8H8v-2h8v2zm0-4H8v-2h8v2zm0-4H8V9h8v2zm-8 8H4v-2h4v2zm0-4H4v-2h4v2zm0-4H4V9h4v2z" />,
+    Fire: <path d="M13.5.67s.74 2.65.74 4.8c0 2.06-13.5 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z" />,
+    Calendar: <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.11.89 2 2 2h14c1.11 0 2-.89 2-2V5c0-1.11-.89-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />,
+    Clock: <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />,
+    Rocket: <path d="M7.5 11h-1C5.35 11 4.38 11.8 4.15 12.92L3.5 17h6l-.65-4.08C8.62 11.8 7.65 11 7.5 11zm9 0h-1c-.15 0-1.12.8-1.35 1.92L13.5 17h6l-.65-4.08C18.62 11.8 17.65 11 17.5 11zM12 1L8 6h3v5h2V6h3l-4-5z" />,
+    Money: <path d="M12.5 6.9c1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-.53.12-1.03.3-1.45.54C8.21 6.33 7 7.73 7 9.75c0 2.2 1.63 3.32 4.44 3.93 1.5.33 1.91.82 1.91 1.5 0 .86-.76 1.32-1.93 1.32-1.46 0-2.31-.69-2.37-2h-2.23c.09 2.2 1.68 3.59 3.68 3.93V21h3v-2.15c.53-.13 1.02-.32 1.44-.56C16.29 17.57 17.5 16.2 17.5 14.25c0-2.58-2.13-3.75-4.73-4.18-1.32-.22-1.77-.73-1.77-1.39 0-.82.86-1.38 1.95-1.38z" />
+};
+
+const SvgIcon = ({ children }: { children?: React.ReactNode }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" fill="currentColor">
+        {children}
     </svg>
-  ),
-  Male: () => <span className="text-3xl">👨</span>,
-  Female: () => <span className="text-3xl">👩</span>,
-  Unisex: () => <span className="text-3xl">✨</span>,
-  Vibes: {
-    Cozy: () => <span className="text-3xl">☕️</span>,
-    Practical: () => <span className="text-3xl">🛠</span>,
-    Wow: () => <span className="text-3xl">🚀</span>,
-    Emotional: () => <span className="text-3xl">🥹</span>,
-  }
-};
-
-const VIBES = [
-  { id: 'cozy', label: 'Уютный и теплый', desc: 'Для душевных вечеров', icon: Icons.Vibes.Cozy },
-  { id: 'practical', label: 'Практичный и полезный', desc: 'То, что пригодится в деле', icon: Icons.Vibes.Practical },
-  { id: 'wow', label: 'Вау-эффект', desc: 'Удивить и поразить', icon: Icons.Vibes.Wow },
-  { id: 'emotional', label: 'Сентиментальный', desc: 'На память и для души', icon: Icons.Vibes.Emotional },
-];
-
-// --- New Data Constants ---
-
-const ROLES = [
-    { id: 'esthete', label: '🎨 Эстет', desc: 'Визуал, ценит красоту' },
-    { id: 'techie', label: '💻 Технарь', desc: 'Гаджеты и инновации' },
-    { id: 'foodie', label: '🍔 Гурман', desc: 'Еда как искусство' },
-    { id: 'athlete', label: '🏃 Спортсмен', desc: 'Движение и ЗОЖ' },
-    { id: 'gamer', label: '🎮 Геймер', desc: 'Виртуальные миры' },
-    { id: 'audiophile', label: '🎧 Меломан', desc: 'Живет в наушниках' },
-    { id: 'reader', label: '📚 Читатель', desc: 'Книжный червь' },
-    { id: 'traveler', label: '🌍 Путешественник', desc: 'Не сидит дома' },
-    { id: 'homebody', label: '🏠 Домосед', desc: 'Мой дом - крепость' },
-    { id: 'party', label: '🎉 Тусовщик', desc: 'Душа компании' },
-    { id: 'system', label: '⚙️ Человек-система', desc: 'Порядок во всем' },
-    { id: 'creator', label: '✨ Творец', desc: 'Создает своими руками' },
-    { id: 'collector', label: '💎 Коллекционер', desc: 'Азарт поиска' },
-    { id: 'career', label: '💼 Карьерист', desc: 'Работа - это страсть' },
-];
-
-const ARCHETYPES = [
-    { id: 'explorer', label: 'Исследователь 🔭', desc: 'Ищет новое, любит открытия' },
-    { id: 'creator', label: 'Создатель 🛠', desc: 'Строит, мастерит, придумывает' },
-    { id: 'curator', label: 'Куратор 🧐', desc: 'Отбирает лучшее, ценит качество' },
-    { id: 'perfectionist', label: 'Перфекционист 📏', desc: 'Всё должно быть идеально' },
-    { id: 'protector', label: 'Защитник 🛡', desc: 'Заботится о других, надежный' },
-    { id: 'comedian', label: 'Комик 🤡', desc: 'Смех - лучшее оружие' },
-];
-
-const PAIN_ZONES = [
-    { id: 'cables', label: '🔌 Провода/Зарядка', desc: 'Вечно теряются или путаются' },
-    { id: 'keys', label: '🔑 Ключи/Мелочи', desc: 'Хаос в карманах или сумке' },
-    { id: 'sleep', label: '😴 Сон/Стресс', desc: 'Трудно расслабиться' },
-    { id: 'workspace', label: '🖥 Рабочее место', desc: 'Беспорядок или неудобство' },
-    { id: 'cleaning', label: '🧹 Уборка/Быт', desc: 'Рутина утомляет' },
-    { id: 'health', label: 'back Здоровье/Спина', desc: 'Сидячий образ жизни' },
-];
-
-const INITIAL_ANSWERS: QuizAnswers = {
-  name: '',
-  ageGroup: '25',
-  recipientGender: null,
-  occasion: '',
-  relationship: '',
-  vibe: '',
-  city: '',
-  interests: '',
-  budget: '',
-  exclude: '',
-  
-  // New Fields Defaults
-  roles: [],
-  roleConfidence: 'sure',
-  archetype: '',
-  selfWorth: '',
-  conversationTopics: '',
-  topicDuration: 'long_term',
-  painPoints: [],
-  painStyle: 'endurer',
-  riskyTopics: false,
-};
-
-const INTEREST_TAGS = [
-  'Технологии', 'Кулинария', 'Спорт', 'Чтение', 'Путешествия', 
-  'Дом и уют', 'Красота', 'Кино', 'Музыка', 'Творчество', 
-  'Игры', 'Здоровье', 'Эко', 'Стиль'
-];
-
-const EXCLUDE_TAGS = [
-  'Одежда', 'Косметика', 'Алкоголь', '18+', 'Сувениры', 
-  'Еда', 'Сладости', 'Сертификаты', 'Деньги', 'Книги'
-];
-
-// Map steps to question IDs for analytics
-const STEP_IDS: StepId[] = [
-  'name', 'age', 'gender', 'occasion', 'relationship', 'vibe', 'city', 
-  'roles', 'archetype', 'topics', 'pain', 'interests', 'exclude' as any, 'budget'
-];
-
-// --- Components ---
-
-const StepHeader: React.FC<{ title: React.ReactNode; subtitle?: string }> = ({ title, subtitle }) => (
-  <div className="text-center mb-10 animate-fade-in-up">
-    <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight leading-tight mb-3 drop-shadow-xl">
-      {title}
-    </h2>
-    {subtitle && (
-      <p className="text-white/60 text-lg font-medium">
-        {subtitle}
-      </p>
-    )}
-  </div>
 );
 
-const SelectionCard: React.FC<{ 
-  selected: boolean; 
-  onClick: () => void; 
-  icon?: React.ReactNode; 
-  label: string; 
-  desc?: string;
-  className?: string;
-}> = ({ selected, onClick, icon, label, desc, className = '' }) => (
-  <button
-    onClick={onClick}
-    className={`group relative w-full text-left p-5 rounded-3xl transition-all duration-300 border backdrop-blur-md flex items-center gap-5 outline-none focus:ring-4 focus:ring-brand-purple/30 ${
-      selected 
-        ? 'bg-white text-brand-dark border-white shadow-[0_0_30px_rgba(255,255,255,0.2)] scale-[1.02] z-10' 
-        : 'bg-white/5 text-white border-white/10 hover:bg-white/10 hover:border-white/20 active:scale-[0.98]'
-    } ${className}`}
-  >
-    {icon && (
-      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-colors duration-300 ${
-        selected ? 'bg-brand-blue/10' : 'bg-white/10 group-hover:bg-white/20'
-      }`}>
-        {icon}
-      </div>
-    )}
-    <div className="flex-1 min-w-0">
-      <div className="font-bold text-lg leading-tight truncate">{label}</div>
-      {desc && (
-        <div className={`text-xs font-medium mt-1 truncate ${selected ? 'text-brand-dark/60' : 'text-white/40'}`}>
-          {desc}
-        </div>
-      )}
+// --- Constants ---
+
+const RELATIONSHIPS = [
+    { id: 'Партнер', label: 'Партнер', icon: Icons.Heart },
+    { id: 'Родитель', label: 'Родитель', icon: Icons.Users },
+    { id: 'Друг', label: 'Друг', icon: Icons.Smile },
+    { id: 'Коллега', label: 'Коллега', icon: Icons.Briefcase },
+    { id: 'Ребенок', label: 'Ребенок', icon: Icons.User },
+    { id: 'Родственник', label: 'Родственник', icon: Icons.Home }
+];
+
+const OCCASIONS = [
+    { id: 'ДР', label: 'День Рождения', icon: Icons.Cake },
+    { id: 'Новый год', label: 'Новый год', icon: Icons.Star },
+    { id: 'Годовщина', label: 'Годовщина', icon: Icons.Heart },
+    { id: 'Просто так', label: 'Просто так', icon: Icons.Smile },
+    { id: 'Новоселье', label: 'Новоселье', icon: Icons.Home },
+    { id: 'Извинение', label: 'Извинение', icon: Icons.Gift }
+];
+
+const GOALS = [
+    { id: 'impress', label: 'Впечатлить', icon: Icons.Star, desc: 'Wow-эффект' },
+    { id: 'care', label: 'Забота', icon: Icons.Heart, desc: 'Тепло и уют' },
+    { id: 'check', label: 'Для галочки', icon: Icons.Briefcase, desc: 'Без нервов' },
+    { id: 'growth', label: 'Вдохновить', icon: Icons.Rocket, desc: 'На развитие' },
+    { id: 'joke', label: 'Посмеяться', icon: Icons.Smile, desc: 'Fun & Joke' }
+];
+
+const DEADLINES = [
+    { id: 0, label: 'Сегодня / Завтра', icon: Icons.Fire },
+    { id: 3, label: 'Пара дней', icon: Icons.Calendar },
+    { id: 7, label: 'Неделя', icon: Icons.Calendar },
+    { id: 30, label: 'Месяц+', icon: Icons.Clock }
+];
+
+const EFFORTS = [
+    { id: 'no_effort', label: 'Минимум усилий', desc: 'Купить и подарить (онлайн/доставка)' },
+    { id: 'low', label: 'Немного внимания', desc: 'Красиво упаковать, подписать открытку' },
+    { id: 'medium', label: 'С душой', desc: 'Найти что-то редкое, собрать набор' },
+    { id: 'high', label: 'Максимум', desc: 'Квест, ручная работа, организация сюрприза' }
+];
+
+const BUDGET_STEPS = [
+    { val: 1000, label: '1 000' },
+    { val: 2000, label: '2 000' },
+    { val: 3000, label: '3 000' },
+    { val: 5000, label: '5 000' },
+    { val: 7000, label: '7 000' },
+    { val: 10000, label: '10 000' },
+    { val: 15000, label: '15 000' },
+    { val: 20000, label: '20 000' },
+    { val: 30000, label: '30 000' },
+    { val: 50000, label: '5 000' },
+    { val: 100000, label: '100k+' }
+];
+
+const STEP_LABELS = [
+    'Имя', 'Возраст', 'Кто?', 'Повод', 'Когда?', 'Интересы', 'Миссия', 'Вложения', 'Бюджет', 'Итог'
+];
+
+const MEMORY_JOGGERS = [
+    "Любит готовить? 🍳", "Спорт или диван? 🏃‍♂️", "Кошки или собаки? 🐱",
+    "Любимый фильм? 🎬", "Кофеман или чай? ☕️", "Играет на чем-то? 🎸",
+    "Путешествия? ✈️", "Геймер? 🎮", "Что читает? 📚",
+    "Сладкоежка? 🍫", "Фанатеет от техники? 💻", "Охота или Рыбалка? 🎣",
+    "Любит растения? 🪴", "Коллекционер? 💎", "Есть авто? 🚗",
+    "Любит рисовать? 🎨", "Трудоголик? 💼", "Меломан? 🎧",
+    "Зожник? 🥗", "Любит настолки? 🎲", "Тусовщик? 🎉",
+    "Любит спать? 😴", "Экстрим? 🧗", "Гаджеты? ⌚️",
+    "Вино или пиво? 🍷", "Стиляга? 👗", "Умный дом? 🏠",
+    "Дачник? 🏡", "Блогер? 📸", "Инвестор? 💸",
+    "Любит баню? 🧖‍♂️", "Смотрит сериалы? 📺", "Эколог? ♻️",
+    "Анимешник? 🇯🇵", "Любит походы? ⛺️", "Фанат Marvel? 🦸‍♂️",
+    "Веган? 🥦", "Йог? 🧘‍♀️", "Любит историю? 🏛", "Танцы? 💃"
+];
+
+// Dev personas
+const DEV_PERSONAS = [
+    { label: '👾 Геймер', data: { name: 'Макс', age: 24, gender: 'male', relationship: 'Друг', occasion: 'ДР', tags: ['PlayStation', 'Cyberpunk', 'Пиво'], budget: 7000 } },
+    { label: '🧘‍♀️ Йогиня', data: { name: 'Анна', age: 30, gender: 'female', relationship: 'Партнер', occasion: 'Просто так', tags: ['Йога', 'Медитация', 'Свечи'], budget: 3000 } },
+    { label: '🎸 Рокер', data: { name: 'Игорь', age: 45, gender: 'male', relationship: 'Коллега', occasion: 'Новоселье', tags: ['Винил', 'Гитара', 'Кофе'], budget: 15000 } }
+];
+
+// --- COMPONENTS ---
+
+const ProgressBar: React.FC<{ current: number; total: number; onJump?: (i: number) => void }> = ({ current, total, onJump }) => (
+    <div className="w-full max-w-xl mx-auto px-1 flex gap-1.5 mb-8">
+        {Array.from({ length: total }).map((_, i) => (
+            <button 
+                key={i}
+                disabled={!onJump}
+                onClick={() => onJump?.(i)}
+                className={`h-1.5 rounded-full transition-all duration-500 ease-out ${
+                    i <= current 
+                    ? 'flex-1 bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]' 
+                    : 'w-2 bg-white/10'
+                } ${onJump ? 'cursor-pointer hover:bg-white/40' : 'cursor-default'}`}
+            />
+        ))}
     </div>
-    
-    {/* Radio Indicator */}
-    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-      selected ? 'border-brand-blue' : 'border-white/20 group-hover:border-white/40'
-    }`}>
-      {selected && <div className="w-3 h-3 bg-brand-blue rounded-full" />}
-    </div>
-  </button>
 );
 
-const AgePicker: React.FC<{ value: string, onChange: (val: string) => void }> = ({ value, onChange }) => {
-  const ages = Array.from({ length: 100 }, (_, i) => i);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const ITEM_WIDTH = 60;
-  const GAP = 16; 
-  const STRIDE = ITEM_WIDTH + GAP;
+const StepTitle: React.FC<{ children: React.ReactNode; subtitle?: string }> = ({ children, subtitle }) => (
+    <div className="text-center mb-10 animate-fade-in-up relative z-10">
+        <h2 className="text-3xl md:text-4xl font-black text-white mb-3 tracking-tight drop-shadow-lg leading-tight">
+            {children}
+        </h2>
+        {subtitle && (
+            <p className="text-white/60 text-lg font-medium max-w-sm mx-auto leading-snug">
+                {subtitle}
+            </p>
+        )}
+    </div>
+);
 
-  useEffect(() => {
-    if (scrollRef.current) {
-        const parsed = parseInt(value);
-        const initial = isNaN(parsed) ? 25 : parsed;
-        scrollRef.current.scrollLeft = initial * STRIDE;
-    }
-  }, []);
-
-  const handleScroll = () => {
-      if (scrollRef.current) {
-          const container = scrollRef.current;
-          const containerCenter = container.getBoundingClientRect().left + container.clientWidth / 2;
-          
-          let closestIndex = 0;
-          let minDistance = Infinity;
-
-          const buttons = container.children;
-          // Loop through buttons to find which one is geometrically closest to center
-          for (let i = 0; i < buttons.length; i++) {
-              const button = buttons[i] as HTMLElement;
-              const rect = button.getBoundingClientRect();
-              const buttonCenter = rect.left + rect.width / 2;
-              const distance = Math.abs(containerCenter - buttonCenter);
-              
-              if (distance < minDistance) {
-                  minDistance = distance;
-                  closestIndex = i;
-              }
-          }
-          
-          if (closestIndex.toString() !== value) {
-              onChange(closestIndex.toString());
-          }
-      }
-  };
-
-  const handleClick = (age: number) => {
-      if (scrollRef.current) {
-          scrollRef.current.scrollTo({
-              left: age * STRIDE,
-              behavior: 'smooth'
-          });
-      }
-  };
-
-  return (
-    <div className="relative w-full h-32 flex items-center group">
-        <div className="absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-brand-dark/80 to-transparent z-10 pointer-events-none" />
-        <div className="absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-brand-dark/80 to-transparent z-10 pointer-events-none" />
+const MemoryJoggers: React.FC = React.memo(() => {
+    const items = useMemo(() => {
+        const list = [...MEMORY_JOGGERS].sort(() => 0.5 - Math.random());
+        const cols = 5; 
+        const rows = Math.ceil(list.length / cols);
         
-        {/* Selection Marker */}
-        <div className="absolute left-1/2 top-0 bottom-0 w-[64px] -translate-x-1/2 border-x-2 border-brand-purple/50 bg-white/5 rounded-2xl z-0 pointer-events-none backdrop-blur-sm" />
+        return list.map((text, i) => {
+            const row = Math.floor(i / cols);
+            const col = i % cols;
+            const baseLeft = (col / cols) * 100;
+            const baseTop = (row / rows) * 100;
+            const jitterX = Math.random() * (100 / cols) * 0.7;
+            const jitterY = Math.random() * (100 / rows) * 0.7;
 
-        <div 
-            ref={scrollRef}
-            onScroll={handleScroll}
-            className="flex items-center gap-4 overflow-x-auto no-scrollbar pl-[calc(50%-30px)] pr-[calc(50%-30px)] snap-x snap-mandatory py-4 w-full"
-        >
-            {ages.map((age) => (
-                <button
-                    key={age}
-                    onClick={() => handleClick(age)}
-                    className={`snap-center shrink-0 w-[60px] h-[60px] rounded-xl flex items-center justify-center text-3xl font-black transition-all duration-300 ${
-                        value === age.toString() 
-                            ? 'text-white scale-125 drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]' 
-                            : 'text-white/20 hover:text-white/50 scale-90'
-                    }`}
-                >
-                    {age}
-                </button>
-            ))}
-        </div>
-        <div className="absolute bottom-[-20px] left-0 right-0 text-center text-xs font-bold text-brand-purple uppercase tracking-widest opacity-80">
-            {parseInt(value) % 10 === 1 && parseInt(value) !== 11 ? 'год' : (parseInt(value) % 10 >= 2 && parseInt(value) % 10 <= 4 && (parseInt(value) < 10 || parseInt(value) > 20)) ? 'года' : 'лет'}
-        </div>
-    </div>
-  );
-};
-
-// --- City Autocomplete Component ---
-
-const CityAutocomplete: React.FC<{ 
-    value: string; 
-    onChange: (val: string) => void;
-    onSelect: () => void;
-}> = ({ value, onChange, onSelect }) => {
-    const [suggestions, setSuggestions] = useState<any[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [showSuggestions, setShowSuggestions] = useState(false);
-    const wrapperRef = useRef<HTMLDivElement>(null);
-
-    // Debounce fetch
-    useEffect(() => {
-        const fetchCities = async () => {
-            if (value.length < 2) {
-                setSuggestions([]);
-                return;
-            }
-            
-            // Only fetch if it looks like user is typing, not if they just selected
-            if (!showSuggestions) return; 
-
-            setLoading(true);
-            try {
-                // Using OpenStreetMap Nominatim API (Free, no key required for moderate use)
-                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}&accept-language=ru&limit=5&featuretype=city`);
-                const data = await res.json();
-                setSuggestions(data);
-            } catch (e) {
-                console.error("City fetch error", e);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        const timeoutId = setTimeout(fetchCities, 500);
-        return () => clearTimeout(timeoutId);
-    }, [value]);
-
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
-                setShowSuggestions(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
+            return {
+                text,
+                left: baseLeft + jitterX,
+                top: baseTop + jitterY,
+                delay: Math.random() * -30,
+                duration: 25 + Math.random() * 15,
+                opacity: 0.4 + Math.random() * 0.4,
+                scale: 0.85 + Math.random() * 0.35
+            };
+        });
     }, []);
 
-    const handleSelect = (city: any) => {
-        // Extract city name clearly (removing region info if it's too long, but keeping helpful context if needed)
-        const name = city.display_name.split(',')[0];
-        onChange(name);
-        setShowSuggestions(false);
-        onSelect();
-    };
-
-    const handleInputClick = () => {
-        if (value.length >= 2) setShowSuggestions(true);
-    };
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        onChange(e.target.value);
-        setShowSuggestions(true);
-    };
-
     return (
-        <div ref={wrapperRef} className="relative group w-full">
-            <div className="absolute top-1/2 left-0 -translate-y-1/2 text-white/30 pointer-events-none">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+        <div className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0">
+            {items.map((item, i) => (
+                <div 
+                    key={i}
+                    className="absolute font-bold whitespace-nowrap animate-float transition-all duration-500"
+                    style={{
+                        left: `${item.left}%`,
+                        top: `${item.top}%`,
+                        color: `rgba(255, 255, 255, ${item.opacity})`,
+                        fontSize: `${item.scale}rem`,
+                        animationDelay: `${item.delay}s`,
+                        animationDuration: `${item.duration}s`,
+                        textShadow: '0 2px 10px rgba(0,0,0,0.2)'
+                    }}
+                >
+                    {item.text}
+                </div>
+            ))}
+        </div>
+    );
+});
+
+const OptionCard: React.FC<{ 
+    label: string; 
+    icon?: React.ReactNode; 
+    desc?: string; 
+    selected: boolean; 
+    onClick: () => void;
+}> = ({ label, icon, desc, selected, onClick }) => (
+    <button
+        onClick={onClick}
+        className={`group relative overflow-hidden transition-all duration-300 w-full text-left
+            flex items-center gap-4 p-5
+            rounded-2xl border backdrop-blur-md
+            ${selected 
+                ? 'bg-white text-brand-dark border-white shadow-[0_0_30px_rgba(255,255,255,0.3)] scale-[1.02]' 
+                : 'bg-white/5 text-white border-white/10 hover:bg-white/10 hover:border-white/30 active:scale-95'
+            }
+        `}
+    >
+        {selected && <div className="absolute inset-0 bg-gradient-to-r from-brand-blue/20 to-brand-purple/20 pointer-events-none" />}
+        {icon && (
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${selected ? 'bg-brand-blue/10 text-brand-blue' : 'bg-white/10 text-white/70'}`}>
+                <SvgIcon>{icon}</SvgIcon>
             </div>
-            <input
+        )}
+        <div className="relative z-10 flex-grow">
+            <div className="font-bold text-lg leading-tight">{label}</div>
+            {desc && (
+                <div className={`text-xs font-medium mt-1 ${selected ? 'text-gray-500' : 'text-white/40'}`}>
+                    {desc}
+                </div>
+            )}
+        </div>
+        {selected && (
+            <div className="text-brand-purple animate-pop">
+                <svg className="w-6 h-6 fill-current" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+            </div>
+        )}
+    </button>
+);
+
+const FloatingInput: React.FC<{ 
+    value: string; 
+    onChange: (val: string) => void; 
+    placeholder: string;
+    autoFocus?: boolean;
+    onEnter?: () => void;
+}> = ({ value, onChange, placeholder, autoFocus, onEnter }) => (
+    <div className="relative group w-full z-20">
+        <div className="absolute inset-0 bg-gradient-to-r from-brand-blue to-brand-purple opacity-0 group-focus-within:opacity-20 blur-xl transition-opacity rounded-2xl"></div>
+        <div className="relative bg-white/10 border border-white/20 backdrop-blur-xl rounded-2xl flex items-center p-1 focus-within:border-white/50 focus-within:bg-white/20 transition-all">
+            <input 
                 type="text"
+                autoFocus={autoFocus}
                 value={value}
-                onChange={handleInputChange}
-                onClick={handleInputClick}
-                placeholder="Введите город..."
-                className="w-full bg-transparent pl-12 text-4xl font-black text-white placeholder-white/10 outline-none border-b-2 border-white/20 focus:border-brand-blue transition-all pb-4 caret-brand-blue"
-                autoComplete="off"
+                onChange={(e) => onChange(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && onEnter && onEnter()}
+                placeholder={placeholder}
+                className="w-full bg-transparent border-none outline-none text-white font-bold text-lg px-6 py-4 placeholder-white/30"
             />
-            {loading && (
-                <div className="absolute right-0 top-1/2 -translate-y-1/2">
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                </div>
+            {value && (
+                <button onClick={onEnter} className="mr-2 p-2 bg-white text-brand-dark rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-transform">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 12h14M12 5l7 7-7 7" /></svg>
+                </button>
             )}
-            
-            {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-[#2A0A18] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden max-h-60 overflow-y-auto">
-                    {suggestions.map((city: any, i) => (
-                        <div 
-                            key={city.place_id || i}
-                            onClick={() => handleSelect(city)}
-                            className="px-4 py-3 hover:bg-white/10 cursor-pointer text-white border-b border-white/5 last:border-0 transition-colors text-left"
-                        >
-                            <div className="font-bold text-sm">{city.display_name.split(',')[0]}</div>
-                            <div className="text-xs text-white/40 truncate">{city.display_name}</div>
-                        </div>
-                    ))}
-                </div>
-            )}
+        </div>
+    </div>
+);
+
+const ScrollPicker: React.FC<{
+    items: { val: number; label: string | number }[];
+    selectedValue: number;
+    onSelect: (val: number) => void;
+    unit?: string;
+}> = ({ items, selectedValue, onSelect, unit }) => {
+    const scrollRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (scrollRef.current) {
+            const index = items.findIndex(i => i.val === selectedValue);
+            if (index !== -1) {
+                const el = scrollRef.current.children[index] as HTMLElement;
+                if (el) {
+                    scrollRef.current.scrollTo({
+                        left: el.offsetLeft - scrollRef.current.clientWidth / 2 + el.clientWidth / 2,
+                        behavior: 'smooth'
+                    });
+                }
+            }
+        }
+    }, [selectedValue, items]);
+    return (
+        <div className="relative w-full h-48 flex items-center justify-center my-4">
+            <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-brand-dark via-brand-dark/90 to-transparent z-20 pointer-events-none"></div>
+            <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-brand-dark via-brand-dark/90 to-transparent z-20 pointer-events-none"></div>
+            <div className="absolute w-32 h-32 border-[3px] border-brand-blue rounded-3xl z-10 pointer-events-none shadow-[0_0_40px_rgba(255,77,109,0.3)] bg-white/5 backdrop-blur-sm"></div>
+            <div ref={scrollRef} className="flex gap-8 overflow-x-auto no-scrollbar w-full px-[50%] snap-x snap-mandatory py-20 items-center">
+                {items.map((item) => (
+                    <button key={item.val} onClick={() => onSelect(item.val)} className={`shrink-0 w-24 text-center snap-center transition-all duration-300 transform flex flex-col items-center justify-center ${selectedValue === item.val ? 'scale-110 opacity-100' : 'scale-90 opacity-30 hover:opacity-60'}`}>
+                        <span className="text-4xl md:text-5xl font-black text-white drop-shadow-md">{item.label}</span>
+                        {unit && <span className="text-xs font-bold uppercase tracking-widest mt-2">{unit}</span>}
+                    </button>
+                ))}
+            </div>
         </div>
     );
 };
 
-// --- Main Quiz Component ---
+// --- MAIN PAGE ---
 
 export const Quiz: React.FC = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [step, setStep] = useState(0);
-  
-  // Analytics Timer
-  const stepStartTimeRef = useRef<number>(Date.now());
-  const quizStartTimeRef = useRef<number>(Date.now());
-
-  // Initialize from props OR default (NO persistence loading)
-  const [answers, setAnswers] = useState<QuizAnswers>(() => {
-    if (location.state) {
-        const { name, relationship } = location.state as { name: string, relationship: string };
-        return { ...INITIAL_ANSWERS, name: name || '', relationship: relationship || '' };
-    }
-    return INITIAL_ANSWERS;
-  });
-
-  // Force dark background on body to prevent white/purple leaks on overscroll
-  useLayoutEffect(() => {
-    const originalBackground = document.body.style.background;
-    const originalBackgroundColor = document.body.style.backgroundColor;
+    const navigate = useNavigate();
+    const { isDevMode, useMockData, setUseMockData } = useDevMode();
+    const [step, setStep] = useState(0);
+    const TOTAL_STEPS = 10;
     
-    document.body.style.background = 'none';
-    document.body.style.backgroundColor = '#2A0A18'; // brand-dark (Valentine)
+    // Form State
+    const [name, setName] = useState('');
+    const [gender, setGender] = useState<'male' | 'female' | 'unisex'>('unisex');
+    const [age, setAge] = useState<number>(30); 
+    const [relationship, setRelationship] = useState('');
+    const [customRelationship, setCustomRelationship] = useState('');
+    const [occasion, setOccasion] = useState('');
+    const [customOccasion, setCustomOccasion] = useState('');
+    const [interestInput, setInterestInput] = useState('');
+    const [tags, setTags] = useState<string[]>([]);
+    const [goal, setGoal] = useState('');
+    const [customGoal, setCustomGoal] = useState('');
+    const [budget, setBudget] = useState(5000);
+    const [deadline, setDeadline] = useState<number | null>(null);
+    const [effort, setEffort] = useState<'no_effort' | 'low' | 'medium' | 'high' | null>(null);
 
-    return () => {
-      document.body.style.background = originalBackground;
-      document.body.style.backgroundColor = originalBackgroundColor;
+    const startTime = useRef(Date.now());
+
+    useEffect(() => { window.scrollTo(0, 0); }, [step]);
+
+    const next = () => setStep(s => Math.min(s + 1, TOTAL_STEPS - 1));
+    const back = () => setStep(s => Math.max(0, s - 1));
+
+    const handlePersonaFill = (persona: typeof DEV_PERSONAS[0]) => {
+        setName(persona.data.name);
+        setAge(persona.data.age);
+        setGender(persona.data.gender as any);
+        setRelationship(persona.data.relationship);
+        setOccasion(persona.data.occasion);
+        setTags(persona.data.tags);
+        setBudget(persona.data.budget);
+        setStep(9); // Jump to overview
     };
-  }, []);
 
-  // Clear any existing draft on mount to ensure clean slate
-  useEffect(() => {
-      localStorage.removeItem('gifty_draft');
-      // If we didn't come from Home via CTA, we should track start here or just let it handle on the first step action?
-      // Best to rely on the Home CTA for 'quiz_started', but if direct load, we might miss it.
-      // For now, assume flow starts at Home.
-      stepStartTimeRef.current = Date.now();
-      quizStartTimeRef.current = Date.now();
-  }, []);
+    const handleAddTag = () => {
+        if (interestInput.trim()) {
+            setTags([...tags, interestInput.trim()]);
+            setInterestInput('');
+        }
+    };
+    const handleRemoveTag = (tagToRemove: string) => setTags(tags.filter(t => t !== tagToRemove));
 
-  // Custom inputs state
-  const [customOccasion, setCustomOccasion] = useState('');
-  const [isCustomOccasion, setIsCustomOccasion] = useState(false);
-  const [customRelationship, setCustomRelationship] = useState('');
-  const [isCustomRelationship, setIsCustomRelationship] = useState(false);
-  const [customVibe, setCustomVibe] = useState('');
-  const [isCustomVibe, setIsCustomVibe] = useState(false);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [selectedExcludeTags, setSelectedExcludeTags] = useState<string[]>([]);
-  const [customExclude, setCustomExclude] = useState('');
+    const finish = () => {
+        const standardAnswers: QuizAnswers = {
+            name: name || 'Друг',
+            age, recipientGender: gender,
+            relationship: customRelationship || relationship,
+            occasion: customOccasion || occasion,
+            vibe: 'Experimental', city: 'Москва',
+            interests: tags.join(', '), budget: `${budget}`,
+            goal: customGoal || goal, deadline: deadline || 7, effortLevel: effort || 'low',
+            roleConfidence: 'sure', archetype: 'aesthetic', selfWorth: '',
+            conversationTopics: tags.join(', '), topicDuration: 'long_term', painStyle: 'endurer', riskyTopics: false, painPoints: [], roles: [],
+        };
+        localStorage.setItem('gifty_answers', JSON.stringify(standardAnswers));
+        analytics.quizCompleted(TOTAL_STEPS, (Date.now() - startTime.current) / 1000);
+        navigate('/results');
+    };
 
-  const inputRef = useRef<HTMLInputElement>(null);
-  const textAreaRef = useRef<HTMLTextAreaElement>(null);
-
-  const updateAnswer = (field: keyof QuizAnswers, value: any) => {
-    setAnswers(prev => ({ ...prev, [field]: value }));
-  };
-
-  const getAnswerForAnalytics = (currentStep: number) => {
-      const stepId = STEP_IDS[currentStep];
-      if (!stepId) return null;
-      return (answers as any)[stepId];
-  };
-
-  const nextStep = () => {
-    // 1. Capture Analytics for completed step
-    const timeSpent = (Date.now() - stepStartTimeRef.current) / 1000;
-    const questionId = STEP_IDS[step] || `step_${step}`;
-    const answer = getAnswerForAnalytics(step);
-    
-    analytics.quizStepCompleted(step + 1, questionId, answer, timeSpent);
-    stepStartTimeRef.current = Date.now(); // Reset timer for next step
-
-    // Total steps increased to 13 (0-13)
-    if (step === 13) { 
-      const finalAnswers = { ...answers };
-      const combinedInterests = [...selectedTags, ...(answers.interests ? [answers.interests] : [])].join(', ');
-      finalAnswers.interests = combinedInterests;
-      
-      const allExcludes = [...selectedExcludeTags];
-      if (customExclude.trim()) allExcludes.push(customExclude.trim());
-      finalAnswers.exclude = allExcludes.join(', ');
-      
-      if (isCustomOccasion) finalAnswers.occasion = customOccasion;
-      if (isCustomRelationship) finalAnswers.relationship = customRelationship;
-      if (isCustomVibe) finalAnswers.vibe = customVibe;
-      
-      // Ensure budget is clean number
-      finalAnswers.budget = (finalAnswers.budget || '').replace(/\D/g, '');
-      
-      // Final Analytics
-      const totalDuration = (Date.now() - quizStartTimeRef.current) / 1000;
-      analytics.quizCompleted(14, totalDuration);
-
-      // Save result for Results page, but we don't save 'gifty_draft'
-      localStorage.setItem('gifty_answers', JSON.stringify(finalAnswers));
-      navigate('/results');
-    } else {
-      setStep(s => s + 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  const prevStep = () => {
-    if (step > 0) {
-        setStep(s => s - 1);
-        stepStartTimeRef.current = Date.now(); // Reset timer to avoid skewing
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-        navigate('/');
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Prevent Next step on enter for CityAutocomplete as it uses Enter to select
-    // Step 9 is topics textarea, step 11 is interest textarea - allow enter for newlines
-    if (step === 6 || step === 9 || step === 11) return; 
-    if (e.key === 'Enter' && isCurrentStepValid()) nextStep();
-  };
-
-  const isCurrentStepValid = () => {
-    switch (step) {
-      case 0: return (answers.name || '').trim().length > 0;
-      case 1: return true; 
-      case 2: return !!answers.recipientGender;
-      case 3: return isCustomOccasion ? customOccasion.trim().length > 0 : (answers.occasion || '').length > 0;
-      case 4: return isCustomRelationship ? customRelationship.trim().length > 0 : (answers.relationship || '').length > 0;
-      case 5: return isCustomVibe ? customVibe.trim().length > 0 : (answers.vibe || '').length > 0;
-      case 6: return (answers.city || '').trim().length > 0;
-      
-      // New Steps
-      case 7: return answers.roles.length > 0; // Roles
-      case 8: return answers.archetype.length > 0; // Archetype
-      case 9: return answers.conversationTopics.trim().length > 0; // Topics
-      case 10: return true; // Pain Points (Optional)
-      
-      case 11: return ((answers.interests || '').trim().length > 0 || selectedTags.length > 0);
-      case 12: return true; // Exclude is optional
-      case 13: return (answers.budget || '').length > 0 && parseInt(answers.budget) > 0;
-      default: return false;
-    }
-  };
-
-  const toggleTag = (tag: string) => {
-      setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
-  };
-
-  const toggleExcludeTag = (tag: string) => {
-      setSelectedExcludeTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
-  };
-
-  // Toggle for Roles
-  const toggleRole = (roleId: string) => {
-      const current = answers.roles;
-      let nextRoles;
-      if (current.includes(roleId)) {
-          nextRoles = current.filter(r => r !== roleId);
-      } else {
-          // Limit to 3 roles
-          if (current.length >= 3) return;
-          nextRoles = [...current, roleId];
-      }
-      updateAnswer('roles', nextRoles);
-  };
-
-  // Toggle Pain Points
-  const togglePain = (painId: string) => {
-      const current = answers.painPoints;
-      const nextPain = current.includes(painId) 
-        ? current.filter(p => p !== painId) 
-        : [...current, painId];
-      updateAnswer('painPoints', nextPain);
-  };
-
-  const getGenderLabels = () => {
-      const age = parseInt(answers.ageGroup) || 25;
-      if (age <= 12) return { female: 'Девочка', male: 'Мальчик' };
-      if (age <= 20) return { female: 'Девушка', male: 'Парень' };
-      return { female: 'Женщина', male: 'Мужчина' };
-  };
-
-  // --- Dynamic Occasions Logic ---
-  const getOccasions = () => {
-      const age = parseInt(answers.ageGroup) || 25;
-      
-      const baseOccasions = [
-          { id: '14feb', label: '14 февраля', desc: 'Романтика', Icon: Icons.Anniversary },
-          { id: 'birthday', label: 'День рождения', desc: 'Личный праздник', Icon: Icons.Birthday },
-          { id: 'just_because', label: 'Просто так', desc: 'Без повода', Icon: Icons.JustBecause }
-      ];
-
-      if (age >= 18) {
-          baseOccasions.splice(2, 0, { id: 'wedding', label: 'Свадьба', desc: 'Начало истории', Icon: Icons.Wedding });
-          baseOccasions.splice(3, 0, { id: 'anniversary', label: 'Годовщина', desc: 'Важная дата', Icon: Icons.Anniversary });
-      } else if (age >= 6) {
-          baseOccasions.push({ id: 'school', label: 'Школа / Учеба', desc: '1 сентября, выпускной', Icon: Icons.School });
-      }
-
-      return baseOccasions;
-  };
-
-  // --- Dynamic Relationships Logic ---
-  const getRelationships = () => {
-      const age = parseInt(answers.ageGroup) || 25;
-      const g = answers.recipientGender;
-
-      if (age < 13) {
-          if (g === 'male') return ['Сын', 'Внук', 'Брат', 'Племянник', 'Друг', 'Крестник'];
-          if (g === 'female') return ['Дочь', 'Внучка', 'Сестра', 'Племянница', 'Подруга', 'Крестница'];
-          return ['Ребенок', 'Внук/Внучка', 'Брат/Сестра', 'Племянник/ца', 'Друг'];
-      }
-      
-      if (age < 18) {
-          if (g === 'male') return ['Парень', 'Сын', 'Брат', 'Друг', 'Одноклассник', 'Племянник'];
-          if (g === 'female') return ['Девушка', 'Дочь', 'Сестра', 'Подруга', 'Одноклассница', 'Племянница'];
-          return ['Пара', 'Ребенок', 'Брат/Сестра', 'Друг'];
-      }
-
-      if (age <= 50) {
-          if (g === 'male') return ['Муж', 'Парень', 'Папа', 'Брат', 'Друг', 'Коллега'];
-          if (g === 'female') return ['Жена', 'Девушка', 'Мама', 'Сестра', 'Подруга', 'Коллега'];
-          return ['Партнер', 'Родитель', 'Брат/Сестра', 'Друг', 'Коллега'];
-      }
-
-      // 50+
-      if (g === 'male') return ['Папа', 'Дедушка', 'Муж', 'Коллега', 'Начальник', 'Друг'];
-      if (g === 'female') return ['Мама', 'Бабушка', 'Жена', 'Коллега', 'Начальница', 'Подруга'];
-      
-      return ['Родитель', 'Бабушка/Дедушка', 'Партнер', 'Коллега', 'Друг'];
-  };
-
-  const renderContent = () => {
-    const genderLabels = getGenderLabels();
-    const occasions = getOccasions();
-    const relationships = getRelationships();
+    const handleCustomInput = (setter: (v: string) => void, selectionSetter: (v: string) => void) => (val: string) => {
+        setter(val);
+        if (val) selectionSetter('');
+    };
 
     return (
-        <div key={step} className={`w-full max-w-lg mx-auto animate-fade-in`}>
-            {step === 0 && (
-                <>
-                    <StepHeader title="Как зовут счастливчика?" subtitle="Начнем с малого" />
-                    <div className="relative group">
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            value={answers.name}
-                            onChange={(e) => updateAnswer('name', e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            placeholder="Имя"
-                            className="w-full bg-transparent text-center text-5xl font-black text-white placeholder-white/10 outline-none border-b-2 border-white/20 focus:border-brand-blue transition-all pb-4 caret-brand-blue"
-                        />
-                    </div>
-                </>
-            )}
+        <div className="min-h-screen bg-brand-dark relative overflow-hidden font-sans flex flex-col text-white selection:bg-brand-blue selection:text-white pb-24">
+            
+            {/* Background Ambience */}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#0F172A] via-[#2A0A18] to-[#4A041D]"></div>
+                <div className="absolute top-[-20%] left-[-20%] w-[80vw] h-[80vw] bg-brand-blue/20 rounded-full blur-[120px] animate-blob"></div>
+                <div className="absolute bottom-[-20%] right-[-20%] w-[80vw] h-[80vw] bg-brand-purple/20 rounded-full blur-[120px] animate-blob animation-delay-2000"></div>
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10"></div>
+            </div>
 
-            {step === 1 && (
-                <>
-                    <StepHeader title={`Сколько лет ${inclineName(answers.name || '', 'dative')}?`} subtitle="Чтобы попасть в точку" />
-                    <div className="py-10">
-                        <AgePicker value={answers.ageGroup} onChange={(val) => updateAnswer('ageGroup', val)} />
-                    </div>
-                </>
-            )}
+            {/* Header */}
+            <div className="relative z-50 px-6 py-6 flex justify-between items-center max-w-2xl mx-auto w-full">
+                <button onClick={step === 0 ? () => navigate('/') : back} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md flex items-center justify-center text-white transition-all active:scale-90">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                <div className="scale-75 origin-center opacity-80"><Logo variant="white" onClick={() => navigate('/')} /></div>
+                <div className="w-10" /> 
+            </div>
 
-            {step === 2 && (
-                <>
-                    <StepHeader title="Пол получателя" subtitle="Для уточнения интересов" />
-                    <div className="grid grid-cols-1 gap-4">
-                        {[
-                            { id: 'female', label: genderLabels.female, Icon: Icons.Female },
-                            { id: 'male', label: genderLabels.male, Icon: Icons.Male },
-                            { id: 'unisex', label: 'Не важно', Icon: Icons.Unisex }
-                        ].map((g) => (
-                            <SelectionCard
-                                key={g.id}
-                                label={g.label}
-                                icon={<g.Icon />}
-                                selected={answers.recipientGender === g.id}
-                                onClick={() => { updateAnswer('recipientGender', g.id); setTimeout(nextStep, 250); }}
-                            />
-                        ))}
-                    </div>
-                </>
-            )}
+            {/* Progress */}
+            <div className="relative z-40">
+                <ProgressBar current={step} total={TOTAL_STEPS} onJump={isDevMode ? setStep : undefined} />
+            </div>
 
-            {step === 3 && (
-                <>
-                    <StepHeader title="По какому поводу?" subtitle="Контекст решает всё" />
-                    <div className="grid grid-cols-1 gap-3 mb-6">
-                        {occasions.map(occ => (
-                            <SelectionCard
-                                key={occ.id}
-                                label={occ.label}
-                                desc={occ.desc}
-                                icon={<occ.Icon />}
-                                selected={!isCustomOccasion && answers.occasion === occ.label}
-                                onClick={() => { setIsCustomOccasion(false); updateAnswer('occasion', occ.label); setTimeout(nextStep, 250); }}
-                            />
-                        ))}
-                        <SelectionCard 
-                            label="Свой вариант"
-                            desc="Опишите своими словами"
-                            icon={<Icons.Edit />}
-                            selected={isCustomOccasion}
-                            onClick={() => { setIsCustomOccasion(true); updateAnswer('occasion', ''); }}
-                        />
-                    </div>
-                    {isCustomOccasion && (
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            placeholder="Например: Выпускной"
-                            value={customOccasion}
-                            onChange={(e) => setCustomOccasion(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            className="w-full bg-white/10 rounded-2xl px-6 py-4 text-white placeholder-white/30 font-bold outline-none border border-white/20 focus:border-brand-purple"
-                        />
-                    )}
-                </>
-            )}
-
-            {step === 4 && (
-                <>
-                    <StepHeader title="Кто этот человек для вас?" />
-                    <div className="grid grid-cols-2 gap-3 mb-6">
-                        {relationships.map(rel => (
-                            <button
-                                key={rel}
-                                onClick={() => { setIsCustomRelationship(false); updateAnswer('relationship', rel); setTimeout(nextStep, 250); }}
-                                className={`p-4 rounded-2xl font-bold text-sm transition-all border ${
-                                    !isCustomRelationship && answers.relationship === rel
-                                    ? 'bg-white text-brand-blue border-white shadow-lg scale-105' 
-                                    : 'bg-white/5 text-white border-white/10 hover:bg-white/10'
-                                }`}
-                            >
-                                {rel}
-                            </button>
-                        ))}
-                        <button
-                            onClick={() => { setIsCustomRelationship(true); updateAnswer('relationship', ''); }}
-                            className={`p-4 rounded-2xl font-bold text-sm transition-all border col-span-2 ${
-                                isCustomRelationship
-                                ? 'bg-white text-brand-blue border-white shadow-lg'
-                                : 'bg-white/5 text-white border-white/10 hover:bg-white/10'
-                            }`}
-                        >
-                            Другое
-                        </button>
-                    </div>
-                    {isCustomRelationship && (
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            placeholder="Кем приходится?"
-                            value={customRelationship}
-                            onChange={(e) => setCustomRelationship(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            className="w-full bg-white/10 rounded-2xl px-6 py-4 text-white placeholder-white/30 font-bold outline-none border border-white/20 focus:border-brand-purple"
-                        />
-                    )}
-                </>
-            )}
-
-            {step === 5 && (
-                <>
-                    <StepHeader title="Какое настроение?" subtitle="Эмоциональный окрас" />
-                    <div className="grid grid-cols-1 gap-3 mb-6">
-                        {VIBES.map(v => (
-                            <SelectionCard
-                                key={v.id}
-                                label={v.label}
-                                desc={v.desc}
-                                icon={<v.icon />}
-                                selected={!isCustomVibe && answers.vibe === v.label}
-                                onClick={() => { setIsCustomVibe(false); updateAnswer('vibe', v.label); setTimeout(nextStep, 250); }}
-                            />
-                        ))}
-                        <SelectionCard
-                            label="Свой вариант"
-                            icon={<Icons.Edit />}
-                            selected={isCustomVibe}
-                            onClick={() => { setIsCustomVibe(true); updateAnswer('vibe', ''); }}
-                        />
-                    </div>
-                    {isCustomVibe && (
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            placeholder="Опишите вайб..."
-                            value={customVibe}
-                            onChange={(e) => setCustomVibe(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            className="w-full bg-white/10 rounded-2xl px-6 py-4 text-white placeholder-white/30 font-bold outline-none border border-white/20 focus:border-brand-purple"
-                        />
-                    )}
-                </>
-            )}
-
-            {step === 6 && (
-                <>
-                    <StepHeader title="Город доставки" subtitle="Чтобы найти товары рядом" />
-                    <div className="mb-6 relative z-50">
-                        <CityAutocomplete 
-                            value={answers.city} 
-                            onChange={(val) => updateAnswer('city', val)} 
-                            onSelect={() => setTimeout(nextStep, 250)}
-                        />
-                    </div>
-                </>
-            )}
-
-            {/* --- NEW STEP 7: Roles --- */}
-            {step === 7 && (
-                <>
-                    <StepHeader title="Кто он по жизни?" subtitle="Выберите 3 главных роли" />
-                    <div className="flex flex-wrap justify-center gap-2 mb-8">
-                        {ROLES.map(role => (
-                            <button
-                                key={role.id}
-                                onClick={() => toggleRole(role.id)}
-                                className={`px-4 py-3 rounded-2xl font-bold text-sm transition-all border shadow-sm ${
-                                    answers.roles.includes(role.id)
-                                    ? 'bg-white text-brand-dark border-white scale-105 shadow-lg'
-                                    : 'bg-white/10 text-white border-white/10 hover:bg-white/20'
-                                }`}
-                            >
-                                {role.label}
-                            </button>
-                        ))}
-                    </div>
-                    
-                    {answers.roles.length > 0 && (
-                        <div className="flex justify-center animate-fade-in">
-                            <div className="bg-white/10 p-1 rounded-xl flex">
-                                <button 
-                                    onClick={() => updateAnswer('roleConfidence', 'sure')}
-                                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${answers.roleConfidence === 'sure' ? 'bg-brand-blue text-white shadow' : 'text-white/60 hover:text-white'}`}
-                                >
-                                    Знаю точно
-                                </button>
-                                <button 
-                                    onClick={() => updateAnswer('roleConfidence', 'guessing')}
-                                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${answers.roleConfidence === 'guessing' ? 'bg-brand-purple text-white shadow' : 'text-white/60 hover:text-white'}`}
-                                >
-                                    Кажется
-                                </button>
+            {/* Content */}
+            <div className="relative z-10 flex-grow flex flex-col max-w-xl mx-auto w-full px-6">
+                
+                {/* 0. NAME & GENDER */}
+                {step === 0 && (
+                    <div className="w-full flex-grow flex flex-col justify-center">
+                        <StepTitle subtitle="Давай начнем с главного. Кому ищем подарок?">Кто счастливчик?</StepTitle>
+                        <div className="space-y-8">
+                            <FloatingInput value={name} onChange={setName} placeholder="Имя (Саша, Женя...)" autoFocus />
+                            <div className="grid grid-cols-3 gap-3">
+                                {['male', 'female', 'unisex'].map(id => (
+                                    <button key={id} onClick={() => setGender(id as any)} className={`flex flex-col items-center justify-center p-4 rounded-2xl border transition-all duration-300 ${gender === id ? 'bg-white text-brand-dark border-white shadow-lg scale-105' : 'bg-white/5 text-white/70 border-white/10 hover:bg-white/10'}`}>
+                                        <span className="font-bold text-sm">{id === 'male' ? 'Он' : id === 'female' ? 'Она' : 'Неважно'}</span>
+                                    </button>
+                                ))}
                             </div>
                         </div>
-                    )}
-                </>
-            )}
-
-            {/* --- NEW STEP 8: Archetype --- */}
-            {step === 8 && (
-                <>
-                    <StepHeader title="Внутренний миф" subtitle="Какой он персонаж?" />
-                    
-                    <div className="grid grid-cols-2 gap-3 mb-8">
-                        {ARCHETYPES.map(arch => (
-                            <button
-                                key={arch.id}
-                                onClick={() => updateAnswer('archetype', arch.id)}
-                                className={`p-4 rounded-2xl text-left transition-all border ${
-                                    answers.archetype === arch.id
-                                    ? 'bg-gradient-to-br from-brand-blue to-brand-purple border-white/50 text-white shadow-lg scale-[1.02]'
-                                    : 'bg-white/5 border-white/10 text-white hover:bg-white/10'
-                                }`}
-                            >
-                                <div className="font-bold mb-1">{arch.label}</div>
-                                <div className="text-[10px] opacity-70 leading-tight">{arch.desc}</div>
-                            </button>
-                        ))}
+                        <div className="mt-auto pt-8"><button disabled={!name} onClick={next} className="w-full py-4 bg-gradient-to-r from-brand-blue to-brand-purple text-white rounded-2xl font-black text-lg shadow-[0_10px_30px_rgba(255,77,109,0.4)] hover:shadow-[0_15px_40px_rgba(255,77,109,0.6)] disabled:opacity-50 disabled:shadow-none transition-all active:scale-95">Далее →</button></div>
                     </div>
+                )}
 
-                    <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
-                        <label className="block text-xs font-bold text-white/50 uppercase tracking-wider mb-2 ml-1">
-                            Суперсила (за что ценит себя?)
-                        </label>
-                        <input
-                            type="text"
-                            placeholder="Например: Умеет решать любые проблемы..."
-                            value={answers.selfWorth}
-                            onChange={(e) => updateAnswer('selfWorth', e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            className="w-full bg-transparent text-white font-medium outline-none placeholder-white/20 border-b border-white/10 focus:border-brand-blue pb-2 transition-all"
-                        />
+                {/* 1. AGE */}
+                {step === 1 && (
+                    <div className="w-full flex-grow flex flex-col justify-center text-center">
+                        <StepTitle subtitle={`Чтобы не подарить погремушку взрослому.`}>Сколько лет {name}?</StepTitle>
+                        <ScrollPicker items={Array.from({ length: 100 }, (_, i) => ({ val: i + 1, label: i + 1 }))} selectedValue={age} onSelect={setAge} unit={age % 10 === 1 && age !== 11 ? 'год' : (age % 10 >= 2 && age % 10 <= 4 && (age < 10 || age > 20)) ? 'года' : 'лет'} />
+                        <div className="mt-auto pt-8"><button onClick={next} className="w-full py-4 bg-white text-black rounded-2xl font-black text-lg shadow-lg hover:scale-[1.02] active:scale-95 transition-all">Подтвердить</button></div>
                     </div>
-                </>
-            )}
+                )}
 
-            {/* --- NEW STEP 9: Topics --- */}
-            {step === 9 && (
-                <>
-                    <StepHeader title="Горящие глаза" subtitle="О чем может говорить часами?" />
-                    
-                    <div className="relative mb-8">
-                        <textarea
-                            ref={textAreaRef}
-                            value={answers.conversationTopics}
-                            onChange={(e) => updateAnswer('conversationTopics', e.target.value)}
-                            placeholder="Космос, инвестиции, коты, история Рима, новый стартап..."
-                            className="w-full h-32 bg-white/10 rounded-3xl p-6 text-white placeholder-white/30 font-bold text-xl outline-none border border-white/10 focus:border-brand-purple focus:bg-white/15 transition-all resize-none shadow-inner text-center leading-relaxed"
-                        />
-                    </div>
-
-                    <div className="flex justify-center gap-4">
-                        <button 
-                            onClick={() => updateAnswer('topicDuration', 'long_term')}
-                            className={`px-6 py-3 rounded-2xl border transition-all ${
-                                answers.topicDuration === 'long_term' 
-                                ? 'bg-white text-brand-dark border-white font-bold shadow-lg' 
-                                : 'bg-transparent text-white/60 border-white/20 hover:bg-white/10'
-                            }`}
-                        >
-                            ❤️ Давно любит
-                        </button>
-                        <button 
-                            onClick={() => updateAnswer('topicDuration', 'temporary')}
-                            className={`px-6 py-3 rounded-2xl border transition-all ${
-                                answers.topicDuration === 'temporary' 
-                                ? 'bg-white text-brand-dark border-white font-bold shadow-lg' 
-                                : 'bg-transparent text-white/60 border-white/20 hover:bg-white/10'
-                            }`}
-                        >
-                            🔥 Новый хайп
-                        </button>
-                    </div>
-                </>
-            )}
-
-            {/* --- NEW STEP 10: Pain Points --- */}
-            {step === 10 && (
-                <>
-                    <StepHeader title="Бытовые враги" subtitle="Что портит настроение?" />
-                    
-                    <div className="flex flex-wrap justify-center gap-3 mb-8">
-                        {PAIN_ZONES.map(pain => (
-                            <button
-                                key={pain.id}
-                                onClick={() => togglePain(pain.id)}
-                                className={`px-4 py-3 rounded-xl text-left transition-all border flex flex-col ${
-                                    answers.painPoints.includes(pain.id)
-                                    ? 'bg-red-500/20 border-red-400 text-white shadow-[0_0_15px_rgba(248,113,113,0.3)]'
-                                    : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
-                                }`}
-                            >
-                                <span className="font-bold text-sm">{pain.label}</span>
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-6">
-                        <div className="bg-white/5 p-1 rounded-xl flex">
-                            <button 
-                                onClick={() => updateAnswer('painStyle', 'endurer')}
-                                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${answers.painStyle === 'endurer' ? 'bg-white/20 text-white' : 'text-white/40'}`}
-                            >
-                                🧘‍♂️ Терпит неудобства
-                            </button>
-                            <button 
-                                onClick={() => updateAnswer('painStyle', 'optimizer')}
-                                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${answers.painStyle === 'optimizer' ? 'bg-brand-blue text-white' : 'text-white/40'}`}
-                            >
-                                🚀 Оптимизирует всё
-                            </button>
+                {/* 2. RELATIONSHIP */}
+                {step === 2 && (
+                    <div className="w-full flex-grow flex flex-col">
+                        <StepTitle subtitle="Чтобы не нарушить субординацию.">Кем приходится?</StepTitle>
+                        <div className="grid grid-cols-2 gap-3 mb-6">
+                            {RELATIONSHIPS.map(rel => (
+                                <OptionCard key={rel.id} label={rel.label} icon={rel.icon} selected={relationship === rel.id && !customRelationship} onClick={() => { setRelationship(rel.id); setCustomRelationship(''); next(); }} />
+                            ))}
                         </div>
+                        <FloatingInput value={customRelationship} onChange={handleCustomInput(setCustomRelationship, setRelationship)} placeholder="Свой вариант..." onEnter={next} />
+                    </div>
+                )}
 
-                        <label className="flex items-center gap-3 cursor-pointer group bg-white/5 p-4 rounded-2xl border border-white/10 hover:bg-white/10 transition-all">
-                            <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${answers.riskyTopics ? 'bg-red-500 border-red-500' : 'border-white/30'}`}>
-                                {answers.riskyTopics && <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                {/* 3. OCCASION */}
+                {step === 3 && (
+                    <div className="w-full flex-grow flex flex-col">
+                        <StepTitle subtitle="Какой праздник на носу?">Повод</StepTitle>
+                        <div className="grid grid-cols-2 gap-3 mb-6">
+                            {OCCASIONS.map(occ => (
+                                <OptionCard key={occ.id} label={occ.label} icon={occ.icon} selected={occasion === occ.id && !customOccasion} onClick={() => { setOccasion(occ.id); setCustomOccasion(''); next(); }} />
+                            ))}
+                        </div>
+                        <FloatingInput value={customOccasion} onChange={handleCustomInput(setCustomOccasion, setOccasion)} placeholder="Другой повод..." onEnter={next} />
+                    </div>
+                )}
+
+                {/* 4. DEADLINE */}
+                {step === 4 && (
+                    <div className="w-full flex-grow flex flex-col">
+                        <StepTitle subtitle="Чтобы успеть с доставкой.">Когда вручаем?</StepTitle>
+                        <div className="space-y-3">
+                            {DEADLINES.map(d => (
+                                <OptionCard key={d.id} label={d.label} icon={d.icon} selected={deadline === d.id} onClick={() => { setDeadline(d.id); next(); }} />
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* 5. INTERESTS */}
+                {step === 5 && (
+                    <div className="w-full flex-grow flex flex-col relative">
+                        <MemoryJoggers />
+                        <StepTitle subtitle="Самое важное. Чем увлекается? О чем говорит?">Интересы</StepTitle>
+                        <div className="flex flex-wrap gap-2 mb-4 min-h-[40px] relative z-10">
+                            {tags.map((tag, idx) => (
+                                <span key={idx} className="bg-white text-brand-dark px-3 py-1.5 rounded-xl font-bold text-sm flex items-center gap-2 animate-pop">
+                                    {tag}
+                                    <button onClick={() => handleRemoveTag(tag)} className="text-gray-400 hover:text-red-500">×</button>
+                                </span>
+                            ))}
+                        </div>
+                        <div className="relative group w-full z-20">
+                            <div className="absolute inset-0 bg-gradient-to-r from-brand-blue to-brand-purple opacity-0 group-focus-within:opacity-20 blur-xl transition-opacity rounded-2xl"></div>
+                            <div className="relative bg-white/10 border border-white/20 backdrop-blur-xl rounded-2xl flex items-center p-1 focus-within:border-white/50 focus-within:bg-white/20 transition-all">
+                                <input type="text" autoFocus value={interestInput} onChange={(e) => setInterestInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddTag()} placeholder="Введите интерес..." className="w-full bg-transparent border-none outline-none text-white font-bold text-lg px-6 py-4 placeholder-white/30" />
+                                <button onClick={handleAddTag} disabled={!interestInput.trim()} className="mr-2 p-3 bg-white text-brand-dark rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-transform disabled:opacity-50"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg></button>
                             </div>
-                            <input 
-                                type="checkbox" 
-                                className="hidden" 
-                                checked={answers.riskyTopics} 
-                                onChange={() => updateAnswer('riskyTopics', !answers.riskyTopics)} 
-                            />
-                            <div className="text-left">
-                                <div className="text-sm font-bold text-white">Risk Check ⚠️</div>
-                                <div className="text-xs text-white/50">Есть табу (вес, гигиена, порядок)?</div>
+                        </div>
+                        <p className="text-white/40 text-xs mt-3 ml-2 relative z-10">Например: Йога, Кофе, Star Wars, Котики...</p>
+                        <div className="mt-auto pt-6 relative z-10"><button onClick={next} className="w-full py-4 bg-white text-black rounded-2xl font-black text-lg shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:scale-[1.02] active:scale-95 transition-all">{tags.length > 0 ? 'Готово, идем дальше' : 'Пропустить'}</button></div>
+                    </div>
+                )}
+
+                {/* 6. GOAL */}
+                {step === 6 && (
+                    <div className="w-full flex-grow flex flex-col">
+                        <StepTitle subtitle="Какую эмоцию хотите вызвать?">Миссия подарка</StepTitle>
+                        <div className="grid grid-cols-1 gap-3 mb-6">
+                            {GOALS.map(g => (
+                                <OptionCard key={g.id} label={g.label} desc={g.desc} icon={g.icon} selected={goal === g.id && !customGoal} onClick={() => { setGoal(g.id); setCustomGoal(''); next(); }} />
+                            ))}
+                        </div>
+                        <FloatingInput value={customGoal} onChange={handleCustomInput(setCustomGoal, setGoal)} placeholder="Своя цель..." onEnter={next} />
+                    </div>
+                )}
+
+                {/* 7. EFFORT */}
+                {step === 7 && (
+                    <div className="w-full flex-grow flex flex-col">
+                        <StepTitle subtitle="Честно оцените свои силы.">Вложения</StepTitle>
+                        <div className="grid grid-cols-1 gap-3">
+                            {EFFORTS.map(e => (
+                                <button key={e.id} onClick={() => { setEffort(e.id as any); next(); }} className={`p-6 rounded-2xl border text-left transition-all ${effort === e.id ? 'bg-white text-brand-dark border-white shadow-lg' : 'bg-white/5 border-white/10 hover:bg-white/10 text-white'}`}>
+                                    <div className="font-bold text-lg mb-1">{e.label}</div>
+                                    <div className="text-sm opacity-60">{e.desc}</div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* 8. BUDGET */}
+                {step === 8 && (
+                    <div className="w-full flex-grow flex flex-col justify-center text-center">
+                        <StepTitle subtitle="На какую сумму ориентируемся?">Бюджет</StepTitle>
+                        <ScrollPicker items={BUDGET_STEPS} selectedValue={budget} onSelect={setBudget} unit="RUB" />
+                        <div className="mt-auto pt-8"><button onClick={next} className="w-full py-4 bg-white text-black rounded-2xl font-black text-lg shadow-lg hover:scale-[1.02] active:scale-95 transition-all">Подтвердить</button></div>
+                    </div>
+                )}
+
+                {/* 9. OVERVIEW */}
+                {step === 9 && (
+                    <div className="w-full flex-grow flex flex-col">
+                        <StepTitle subtitle="Проверьте, всё ли верно?">Перед стартом</StepTitle>
+                        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-6 shadow-xl mb-8">
+                            <div className="space-y-4 text-sm">
+                                <div className="flex justify-between border-b border-white/10 pb-3"><span className="text-white/50">Кто</span><span className="font-bold">{name}, {age} лет</span></div>
+                                <div className="flex justify-between border-b border-white/10 pb-3"><span className="text-white/50">Повод</span><span className="font-bold">{customOccasion || occasion}</span></div>
+                                <div className="flex justify-between border-b border-white/10 pb-3"><span className="text-white/50">Интересы</span><span className="font-bold text-right max-w-[60%]">{tags.join(', ') || 'Не указаны'}</span></div>
+                                <div className="flex justify-between items-center pt-1"><span className="text-white/50">Бюджет</span><span className="font-black text-xl text-brand-blue bg-white px-3 py-1 rounded-lg shadow-sm">{budget.toLocaleString()} ₽</span></div>
                             </div>
-                        </label>
+                        </div>
+                        <div className="mt-auto space-y-3">
+                            <button onClick={finish} className="w-full py-5 bg-gradient-to-r from-brand-blue to-brand-purple text-white rounded-2xl font-black text-xl uppercase tracking-widest shadow-[0_0_40px_rgba(255,77,109,0.4)] hover:scale-102 transition-transform animate-pulse-slow">🚀 Поехали!</button>
+                            <button onClick={() => setStep(0)} className="w-full py-4 text-white/50 font-bold hover:text-white transition-colors">Изменить данные</button>
+                        </div>
                     </div>
-                </>
-            )}
+                )}
 
-            {step === 11 && (
-                <>
-                    <StepHeader title="Хобби и увлечения" subtitle="Конкретика (если есть)" />
-                    <div className="flex flex-wrap gap-2 mb-8 justify-center">
-                        {INTEREST_TAGS.map(tag => (
-                            <button
-                                key={tag}
-                                onClick={() => toggleTag(tag)}
-                                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all border ${
-                                    selectedTags.includes(tag) 
-                                    ? 'bg-white text-brand-dark border-white shadow-lg scale-105' 
-                                    : 'bg-white/5 text-white border-white/10 hover:bg-white/10'
-                                }`}
-                            >
-                                {tag}
+            </div>
+
+            {/* DEV QUICK BAR */}
+            {isDevMode && (
+                <div className="fixed bottom-0 left-0 right-0 z-[100] bg-black/90 backdrop-blur-xl border-t border-green-500/30 p-4 flex flex-col gap-3 animate-slide-up">
+                    <div className="flex items-center gap-4 overflow-x-auto no-scrollbar pb-1">
+                        <span className="text-[10px] font-black text-green-400 uppercase tracking-widest flex items-center shrink-0">Step Jump:</span>
+                        {STEP_LABELS.map((label, i) => (
+                            <button key={i} onClick={() => setStep(i)} className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-[9px] font-bold transition-all border ${step === i ? 'bg-green-500 text-white border-green-400' : 'bg-white/5 text-white/40 border-white/10 hover:bg-white/10'}`}>
+                                {label}
                             </button>
                         ))}
                     </div>
-                    <div className="relative">
-                        <textarea
-                            ref={textAreaRef}
-                            value={answers.interests}
-                            onChange={(e) => updateAnswer('interests', e.target.value)}
-                            placeholder="Любит Гарри Поттера, мечтает о корги, фанат Marvel..."
-                            className="w-full h-32 bg-white/10 rounded-3xl p-6 text-white placeholder-white/30 font-medium text-lg outline-none border border-white/10 focus:border-brand-purple focus:bg-white/15 transition-all resize-none shadow-inner"
-                        />
+                    <div className="flex items-center justify-between border-t border-white/10 pt-2">
+                        <div className="flex items-center gap-4 overflow-x-auto no-scrollbar">
+                             <span className="text-[9px] font-bold text-white/40 uppercase tracking-tighter">Personas:</span>
+                             {DEV_PERSONAS.map(p => (
+                                <button key={p.label} onClick={() => handlePersonaFill(p)} className="whitespace-nowrap px-4 py-2 bg-green-500/20 text-green-400 border border-green-500/30 rounded-xl text-[10px] font-bold hover:bg-green-500 hover:text-white transition-all">
+                                    {p.label}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="flex items-center gap-2 ml-4">
+                             <button 
+                                onClick={() => setUseMockData(!useMockData)}
+                                className={`px-3 py-1 rounded-lg text-[9px] font-black transition-all border ${useMockData ? 'bg-amber-500 text-white border-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : 'bg-white/5 text-white/40 border-white/10'}`}
+                             >
+                                {useMockData ? 'MOCK' : 'API'}
+                             </button>
+                             <button onClick={() => finish()} className="whitespace-nowrap px-4 py-1.5 bg-white/10 text-white border border-white/10 rounded-xl text-[10px] font-bold">
+                                Skip ⏩
+                             </button>
+                        </div>
                     </div>
-                </>
-            )}
-
-            {step === 12 && (
-                <>
-                    <StepHeader title="Чего точно НЕ дарить?" subtitle="Исключим провальные варианты" />
-                    <div className="flex flex-wrap gap-2 mb-6 justify-center">
-                        {EXCLUDE_TAGS.map(tag => (
-                            <button
-                                key={tag}
-                                onClick={() => toggleExcludeTag(tag)}
-                                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all border ${
-                                    selectedExcludeTags.includes(tag) 
-                                    ? 'bg-red-500 text-white border-red-400 shadow-lg scale-105' 
-                                    : 'bg-white/5 text-white border-white/10 hover:bg-white/10'
-                                }`}
-                            >
-                                {selectedExcludeTags.includes(tag) ? '✕ ' : ''}{tag}
-                            </button>
-                        ))}
-                    </div>
-                    <div className="relative group">
-                        <input
-                            type="text"
-                            placeholder="Что-то еще? (например: живые цветы)"
-                            value={customExclude}
-                            onChange={(e) => setCustomExclude(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            className="w-full bg-white/10 rounded-2xl px-6 py-4 text-white placeholder-white/30 font-bold outline-none border border-white/20 focus:border-brand-purple transition-all"
-                        />
-                    </div>
-                    <p className="text-center text-white/40 text-sm mt-6">
-                        Можно пропустить, если ограничений нет
-                    </p>
-                </>
-            )}
-
-            {step === 13 && (
-                <>
-                    <StepHeader title="Бюджет" subtitle="Сколько готовы потратить?" />
-                    <div className="relative mb-8">
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            inputMode="numeric"
-                            placeholder="0"
-                            value={(answers.budget || '').replace(/\D/g, '')}
-                            onChange={(e) => updateAnswer('budget', e.target.value.replace(/\D/g, ''))}
-                            onKeyDown={handleKeyDown}
-                            className="w-full bg-transparent text-center text-6xl font-black text-white placeholder-white/10 outline-none border-b-2 border-white/20 focus:border-brand-blue transition-all pb-4"
-                        />
-                        <span className="absolute top-1/2 right-4 -translate-y-1/2 text-2xl font-bold text-white/30">₽</span>
-                    </div>
-                    
-                    <div className="flex flex-wrap justify-center gap-3">
-                        {[1000, 3000, 5000, 10000, 15000, 25000].map(amount => (
-                            <button
-                                key={amount}
-                                onClick={() => updateAnswer('budget', amount.toString())}
-                                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold transition-all border border-white/5"
-                            >
-                                {amount.toLocaleString()} ₽
-                            </button>
-                        ))}
-                    </div>
-                </>
+                </div>
             )}
         </div>
     );
-  };
-
-  return (
-    <div className="min-h-screen pt-safe-top pb-safe-bottom flex flex-col relative overflow-hidden bg-brand-dark">
-      
-      {/* Dynamic Background Elements */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-          <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-brand-blue/20 rounded-full blur-[120px] animate-pulse-slow" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-brand-purple/20 rounded-full blur-[120px] animate-blob" />
-      </div>
-
-      {/* Navigation Bar */}
-      <div className="relative z-50 px-6 py-6 flex items-center justify-between">
-          <button 
-            onClick={prevStep}
-            className="w-12 h-12 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white transition-all active:scale-90 border border-white/10 backdrop-blur-md"
-          >
-            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-80"><path d="M15 18l-6-6 6-6"/></svg>
-          </button>
-
-          {/* Segmented Progress */}
-          <div className="flex gap-1 absolute left-1/2 -translate-x-1/2 max-w-[200px] flex-wrap justify-center">
-              {Array.from({ length: 14 }).map((_, i) => (
-                  <div 
-                    key={i} 
-                    className={`h-1.5 rounded-full transition-all duration-500 ${
-                        i <= step ? 'w-3 bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]' : 'w-1.5 bg-white/10'
-                    }`} 
-                  />
-              ))}
-          </div>
-
-          <div className="w-12 h-12" /> {/* Spacer */}
-      </div>
-
-      {/* Main Content Area */}
-      <div className="flex-grow flex flex-col items-center justify-center px-6 relative z-10">
-          
-          {/* Mascot stays constant but reacts */}
-          <div className="mb-8 transition-transform duration-500 hover:scale-105 cursor-pointer">
-             <Mascot 
-                className="w-32 h-32 md:w-40 md:h-40 drop-shadow-2xl" 
-                emotion={step === 0 ? 'happy' : step === 9 ? 'excited' : step === 10 ? 'thinking' : step === 13 ? 'cool' : 'happy'}
-                accessory="santa-hat"
-                variant="cupid"
-             />
-          </div>
-
-          <div className="w-full">
-              {renderContent()}
-          </div>
-      </div>
-
-      {/* Bottom Action Area */}
-      <div className="p-6 pb-8 relative z-50">
-         <div className="max-w-lg mx-auto">
-            <Button 
-                onClick={nextStep} 
-                disabled={!isCurrentStepValid()} 
-                fullWidth 
-                className={`h-16 text-xl rounded-2xl shadow-xl transition-all duration-500 ${
-                    !isCurrentStepValid() 
-                    ? 'opacity-30 grayscale cursor-not-allowed bg-white/10 text-white' 
-                    : 'bg-gradient-to-r from-brand-blue to-brand-purple text-white hover:scale-[1.02] active:scale-95 shadow-[0_0_40px_rgba(255,77,109,0.4)]'
-                }`}
-            >
-                <div className="flex items-center justify-center gap-2">
-                    {step === 13 ? 'Сотворить магию' : 'Далее'}
-                    {isCurrentStepValid() && step !== 13 && (
-                        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="animate-pulse">
-                            <path d="M5 12h14M12 5l7 7-7 7"/>
-                        </svg>
-                    )}
-                    {step === 13 && <span className="text-2xl">💘</span>}
-                </div>
-            </Button>
-         </div>
-      </div>
-
-      {/* Animations Styles */}
-      <style>{`
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in-up {
-            animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        .animate-fade-in {
-            animation: fadeInUp 0.4s ease-out forwards;
-        }
-      `}</style>
-    </div>
-  );
 };

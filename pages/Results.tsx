@@ -1,766 +1,530 @@
-import React, { useEffect, useState } from 'react';
+
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Mascot } from '../components/Mascot';
 import { GiftCard } from '../components/GiftCard';
 import { GiftDetailsModal } from '../components/GiftDetailsModal';
-import { api } from '../api';
-import { Gift, QuizAnswers, RecommendationsResponse } from '../domain/types';
-import { Button } from '../components/Button';
-import { useNavigate } from 'react-router-dom';
-import { analytics, track } from '../utils/analytics';
-import { Mascot } from '../components/Mascot';
+import { Gift, QuizAnswers, RecommendationSession, RecommendationTrack, DialogueHypothesis } from '../domain/types';
+import { api, setGlobalLogger } from '../api';
 import { useDevMode } from '../components/DevModeContext';
-import { inclineName } from '../utils/stringUtils';
-import { createPortal } from 'react-dom';
-import { isInWishlist, addToWishlist, removeFromWishlist } from '../utils/storage';
-import { AmbientSnow } from '../components/SnowSystem';
+import { MockServer } from '../api/mock/server';
 
-const LOADING_MESSAGES = [
-    "Анализирую магию...",
-    "Советуюсь с эльфами...",
-    "Ищу идеальные совпадения...",
-    "Спрашиваю у Санты...",
-    "Проверяю списки желаний...",
-    "Калибрую нейросеть...",
-    "Шуршу подарочной бумагой...",
-    "Добавляю щепотку волшебства...",
-    "Сканирую тренды...",
-    "Отсеиваю скучные носки...",
-    "Ищу то, что вызовет восторг...",
-    "Завариваю какао для вдохновения...",
-    "Распутываю гирлянду идей...",
-    "Договариваюсь с жабой (про бюджет)...",
-    "Изучаю совместимость...",
-    "Почти готово, честно...",
-    "Генерирую радость...",
-    "Смотрю, что дарят звезды...",
-    "Подбираю лучшую цену...",
-    "Ищу редкие артефакты...",
-    "Включаю новогоднее настроение...",
-    "Проверяю наличие на Северном полюсе...",
-    "Составляю секретный список...",
-    "Думаю, как удивить...",
-    "Еще одна секундочка...",
-    "Связываюсь с базой данных чудес...",
-    "Выбираю самое лучшее..."
-];
+// --- COMPONENTS ---
 
-const LoadingScreen: React.FC = () => {
-  const [msg, setMsg] = useState(LOADING_MESSAGES[0]);
-
-  useEffect(() => {
-    // Set initial random message
-    setMsg(LOADING_MESSAGES[Math.floor(Math.random() * LOADING_MESSAGES.length)]);
-
-    const interval = setInterval(() => {
-        setMsg(prev => {
-            const available = LOADING_MESSAGES.filter(m => m !== prev);
-            return available[Math.floor(Math.random() * available.length)];
-        });
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
-
-  return createPortal(
-    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center p-6 text-center bg-brand-dark overflow-hidden touch-none text-white">
-        <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-blue/20 rounded-full blur-[100px] animate-pulse-slow"></div>
-            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-brand-purple/20 rounded-full blur-[100px] animate-pulse-slow" style={{ animationDelay: '1s' }}></div>
-        </div>
-        <div className="relative z-10 animate-float">
-            <Mascot className="w-32 h-32 mb-8 drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]" emotion="thinking" accessory="glasses" />
-        </div>
-        <h2 className="text-2xl font-black mb-3 animate-pulse text-white transition-all duration-500 min-h-[4rem] flex items-center justify-center">
-            {msg}
-        </h2>
-        <div className="flex gap-2 justify-center mb-8">
-            <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-            <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-            <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-        </div>
-        <p className="text-white/50 text-sm max-w-xs font-medium">Ищу идеальные варианты среди тысяч товаров</p>
-    </div>,
-    document.body
-  );
-};
-
-// --- Featured Hero Card Component ---
-
-const FeaturedCard: React.FC<{ 
-  gift: Gift; 
-  onClick: (g: Gift) => void;
-  onToggleWishlist: () => void; 
-}> = ({ gift, onClick, onToggleWishlist }) => {
-  const [saved, setSaved] = useState(isInWishlist(gift.id));
-
-  useEffect(() => {
-      setSaved(isInWishlist(gift.id));
-  }, [gift.id]);
-
-  const handleWishlist = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (saved) {
-      removeFromWishlist(gift.id);
-      track('remove_wishlist', { id: gift.id });
-    } else {
-      addToWishlist(gift.id);
-      track('add_wishlist', { id: gift.id });
-    }
-    setSaved(!saved);
-    onToggleWishlist();
-  };
-
-  // Click wrapper to track monetization
-  const handleClick = () => {
-    analytics.giftClicked(gift, 0, 'results_featured');
-    onClick(gift);
-  }
-
-  const formattedPrice = gift.price ? new Intl.NumberFormat('ru-RU').format(gift.price) + ' ' + (gift.currency === 'USD' ? '$' : '₽') : '---';
-
-  return (
-    <div 
-        onClick={handleClick}
-        className="group relative w-full bg-white rounded-[2.5rem] overflow-hidden shadow-xl hover:shadow-[0_0_50px_rgba(124,58,237,0.3)] transition-all duration-500 cursor-pointer border border-white/20 transform hover:-translate-y-1"
-    >
-        <div className="flex flex-col md:flex-row h-auto md:min-h-[28rem]">
-            {/* Image Side */}
-            <div className="relative w-full md:w-5/12 h-96 md:h-auto overflow-hidden bg-gray-100">
-                <div className="absolute top-4 left-4 z-20 bg-gradient-to-r from-brand-blue to-brand-purple text-white text-[10px] font-black px-3 py-1.5 rounded-lg shadow-lg uppercase tracking-wider flex items-center gap-1">
-                    <span>✨</span> Выбор №1
+const ChatBubble: React.FC<{ children: React.ReactNode; isTyping?: boolean }> = ({ children, isTyping }) => (
+    <div className="relative bg-white/90 backdrop-blur-xl text-brand-dark rounded-2xl rounded-tl-none p-6 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] max-w-xl animate-pop border border-white/50 transition-all">
+        <div className="absolute top-0 left-[-8px] w-4 h-4 bg-white/90 transform skew-x-[20deg]"></div>
+        <div className="relative z-10 text-lg font-bold leading-snug">
+            {isTyping ? (
+                <div className="flex gap-1.5 p-2 px-4">
+                    <div className="w-2 h-2 bg-brand-pink/50 rounded-full animate-[bounce_1s_infinite_0ms]"></div>
+                    <div className="w-2 h-2 bg-brand-pink/50 rounded-full animate-[bounce_1s_infinite_200ms]"></div>
+                    <div className="w-2 h-2 bg-brand-pink/50 rounded-full animate-[bounce_1s_infinite_400ms]"></div>
                 </div>
-                
-                {/* Wishlist Button */}
-                <button 
-                    onClick={handleWishlist}
-                    className={`absolute top-4 right-4 z-20 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg ${saved ? 'bg-white text-[#F91155]' : 'bg-white/80 hover:bg-white text-gray-400'}`}
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${saved ? 'fill-current' : ''}`} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={saved ? 0 : 2} fill={saved ? "currentColor" : "none"}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                </button>
-
-                <img 
-                    src={gift.imageUrl || 'https://placehold.co/600x600/f3f4f6/9ca3af?text=No+Image'} 
-                    alt={gift.title} 
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-                
-                {/* Mobile Gradient & Text Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent md:hidden" />
-                <div className="absolute bottom-4 left-4 right-4 md:hidden text-white pb-2">
-                     <h2 className="text-xl font-bold leading-tight mb-1 line-clamp-2 drop-shadow-md">{gift.title}</h2>
-                     <p className="font-black text-2xl drop-shadow-md">{formattedPrice}</p>
-                </div>
-            </div>
-
-            {/* Content Side (Desktop) */}
-            <div className="relative w-full md:w-7/12 p-6 md:p-10 flex flex-col justify-center bg-white">
-                
-                {/* Desktop Header */}
-                <div className="hidden md:block mb-6">
-                    <h2 className="text-3xl lg:text-4xl font-black text-brand-dark leading-[1.1] mb-3 group-hover:text-brand-blue transition-colors line-clamp-2">
-                        {gift.title}
-                    </h2>
-                    <div className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand-blue to-brand-purple">
-                        {formattedPrice}
-                    </div>
-                </div>
-
-                {/* AI Reason Bubble */}
-                <div className="relative bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 rounded-3xl p-5 mb-8 shadow-sm">
-                    <div className="absolute -top-4 -left-2 bg-white p-1.5 rounded-full shadow-sm border border-indigo-50 rotate-[-10deg]">
-                        <span className="text-2xl">🤖</span>
-                    </div>
-                    <p className="text-indigo-900/80 font-medium text-sm md:text-lg leading-relaxed pl-2">
-                        "{gift.reason || 'Этот подарок идеально подходит под выбранные параметры.'}"
-                    </p>
-                </div>
-
-                {/* Tags */}
-                {gift.tags && (
-                    <div className="flex flex-wrap gap-2 mb-8">
-                        {gift.tags.slice(0, 3).map(tag => (
-                            <span key={tag} className="px-3 py-1 bg-gray-100 rounded-lg text-xs font-bold text-gray-500 uppercase tracking-wide">
-                                #{tag}
-                            </span>
-                        ))}
-                    </div>
-                )}
-
-                <div className="mt-auto flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                        {gift.merchant && (
-                            <>
-                                <span>{gift.merchant}</span>
-                                <span className="w-1 h-1 bg-gray-300 rounded-full" />
-                            </>
-                        )}
-                        <span>{gift.category || 'Gift'}</span>
-                    </div>
-                    
-                    <div className="hidden md:flex h-12 px-8 rounded-xl bg-brand-dark text-white font-bold items-center justify-center group-hover:bg-brand-blue transition-all shadow-lg group-hover:shadow-brand-blue/30">
-                        Смотреть
-                    </div>
-                </div>
-            </div>
+            ) : children}
         </div>
     </div>
-  );
-};
+);
 
-// --- Dev Mode Components ---
+const HypothesisCard: React.FC<{ 
+    data: DialogueHypothesis; 
+    onOpenFeed: () => void; 
+    onLike: (id: string) => void;
+    onDislike: (id: string) => void;
+}> = ({ data, onOpenFeed, onLike, onDislike }) => {
+    const [status, setStatus] = useState<'none' | 'liked' | 'disliked'>('none');
 
-const DevAddGiftModal: React.FC<{ isOpen: boolean; onClose: () => void; onAdd: (g: Partial<Gift>) => void }> = ({ isOpen, onClose, onAdd }) => {
-    const [form, setForm] = useState({
-        title: '',
-        price: '',
-        description: '',
-        imageUrl: '',
-        reason: ''
-    });
-
-    if (!isOpen) return null;
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setForm(prev => ({ ...prev, imageUrl: reader.result as string }));
-            };
-            reader.readAsDataURL(file);
-        }
+    const handleLike = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setStatus('liked');
+        onLike(data.id);
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        onAdd({
-            title: form.title || 'Новый товар',
-            price: parseInt(form.price) || 0,
-            description: form.description,
-            imageUrl: form.imageUrl || 'https://placehold.co/400x500/png?text=Mock+Gift',
-            reason: form.reason || 'Добавлено вручную разработчиком',
-            currency: 'RUB',
-            merchant: 'DevMock'
-        });
-        onClose();
-        setForm({ title: '', price: '', description: '', imageUrl: '', reason: '' });
+    const handleDislike = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setStatus('disliked');
+        onDislike(data.id);
     };
 
-    return createPortal(
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
-            <div className="bg-[#1e1e1e] border border-white/10 w-full max-w-md rounded-2xl p-6 shadow-2xl text-white" onClick={e => e.stopPropagation()}>
-                <h3 className="text-xl font-bold mb-4 text-green-400">🛠 Add Mock Gift</h3>
-                <form onSubmit={handleSubmit} className="space-y-3">
-                    <input 
-                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-500"
-                        placeholder="Title"
-                        value={form.title}
-                        onChange={e => setForm({...form, title: e.target.value})}
-                        autoFocus
-                    />
-                    <input 
-                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-500"
-                        placeholder="Price (RUB)"
-                        type="number"
-                        value={form.price}
-                        onChange={e => setForm({...form, price: e.target.value})}
-                    />
-                    
-                    {/* Image URL + File Upload */}
-                    <div className="flex gap-2">
-                        <input 
-                            className="flex-grow bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-500"
-                            placeholder="Image URL"
-                            value={form.imageUrl}
-                            onChange={e => setForm({...form, imageUrl: e.target.value})}
-                        />
-                        <label className="flex-shrink-0 bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg px-3 py-2 cursor-pointer flex items-center justify-center">
-                            <span className="text-xs font-bold">📂</span>
-                            <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-                        </label>
-                    </div>
-                    {form.imageUrl && (
-                        <div className="w-full h-20 bg-black/50 rounded-lg overflow-hidden border border-white/5">
-                            <img src={form.imageUrl} alt="Preview" className="w-full h-full object-contain" />
-                        </div>
-                    )}
+    const badgeColors: Record<string, string> = {
+        'the_mirror': 'bg-purple-400',
+        'the_optimizer': 'bg-blue-400',
+        'the_catalyst': 'bg-orange-400',
+        'the_anchor': 'bg-green-400'
+    };
 
-                    <input 
-                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-500"
-                        placeholder="AI Reason (Short)"
-                        value={form.reason}
-                        onChange={e => setForm({...form, reason: e.target.value})}
-                    />
-                    <textarea 
-                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-500 h-20 resize-none"
-                        placeholder="Description"
-                        value={form.description}
-                        onChange={e => setForm({...form, description: e.target.value})}
-                    />
-                    <div className="flex gap-2 pt-2">
-                        <button type="button" onClick={onClose} className="flex-1 bg-white/10 hover:bg-white/20 py-2 rounded-lg text-sm font-bold">Cancel</button>
-                        <button type="submit" className="flex-1 bg-green-600 hover:bg-green-500 py-2 rounded-lg text-sm font-bold text-white">Add Gift</button>
-                    </div>
-                </form>
-            </div>
-        </div>,
-        document.body
-    );
-};
+    if (status === 'disliked') return null;
 
-// --- Main Component ---
-
-export const Results: React.FC = () => {
-  const [response, setResponse] = useState<RecommendationsResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [answers, setAnswers] = useState<QuizAnswers | null>(null);
-  const [showDebug, setShowDebug] = useState(false);
-  const { isDevMode } = useDevMode();
-  
-  // Pagination State - Multiples of 2, 3, 4 (LCM is 12) to avoid gaps
-  const [visibleCount, setVisibleCount] = useState(12);
-  
-  // Dev Mode State
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [draggedId, setDraggedId] = useState<string | null>(null);
-  
-  // Modal State
-  const [selectedGift, setSelectedGift] = useState<Gift | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  const [wishlistVersion, setWishlistVersion] = useState(0);
-
-  const navigate = useNavigate();
-
-  const fetchResults = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const stored = localStorage.getItem('gifty_answers');
-      if (!stored) {
-        navigate('/quiz');
-        return;
-      }
-      
-      const parsedAnswers: QuizAnswers = JSON.parse(stored);
-      setAnswers(parsedAnswers);
-      
-      // Use the new generate endpoint which returns full Gift objects
-      const recResponse = await api.recommendations.create(parsedAnswers);
-      setResponse(recResponse);
-      
-      analytics.resultsShown(recResponse.gifts.length);
-    } catch (err) {
-      console.error(err);
-      setError("Не удалось подобрать подарки.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchResults();
-  }, []);
-
-  const handleGiftClick = (gift: Gift) => {
-    track('view_gift_details', { id: gift.id });
-    setSelectedGift(gift);
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setTimeout(() => setSelectedGift(null), 300);
-  };
-
-  const handleLoadMore = () => {
-      setVisibleCount(prev => prev + 12);
-      track('results_load_more');
-  };
-
-  // --- Dev Mode Actions ---
-
-  const handleDevDelete = (e: React.MouseEvent, id: string) => {
-      e.stopPropagation();
-      if (!response) return;
-      
-      const newGifts = response.gifts.filter(g => g.id !== id);
-      let newFeatured = response.featuredGift;
-      
-      // If we deleted the featured gift, promote the first from the remaining list
-      if (response.featuredGift.id === id) {
-          newFeatured = newGifts.length > 0 ? newGifts[0] : null as any;
-      }
-
-      setResponse({
-          ...response,
-          gifts: newGifts,
-          featuredGift: newFeatured
-      });
-  };
-
-  const handleDevAdd = (data: Partial<Gift>) => {
-      if (!response) return;
-      const newGift: Gift = {
-          id: `mock-${Date.now()}`,
-          title: data.title || 'No Title',
-          description: data.description || null,
-          price: data.price || 0,
-          currency: 'RUB',
-          imageUrl: data.imageUrl || null,
-          productUrl: '#',
-          merchant: 'Dev',
-          category: 'Mock',
-          reason: data.reason,
-          ...data
-      } as Gift;
-
-      setResponse({
-          ...response,
-          gifts: [newGift, ...response.gifts]
-      });
-  };
-
-  const handleGiftUpdate = (updatedGift: Gift) => {
-      if (!response) return;
-      
-      setResponse({
-          ...response,
-          featuredGift: response.featuredGift.id === updatedGift.id ? updatedGift : response.featuredGift,
-          gifts: response.gifts.map(g => g.id === updatedGift.id ? updatedGift : g)
-      });
-  };
-
-  // --- Drag & Drop Handlers ---
-
-  const handleDragStart = (e: React.DragEvent, id: string) => {
-      if (!isDevMode) return;
-      setDraggedId(id);
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', id); // Firefox hack
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-      if (!isDevMode) return;
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleDrop = (e: React.DragEvent, targetId: string) => {
-      e.preventDefault();
-      if (!isDevMode || !response || !draggedId || draggedId === targetId) return;
-
-      const currentFeaturedId = response.featuredGift?.id;
-      const isSourceFeatured = draggedId === currentFeaturedId;
-      const isTargetFeatured = targetId === currentFeaturedId;
-
-      let newGifts = [...response.gifts];
-      let newFeatured = response.featuredGift;
-
-      if (isSourceFeatured && !isTargetFeatured) {
-          // Featured -> Grid: Swap
-          const targetGift = newGifts.find(g => g.id === targetId);
-          if (targetGift) newFeatured = targetGift;
-      } else if (!isSourceFeatured && isTargetFeatured) {
-          // Grid -> Featured: Swap
-          const sourceGift = newGifts.find(g => g.id === draggedId);
-          if (sourceGift) newFeatured = sourceGift;
-      } else {
-          // Grid -> Grid: Reorder
-          const fromIndex = newGifts.findIndex(g => g.id === draggedId);
-          const toIndex = newGifts.findIndex(g => g.id === targetId);
-          if (fromIndex !== -1 && toIndex !== -1) {
-              const [item] = newGifts.splice(fromIndex, 1);
-              newGifts.splice(toIndex, 0, item);
-          }
-      }
-
-      setResponse({ ...response, gifts: newGifts, featuredGift: newFeatured });
-      setDraggedId(null);
-  };
-
-  if (loading) return <LoadingScreen />;
-
-  if (error || !response) {
     return (
-       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-brand-dark text-white relative overflow-hidden">
-          {/* Ambience for error screen too */}
-          <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-red-500/10 rounded-full blur-[80px]"></div>
-          </div>
-          
-          <div className="relative z-10 animate-pop">
-              <Mascot emotion="surprised" accessory="none" className="w-40 h-40 mb-6 drop-shadow-2xl mx-auto" />
-              <h2 className="text-2xl font-black mb-2">Возникла непредвиденная ошибка</h2>
-              <p className="text-white/60 text-sm max-w-xs mx-auto mb-8 font-medium leading-relaxed">
-                  Наши инженеры уже ищут решение. Попробуйте повторить запрос чуть позже.
-              </p>
-              
-              <div className="flex flex-col gap-4 items-center">
-                  <Button onClick={fetchResults} className="shadow-lg shadow-brand-blue/30 px-10">
-                      Попробовать еще раз
-                  </Button>
-                  <button onClick={() => navigate('/quiz')} className="text-white/40 hover:text-white text-xs font-bold transition-colors">
-                      Вернуться к параметрам
-                  </button>
-              </div>
-          </div>
-       </div>
-    );
-  }
-
-  const featured = response.featuredGift;
-  const others = featured ? response.gifts.filter(g => g.id !== featured.id) : response.gifts;
-  const visibleOthers = others.slice(0, visibleCount);
-
-  return (
-    <div className="min-h-screen pt-24 pb-20 overflow-x-hidden relative">
-      
-      {/* Background Ambience & Snow */}
-      <AmbientSnow />
-      <div className="fixed inset-0 pointer-events-none z-0">
-          <div className="absolute top-[-20%] right-[-20%] w-[800px] h-[800px] bg-brand-blue/20 rounded-full blur-[100px]"></div>
-          <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
-      </div>
-
-      <div className="max-w-6xl mx-auto px-4 relative z-10">
-        
-        {/* Header */}
-        <div className="flex justify-between items-end mb-10 animate-fade-in-up">
-            <div>
-                <div className="flex items-center gap-3 mb-2">
-                    <span className="bg-white/10 backdrop-blur-md border border-white/20 px-3 py-1 rounded-full text-[10px] font-bold text-white uppercase tracking-widest">
-                        AI Подборка
-                    </span>
-                    {answers?.name && (
-                        <span className="text-white/60 text-sm font-bold">для {inclineName(answers.name, 'genitive')}</span>
-                    )}
+        <div className={`bg-white/90 backdrop-blur-md border rounded-[2.5rem] overflow-hidden shadow-xl animate-pop group transition-all hover:shadow-2xl ${status === 'liked' ? 'ring-4 ring-brand-pink border-brand-pink scale-[1.01]' : 'border-white/50'}`}>
+            <div onClick={onOpenFeed} className="cursor-pointer">
+                <div className="p-8 pb-4">
+                    <div className="flex justify-between items-start mb-3">
+                        <span className={`text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-full text-white shadow-sm ${badgeColors[data.primary_gap] || 'bg-gray-400'}`}>
+                            {data.primary_gap.replace('the_', '')}
+                        </span>
+                        {status === 'liked' && <span className="text-xl animate-pop">❤️</span>}
+                    </div>
+                    <h3 className="text-2xl font-black text-brand-dark mb-2 leading-tight">{data.title}</h3>
+                    <p className="text-gray-600 text-sm leading-relaxed font-medium">{data.description}</p>
                 </div>
-                <h1 className="text-3xl md:text-5xl font-black text-white leading-tight">
-                    Идеальные <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-blue to-brand-purple">совпадения</span>
-                </h1>
+
+                {data.preview_products.length > 0 && (
+                    <div className="px-8 pb-6 relative">
+                        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 mask-gradient-right snap-x">
+                            {data.preview_products.map((gift, i) => (
+                                <div key={i} className="w-24 shrink-0 snap-start">
+                                    <div className="aspect-[4/5] rounded-2xl bg-gray-100 overflow-hidden mb-2 border border-white shadow-sm">
+                                        <img src={gift.imageUrl || ''} className="w-full h-full object-cover" alt="" />
+                                    </div>
+                                    <div className="text-[10px] font-black text-brand-dark/40 text-center">{gift.price} ₽</div>
+                                </div>
+                            ))}
+                            <div className="w-24 shrink-0 aspect-[4/5] rounded-2xl bg-brand-pink/5 border-2 border-dashed border-brand-pink/20 flex flex-col items-center justify-center text-brand-pink gap-1">
+                                <span className="text-xl">✨</span>
+                                <span className="text-[9px] font-black uppercase">Еще 10+</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
             
-            {/* Debug Button - Only in Dev Mode */}
-            {isDevMode && (
-                <div className="flex gap-2">
-                    <button 
-                        onClick={() => setShowDebug(!showDebug)}
-                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${showDebug ? 'bg-green-500 text-white' : 'bg-white/5 hover:bg-white/10 text-white/50'}`}
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                        </svg>
-                    </button>
-                </div>
-            )}
-        </div>
-
-        {isDevMode && showDebug && (
-            <div className="bg-gray-900 rounded-2xl p-6 mb-8 text-[10px] font-mono text-green-400 border border-gray-800 overflow-hidden shadow-2xl animate-pop w-full">
-                <div className="flex justify-between items-start mb-4 border-b border-gray-700 pb-4">
-                    <div>
-                        <p className="font-bold text-lg mb-2">🛠 Debug Console</p>
-                        <p>Engine: {response.engineVersion}</p>
-                        <p>Run ID: {response.quizRunId}</p>
-                    </div>
-                    <div className="text-right">
-                        <p>Gifts: {response.gifts.length}</p>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Request Payload */}
-                    {response.requestPayload && (
-                        <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                            <p className="font-bold text-blue-300 mb-2 uppercase tracking-widest text-[9px]">📤 Request Payload</p>
-                            <pre className="overflow-x-auto whitespace-pre-wrap break-words max-h-60 text-white/70">
-                                {JSON.stringify(response.requestPayload, null, 2)}
-                            </pre>
-                        </div>
-                    )}
-
-                    {/* Server Error (if exists) */}
-                    {response.serverError && (
-                        <div className="bg-red-900/20 p-4 rounded-xl border border-red-500/30">
-                            <p className="font-bold text-red-400 mb-2 uppercase tracking-widest text-[9px]">🔥 Server Error</p>
-                            <pre className="overflow-x-auto whitespace-pre-wrap break-words max-h-60 text-red-200">
-                                {typeof response.serverError === 'string' ? response.serverError : JSON.stringify(response.serverError, null, 2)}
-                            </pre>
-                        </div>
-                    )}
-                </div>
-
-                {/* Response Data */}
-                <div className="mt-4 bg-white/5 p-4 rounded-xl border border-white/5">
-                    <p className="font-bold text-green-300 mb-2 uppercase tracking-widest text-[9px]">📥 Response Payload (Partial)</p>
-                    <pre className="overflow-x-auto whitespace-pre-wrap break-words max-h-60 text-white/50">
-                        {JSON.stringify({ ...response, gifts: `Array(${response.gifts.length})`, featuredGift: 'Object' }, null, 2)}
-                    </pre>
-                </div>
-            </div>
-        )}
-
-        <div className="space-y-12">
-            {/* Featured Section */}
-            {featured && (
-                <div 
-                    draggable={isDevMode}
-                    onDragStart={(e) => handleDragStart(e, featured.id)}
-                    onDragOver={handleDragOver}
-                    onDrop={(e) => handleDrop(e, featured.id)}
-                    className={`relative animate-fade-in-up ${draggedId === featured.id ? 'opacity-50 scale-95' : ''}`} 
-                    style={{ animationDelay: '0.1s' }}
+            <div className="p-8 pt-0 flex gap-3">
+                 <button 
+                    onClick={handleDislike}
+                    className="flex-1 py-4 bg-gray-100 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-2xl font-bold transition-all active:scale-95"
                 >
-                    {/* Dev Delete Button for Featured */}
-                    {isDevMode && (
+                    Не то ✕
+                </button>
+                <button 
+                    onClick={handleLike} 
+                    className={`flex-[2] py-4 font-black rounded-2xl transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 group/btn ${status === 'liked' ? 'bg-brand-love text-white' : 'bg-brand-pink text-white hover:bg-brand-love shadow-brand-pink/20'}`}
+                >
+                    <span className="group-hover/btn:scale-110 transition-transform">🎯</span> 
+                    Это про него!
+                </button>
+            </div>
+        </div>
+    );
+};
+
+const ProbeOverlay: React.FC<{ probe: RecommendationSession['current_probe'], onAnswer: (val: string) => void, onClose: () => void }> = ({ probe, onAnswer, onClose }) => {
+    if (!probe) return null;
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-brand-dark/60 backdrop-blur-md animate-fade-in">
+            <div className="bg-white rounded-[3rem] p-8 md:p-12 w-full max-w-lg shadow-2xl animate-pop border-4 border-white relative">
+                <button onClick={onClose} className="absolute top-6 right-6 text-gray-400 hover:text-brand-dark font-black">✕</button>
+                <div className="text-center mb-8">
+                    <div className="w-16 h-16 bg-brand-pink/10 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 animate-bounce-slow">🤔</div>
+                    <h2 className="text-2xl md:text-3xl font-black text-brand-dark mb-2 leading-tight">{probe.question}</h2>
+                    {probe.subtitle && <p className="text-gray-500 font-bold text-sm">{probe.subtitle}</p>}
+                </div>
+                <div className="space-y-3">
+                    {probe.options.map(opt => (
                         <button 
-                            onClick={(e) => handleDevDelete(e, featured.id)}
-                            className="absolute top-4 right-16 z-50 bg-red-500 hover:bg-red-600 text-white w-8 h-8 rounded-full flex items-center justify-center shadow-lg border-2 border-white/20 transition-transform hover:scale-110"
-                            title="Remove item (Dev Mode)"
+                            key={opt.id}
+                            onClick={() => onAnswer(opt.label)}
+                            className="w-full p-5 bg-gray-50 hover:bg-white hover:shadow-xl border border-gray-100 rounded-3xl text-left flex items-center gap-4 transition-all group"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
+                            <span className="text-3xl group-hover:scale-110 transition-transform">{opt.icon || '👉'}</span>
+                            <div className="font-black text-brand-dark leading-tight">{opt.label}</div>
                         </button>
-                    )}
-
-                    <FeaturedCard 
-                        gift={featured} 
-                        onClick={handleGiftClick} 
-                        onToggleWishlist={() => setWishlistVersion(v => v + 1)}
-                    />
-                </div>
-            )}
-
-            {/* Grid Section */}
-            <div>
-                {/* Separator */}
-                <div className="flex items-center gap-4 mb-8 opacity-0 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-                    <div className="h-px bg-white/20 flex-grow rounded-full"></div>
-                    <h3 className="text-white/40 font-bold uppercase tracking-[0.2em] text-xs">Другие варианты</h3>
-                    <div className="h-px bg-white/20 flex-grow rounded-full"></div>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                    {visibleOthers.map((gift, idx) => (
-                        <div 
-                            key={gift.id} 
-                            draggable={isDevMode}
-                            onDragStart={(e) => handleDragStart(e, gift.id)}
-                            onDragOver={handleDragOver}
-                            onDrop={(e) => handleDrop(e, gift.id)}
-                            className={`relative animate-fade-in-up ${draggedId === gift.id ? 'opacity-50 scale-95' : ''}`} 
-                            style={{ animationDelay: `${0.2 + (idx % 12) * 0.05}s` }}
-                        >
-                            {/* Dev Delete Button for Grid Items */}
-                            {isDevMode && (
-                                <button 
-                                    onClick={(e) => handleDevDelete(e, gift.id)}
-                                    className="absolute top-2 left-2 z-50 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-full flex items-center justify-center shadow-lg border border-white/20 transition-transform hover:scale-110"
-                                    title="Remove item"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            )}
-                            <GiftCard 
-                                gift={gift} 
-                                onClick={handleGiftClick}
-                                onToggleWishlist={() => setWishlistVersion(v => v + 1)}
-                                rank={idx + 1}
-                            />
-                        </div>
                     ))}
                 </div>
-                
-                {/* Load More Button */}
-                {visibleCount < others.length && (
-                    <div className="flex justify-center mt-12 animate-fade-in-up">
-                        <button 
-                            onClick={handleLoadMore}
-                            className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold py-4 px-10 rounded-2xl transition-all active:scale-95 shadow-lg flex items-center gap-2 group text-sm"
-                        >
-                            <span>Показать больше</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 transition-transform group-hover:translate-y-1 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-                    </div>
-                )}
             </div>
         </div>
-        
-        {/* Footer Action */}
-        <div className="mt-16 text-center pb-8 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
-            <div className="bg-white rounded-[2.5rem] p-8 md:p-12 border border-gray-100 shadow-xl inline-block w-full max-w-2xl relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-purple-50/50"></div>
-                <div className="relative z-10">
-                    <Mascot emotion="happy" className="w-24 h-24 mx-auto mb-4" />
-                    <h3 className="text-2xl font-black text-brand-dark mb-2">Не нашли то самое?</h3>
-                    <p className="text-gray-500 mb-8 max-w-md mx-auto font-medium">Попробуйте уточнить запрос или изменить параметры поиска.</p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Button variant="secondary" onClick={() => navigate('/quiz')}>
-                            Попробовать еще раз
-                        </Button>
-                        <button 
-                            onClick={() => navigate('/')}
-                            className="px-8 py-3.5 rounded-2xl font-bold text-gray-500 hover:text-brand-dark hover:bg-gray-100 transition-all border border-gray-200 bg-white"
-                        >
-                            На главную
-                        </button>
+    );
+};
+
+// --- DRAGGABLE CONSOLE LOGS ---
+const NetworkLog = ({ logs, clear }: { logs: any[], clear: () => void }) => (
+    <div className="flex flex-col h-full bg-black/40 rounded-xl overflow-hidden font-mono text-[9px]">
+        <div className="flex justify-between items-center p-2 bg-black/20 border-b border-white/5">
+            <span className="text-white/40 uppercase tracking-widest font-black">Live Network Events</span>
+            <button onClick={clear} className="text-brand-pink hover:underline uppercase">Clear</button>
+        </div>
+        <div className="flex-grow overflow-y-auto p-2 space-y-2 no-scrollbar">
+            {logs.map(log => (
+                <div key={log.id} className="border-l-2 border-white/10 pl-2 py-1">
+                    <div className="flex justify-between items-center">
+                        <span className="text-white/80 font-black">[{log.method}] {log.endpoint}</span>
+                        <span className="text-white/20">{log.timestamp}</span>
                     </div>
+                    {log.payload && (
+                        <div className="text-green-400 mt-1 opacity-60 truncate">
+                            Payload: {JSON.stringify(log.payload)}
+                        </div>
+                    )}
+                </div>
+            ))}
+            {logs.length === 0 && <div className="text-white/20 italic p-4 text-center">Ожидание запросов...</div>}
+        </div>
+    </div>
+);
+
+export const Results: React.FC = () => {
+    const navigate = useNavigate();
+    const { isDevMode, useMockData, setUseMockData, logs, addLog, clearLogs } = useDevMode();
+    
+    const [session, setSession] = useState<RecommendationSession | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
+    const [activeTrackId, setActiveTrackId] = useState<string>('');
+    const [viewGift, setViewGift] = useState<Gift | null>(null);
+    const [customAnswer, setCustomAnswer] = useState('');
+    const [phase, setPhase] = useState<'probe' | 'overview' | 'feed' | 'dead_end'>('probe');
+    const [consoleTab, setConsoleTab] = useState<'control' | 'network'>('control');
+    
+    // Console Dragging State
+    const [consolePos, setConsolePos] = useState({ x: 0, y: 0 });
+    const [isDragging, setIsDragging] = useState(false);
+    const dragRef = useRef<{ startX: number, startY: number, initialX: number, initialY: number } | null>(null);
+
+    const initialized = useRef(false);
+
+    useEffect(() => {
+        setGlobalLogger(addLog);
+    }, [addLog]);
+
+    useEffect(() => {
+        const init = async () => {
+            if (initialized.current) return;
+            const stored = localStorage.getItem('gifty_answers');
+            if (!stored && !useMockData) { navigate('/quiz'); return; }
+            initialized.current = true;
+            try {
+                const answers: QuizAnswers = stored ? JSON.parse(stored) : {};
+                const res = await api.gutg.init(answers);
+                updateInternalState(res);
+            } catch (e) { setError(true); } finally { setLoading(false); }
+        };
+        init();
+    }, [navigate, useMockData]);
+
+    const updateInternalState = (res: RecommendationSession) => {
+        setSession(res);
+        if (res.state === 'BRANCHING') setPhase('probe');
+        else if (res.state === 'DEAD_END') setPhase('dead_end');
+        else if (res.state === 'DEEP_DIVE') setPhase('feed');
+        else setPhase('overview');
+
+        if (res.tracks && res.tracks.length > 0 && (!activeTrackId || !res.tracks.find(t => t.topic_id === activeTrackId))) {
+            setActiveTrackId(res.tracks[0].topic_id);
+        }
+    };
+
+    const activeTrack = useMemo(() => 
+        session?.tracks?.find(t => t.topic_id === activeTrackId), 
+        [session, activeTrackId]
+    );
+
+    const handleInteract = async (action: string, value: string) => {
+        // "Load more" and "select track" shouldn't show heavy loading spinner usually for better UX
+        if (action !== 'load_more_hypotheses' && action !== 'select_track') setLoading(true);
+        
+        try {
+            if (useMockData && action === 'refine_topic') {
+                const res = await MockServer.getGUTGSession('REFINE');
+                updateInternalState(res);
+            } else {
+                const res = await api.gutg.interact(session?.session_id || '', action, value);
+                updateInternalState(res);
+            }
+        } catch (e) { console.error(e); } finally { setLoading(false); }
+    };
+
+    const handleDeepDive = async (hId: string) => {
+        setLoading(true);
+        try {
+            const res = await api.gutg.interact(session?.session_id || '', 'like_hypothesis', hId);
+            updateInternalState(res);
+        } catch (e) { console.error(e); } finally { setLoading(false); }
+    };
+
+    const forceState = async (variant: 'BRANCHING' | 'TRACKS' | 'FEED' | 'DEAD_END') => {
+        setLoading(true);
+        updateInternalState(await MockServer.getGUTGSession(variant));
+        setLoading(false);
+    };
+
+    // --- DRAG HANDLERS ---
+    const startDrag = (e: React.MouseEvent | React.TouchEvent) => {
+        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        dragRef.current = { startX: clientX, startY: clientY, initialX: consolePos.x, initialY: consolePos.y };
+        setIsDragging(true);
+    };
+
+    useEffect(() => {
+        const handleMove = (e: MouseEvent | TouchEvent) => {
+            if (!isDragging || !dragRef.current) return;
+            const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+            const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+            setConsolePos({
+                x: dragRef.current.initialX + (clientX - dragRef.current.startX),
+                y: dragRef.current.initialY + (clientY - dragRef.current.startY)
+            });
+        };
+        const handleUp = () => setIsDragging(false);
+        window.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleUp);
+        window.addEventListener('touchmove', handleMove);
+        window.addEventListener('touchend', handleUp);
+        return () => {
+            window.removeEventListener('mousemove', handleMove);
+            window.removeEventListener('mouseup', handleUp);
+            window.removeEventListener('touchmove', handleMove);
+            window.removeEventListener('touchend', handleUp);
+        };
+    }, [isDragging]);
+
+    return (
+        <div className="min-h-screen relative overflow-x-hidden flex flex-col font-sans pb-48">
+            {/* Header */}
+            <div className="fixed top-0 left-0 right-0 z-40 p-4 flex justify-between items-start pointer-events-none">
+                <button onClick={() => navigate('/quiz')} className="pointer-events-auto bg-white/80 hover:bg-white backdrop-blur-md px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/20 transition-all shadow-sm text-brand-dark">← Квиз</button>
+                <button onClick={() => navigate('/')} className="pointer-events-auto bg-white/80 hover:bg-white backdrop-blur-md px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/20 transition-all shadow-sm text-brand-dark">Домой</button>
+            </div>
+
+            <div className="flex-grow flex flex-col items-center pt-24 px-4 max-w-4xl mx-auto w-full">
+                
+                <div className="mb-12 w-full max-w-2xl flex items-end gap-5 min-h-[140px]">
+                    <div className="mb-3 shrink-0">
+                        <Mascot 
+                            emotion={loading ? 'thinking' : phase === 'dead_end' ? 'surprised' : phase === 'feed' ? 'excited' : 'happy'} 
+                            className="w-24 h-24 md:w-32 md:h-32 drop-shadow-2xl" 
+                            variant="cupid"
+                        />
+                    </div>
+                    
+                    <ChatBubble isTyping={loading}>
+                        {loading ? '...' : (
+                            <>
+                                {error && <p>Ой, мои нейроны запутались. Попробуйте обновить страницу.</p>}
+                                {phase === 'probe' && session?.current_probe && (
+                                    <>
+                                        <p>{session.current_probe.question}</p>
+                                        {session.current_probe.subtitle && <p className="text-[10px] text-gray-500 mt-2 font-black uppercase tracking-widest opacity-50">{session.current_probe.subtitle}</p>}
+                                    </>
+                                )}
+                                {phase === 'overview' && (
+                                    <p>Я проанализировал профиль. Нашел несколько крутых векторов в теме «{activeTrack?.topic_name}»:</p>
+                                )}
+                                {phase === 'feed' && <p>Супер! Вот подборка, которая попадет точно в цель:</p>}
+                                {phase === 'dead_end' && <p>Хм, кажется мы перебрали всё. Куда двинемся дальше?</p>}
+                            </>
+                        )}
+                    </ChatBubble>
+                </div>
+
+                <div className="w-full flex-grow flex flex-col items-center">
+                    {!loading && !error && (
+                        <>
+                            {phase === 'probe' && session?.current_probe && (
+                                <div className="w-full max-w-2xl animate-fade-in-up">
+                                    <div className="mb-6 relative group z-10">
+                                        <input 
+                                            type="text" 
+                                            value={customAnswer}
+                                            onChange={(e) => setCustomAnswer(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && customAnswer.trim() && handleInteract('answer_probe', customAnswer)}
+                                            placeholder="Напишите свой вариант..."
+                                            className="w-full relative bg-white/80 hover:bg-white backdrop-blur-xl border border-white/50 rounded-2xl py-4 pl-6 pr-14 text-brand-dark font-bold placeholder-gray-400 outline-none focus:ring-4 focus:ring-brand-pink/20 transition-all shadow-lg text-lg"
+                                        />
+                                        <button 
+                                            onClick={() => customAnswer.trim() && handleInteract('answer_probe', customAnswer)}
+                                            disabled={!customAnswer.trim()}
+                                            className="absolute right-2 top-2 bottom-2 aspect-square bg-brand-pink text-white rounded-xl flex items-center justify-center shadow-md hover:bg-brand-love transition-all active:scale-90 z-20"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clipRule="evenodd" /></svg>
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {session.current_probe.options.map((opt) => (
+                                            <button key={opt.id} onClick={() => handleInteract('answer_probe', opt.label)} className="bg-white/80 hover:bg-white border border-white/40 p-5 rounded-[2rem] text-left transition-all group flex items-center gap-4 shadow-lg active:scale-[0.98]">
+                                                <span className="text-3xl group-hover:scale-110 transition-transform">{opt.icon || '👉'}</span>
+                                                <div>
+                                                    <div className="font-black text-brand-dark text-sm leading-tight">{opt.label}</div>
+                                                    {opt.description && <div className="text-[10px] text-gray-500 font-bold mt-1 opacity-60">{opt.description}</div>}
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {phase === 'overview' && session?.tracks && (
+                                <div className="w-full flex flex-col gap-8 animate-fade-in-up">
+                                    {/* Track Switcher */}
+                                    <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 mask-gradient-right px-2">
+                                        {session.tracks.map(t => {
+                                            const isActive = t.topic_id === activeTrackId;
+                                            return (
+                                                <div key={t.topic_id} className="relative shrink-0 flex flex-col gap-1 items-center group">
+                                                    <button 
+                                                        onClick={() => {
+                                                            setActiveTrackId(t.topic_id);
+                                                            handleInteract('select_track', t.topic_id);
+                                                        }} 
+                                                        className={`flex flex-col items-start px-6 py-4 rounded-[2.5rem] border transition-all duration-300 min-w-[150px] relative ${isActive ? 'bg-white text-brand-dark border-white shadow-xl scale-105 z-10' : 'bg-white/30 text-brand-dark/50 border-white/20 hover:bg-white/50'}`}
+                                                    >
+                                                        <span className="text-[9px] font-black uppercase opacity-60 mb-0.5">{t.topic_name}</span>
+                                                        <span className="text-sm font-black truncate w-full">{t.title}</span>
+                                                        {isActive && <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2 h-2 bg-brand-pink rounded-full shadow-[0_0_10px_#FF4D6D]"></div>}
+                                                    </button>
+                                                    
+                                                    {isActive && (
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); handleInteract('refine_topic', t.topic_id); }}
+                                                            className="mt-2 bg-white/20 hover:bg-white/40 backdrop-blur-sm px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter text-brand-dark transition-all flex items-center gap-1"
+                                                        >
+                                                            ⚙️ Уточнить тему
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Hypotheses List */}
+                                    <div className="w-full max-w-xl mx-auto space-y-6">
+                                        {activeTrack && activeTrack.hypotheses.map(h => (
+                                            <HypothesisCard 
+                                                key={h.id} 
+                                                data={h} 
+                                                onOpenFeed={() => handleDeepDive(h.id)} 
+                                                onLike={(id) => api.gutg.react(id, 'like')}
+                                                onDislike={(id) => api.gutg.react(id, 'dislike')}
+                                            />
+                                        ))}
+                                        
+                                        <button 
+                                            onClick={() => handleInteract('load_more_hypotheses', activeTrackId)}
+                                            className="w-full py-10 border-4 border-dashed border-white/30 hover:border-white/50 bg-white/5 rounded-[3rem] text-brand-dark/40 font-black transition-all text-sm flex flex-col items-center gap-3 group active:scale-95"
+                                        >
+                                            <span className="text-4xl group-hover:rotate-12 transition-transform">➕</span>
+                                            ПОКАЗАТЬ ЕЩЕ ГИПОТЕЗЫ
+                                        </button>
+                                    </div>
+
+                                    {/* Rescue Interaction */}
+                                    <div className="mt-12 border-t border-white/20 pt-10 text-center">
+                                        <p className="text-[10px] font-black text-brand-dark/30 uppercase tracking-[0.4em] mb-6">Ничего не подошло?</p>
+                                        <button 
+                                            onClick={() => handleInteract('suggest_topics', '')}
+                                            className="py-5 px-10 rounded-[2rem] bg-white/40 border border-white/40 text-brand-dark font-black hover:bg-white transition-all shadow-md active:scale-95"
+                                        >
+                                            ПОПРОБОВАТЬ ДРУГИЕ НАПРАВЛЕНИЯ
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {phase === 'feed' && (
+                                <div className="w-full animate-fade-in-up px-2">
+                                    <button 
+                                        onClick={() => setPhase('overview')}
+                                        className="mb-8 bg-white/80 hover:bg-white text-brand-dark px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all shadow-md border border-white/50 active:scale-95"
+                                    >
+                                        ← Назад к гипотезам
+                                    </button>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pb-20">
+                                        {session?.deep_dive_products?.map((g, i) => <GiftCard key={g.id} gift={g} onClick={setViewGift} rank={i} />)}
+                                    </div>
+                                </div>
+                            )}
+
+                            {phase === 'dead_end' && (
+                                <div className="w-full max-w-md text-center animate-pop bg-white/90 backdrop-blur-xl p-12 rounded-[3rem] shadow-2xl border border-white/50">
+                                    <h2 className="text-3xl font-black text-brand-dark mb-4">Тут пусто 🛑</h2>
+                                    <p className="text-gray-600 mb-10 font-bold leading-relaxed opacity-70">Мои алгоритмы зашли в тупик в этом направлении. Давайте сменим стратегию?</p>
+                                    <button onClick={() => window.location.reload()} className="w-full py-5 bg-brand-pink text-white rounded-2xl font-black shadow-xl hover:bg-brand-love transition-all active:scale-95">Начать сначала</button>
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
             </div>
+
+            {/* Probe Overlay handling (from Refine action) */}
+            {session?.current_probe && (
+                <ProbeOverlay 
+                    probe={session.current_probe} 
+                    onAnswer={(val) => handleInteract('answer_probe', val)} 
+                    onClose={() => setSession(prev => prev ? ({ ...prev, current_probe: undefined }) : null)}
+                />
+            )}
+
+            {/* --- GIFTY ENGINE CONSOLE 4.0 (DRAGGABLE & LIVE LOGS) --- */}
+            {isDevMode && (
+                <div 
+                    className="fixed z-[100] w-[95%] max-w-lg select-none"
+                    style={{ 
+                        transform: `translate(${consolePos.x}px, ${consolePos.y}px)`,
+                        bottom: '2rem',
+                        left: '50%',
+                        marginLeft: '-237.5px' 
+                    }}
+                >
+                    <div className="bg-[#0F172A]/95 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_30px_70px_-15px_rgba(0,0,0,0.8)] border border-white/10 overflow-hidden h-[360px] flex flex-col">
+                        
+                        {/* Drag Handle & Header */}
+                        <div 
+                            onMouseDown={startDrag}
+                            onTouchStart={startDrag}
+                            className="p-4 border-b border-white/5 cursor-move active:bg-white/5 flex items-center justify-between"
+                        >
+                            <div className="flex gap-4">
+                                <button onMouseDown={e => e.stopPropagation()} onClick={() => setConsoleTab('control')} className={`text-[10px] font-black uppercase tracking-widest ${consoleTab === 'control' ? 'text-brand-pink' : 'text-white/30'}`}>Engine Control</button>
+                                <button onMouseDown={e => e.stopPropagation()} onClick={() => setConsoleTab('network')} className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${consoleTab === 'network' ? 'text-green-400' : 'text-white/30'}`}>
+                                    Network Log {logs.length > 0 && <span className="bg-green-500 text-black px-1 rounded-sm text-[8px]">{logs.length}</span>}
+                                </button>
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <div className="w-1 h-1 bg-white/20 rounded-full"></div>
+                                <div className="w-1 h-1 bg-white/20 rounded-full"></div>
+                                <div className="w-1 h-1 bg-white/20 rounded-full"></div>
+                            </div>
+                        </div>
+                        
+                        <div className="flex-grow overflow-hidden relative p-6">
+                            {consoleTab === 'control' ? (
+                                <div className="space-y-6">
+                                    <div>
+                                        <label className="text-[8px] font-bold text-white/40 uppercase mb-2 block">State Forcing</label>
+                                        <div className="grid grid-cols-4 gap-1.5">
+                                            {['BRANCHING', 'TRACKS', 'FEED', 'DEAD_END'].map(v => (
+                                                <button 
+                                                    key={v}
+                                                    onClick={() => forceState(v as any)} 
+                                                    className={`py-2.5 rounded-xl text-[9px] font-black transition-all border ${session?.state === v ? 'bg-brand-pink border-brand-pink text-white' : 'bg-white/5 text-white/40 border-white/10 hover:bg-white/10'}`}
+                                                >
+                                                    {v}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                                        <div className="flex items-center gap-3">
+                                            <button onClick={() => setUseMockData(!useMockData)} className={`px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase border transition-all ${useMockData ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'bg-white/5 text-white/30 border-white/5'}`}>
+                                                Mock Mode: {useMockData ? 'ON' : 'OFF'}
+                                            </button>
+                                            <button onClick={() => window.location.reload()} className="px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase border border-white/5 text-white/30">Reset Session</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <NetworkLog logs={logs} clear={clearLogs} />
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {viewGift && (
+                <GiftDetailsModal gift={viewGift} isOpen={!!viewGift} onClose={() => setViewGift(null)} answers={null} onWishlistChange={() => {}} />
+            )}
         </div>
-
-        {selectedGift && (
-            <GiftDetailsModal 
-            gift={selectedGift} 
-            isOpen={isModalOpen} 
-            onClose={handleCloseModal}
-            answers={answers}
-            onWishlistChange={() => setWishlistVersion(v => v + 1)}
-            onUpdate={handleGiftUpdate}
-            />
-        )}
-
-        {/* Dev Mode Add Button */}
-        {isDevMode && (
-            <button
-                onClick={() => setIsAddModalOpen(true)}
-                className="fixed bottom-24 right-6 z-[60] bg-green-500 hover:bg-green-400 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-110 border-4 border-white/20 animate-pop"
-                title="Add Mock Gift"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
-                </svg>
-            </button>
-        )}
-
-        {/* Dev Mode Modal */}
-        {isDevMode && (
-            <DevAddGiftModal 
-                isOpen={isAddModalOpen} 
-                onClose={() => setIsAddModalOpen(false)} 
-                onAdd={handleDevAdd} 
-            />
-        )}
-
-      </div>
-      
-      <style>{`
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in-up {
-            animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            opacity: 0; 
-        }
-      `}</style>
-    </div>
-  );
+    );
 };
