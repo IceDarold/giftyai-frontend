@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 
 interface MascotProps {
@@ -17,7 +18,7 @@ export const Mascot: React.FC<MascotProps> = ({
   eyesY = 0,
   accessory = 'none',
   floating = true,
-  variant = 'cupid' // Default to Cupid for Valentine's
+  variant = 'default' 
 }) => {
   // Eye tracking movement calculation (clamped for the SVG coordinate system)
   const pupilX = Math.max(-1, Math.min(1, eyesX)) * 5;
@@ -38,17 +39,17 @@ export const Mascot: React.FC<MascotProps> = ({
     return () => clearTimeout(timer);
   }, []);
 
-  // Colors based on variant
+  // Cyber-Gift Colors (Tech & Fun)
   const isCupid = variant === 'cupid';
-  const headGradientId = isCupid ? "headGradientPink" : "headGradientBlue";
+  const headGradientId = isCupid ? "headGradientLove" : "headGradientCyber";
   
   const colors = {
-      headDark: isCupid ? "#E01E37" : "#1D4ED8", // Dark outline/ears
-      headMain: isCupid ? `url(#${headGradientId})` : `url(#${headGradientId})`,
-      snout: isCupid ? "#FFC2D1" : "#BFDBFE",
-      cheek: isCupid ? "#FF8FA3" : "#F472B6",
-      nose: isCupid ? "#A01138" : "#1E3A8A",
-      stroke: isCupid ? "#A01138" : "#1E3A8A"
+      headDark: isCupid ? "#DB2777" : "#7C3AED", // Pink-600 or Violet-600
+      headMain: `url(#${headGradientId})`,
+      snout: isCupid ? "#FDE047" : "#E879F9", // Yellow or Light Fuchsia
+      cheek: isCupid ? "#FCA5A5" : "#22D3EE", // Pink or Cyan
+      nose: isCupid ? "#9F1239" : "#4C1D95",  // Dark Rose or Deep Violet
+      stroke: isCupid ? "#881337" : "#090014" // Deep Red or Black-Purple
   };
 
   return (
@@ -57,16 +58,16 @@ export const Mascot: React.FC<MascotProps> = ({
         
         <svg viewBox="0 0 200 220" className="w-full h-full drop-shadow-2xl overflow-visible">
             <defs>
-                {/* Default Blue Gradient */}
-                <linearGradient id="headGradientBlue" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#60A5FA" /> 
-                    <stop offset="100%" stopColor="#2563EB" />
+                {/* Cyber Gradient (Purple -> Cyan) */}
+                <linearGradient id="headGradientCyber" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#A855F7" /> {/* Purple */}
+                    <stop offset="100%" stopColor="#22D3EE" /> {/* Cyan */}
                 </linearGradient>
 
-                {/* Cupid Pink Gradient */}
-                <linearGradient id="headGradientPink" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#FF8FA3" /> 
-                    <stop offset="100%" stopColor="#FF4D6D" />
+                {/* Love Gradient (Pink -> Red) */}
+                <linearGradient id="headGradientLove" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#F472B6" /> 
+                    <stop offset="100%" stopColor="#E11D48" />
                 </linearGradient>
                 
                 <filter id="softGlow">
@@ -78,12 +79,10 @@ export const Mascot: React.FC<MascotProps> = ({
                 </filter>
             </defs>
 
-            {/* --- CUPID WINGS (Behind) --- */}
+            {/* --- CUPID WINGS (Conditional) --- */}
             {isCupid && (
                 <g transform="translate(0, 10)">
-                    {/* Left Wing */}
                     <path d="M20 90 Q -20 40 10 20 Q 30 10 50 60" fill="white" stroke={colors.headDark} strokeWidth="2" opacity="0.8" />
-                    {/* Right Wing */}
                     <path d="M180 90 Q 220 40 190 20 Q 170 10 150 60" fill="white" stroke={colors.headDark} strokeWidth="2" opacity="0.8" />
                 </g>
             )}
@@ -110,66 +109,57 @@ export const Mascot: React.FC<MascotProps> = ({
 
             {/* Mouth */}
             <path 
-                d={emotion === 'surprised' ? "M90 155 Q100 165 110 155" : "M85 152 Q100 165 115 152"} 
+                d={emotion === 'surprised' ? "M90 155 Q100 165 110 155" : (emotion === 'cool' ? "M90 155 Q100 158 110 155" : "M85 152 Q100 165 115 152")} 
                 fill="none" 
                 stroke={colors.stroke} 
                 strokeWidth="4" 
                 strokeLinecap="round" 
             />
 
-            {/* --- EYES --- */}
-            <g transform="translate(0, 10)">
-                 {/* Left Eye */}
-                 <g transform="translate(70, 95)">
-                    <circle cx="0" cy="0" r="22" fill="white" stroke={colors.snout} strokeWidth="2"/>
-                    {isBlinking ? (
-                        <line x1="-18" y1="0" x2="18" y2="0" stroke={colors.stroke} strokeWidth="4" strokeLinecap="round" />
-                    ) : (
-                        <g transform={`translate(${pupilX}, ${pupilY})`}>
-                            <circle cx="0" cy="0" r="10" fill={colors.stroke} />
-                            <circle cx="3" cy="-3" r="3" fill="white" />
-                        </g>
-                    )}
-                 </g>
+            {/* --- EYES (Hidden if Cool/Glasses) --- */}
+            {emotion !== 'cool' && accessory !== 'glasses' && (
+                <g transform="translate(0, 10)">
+                     {/* Left Eye */}
+                     <g transform="translate(70, 95)">
+                        <circle cx="0" cy="0" r="22" fill="white" stroke={colors.snout} strokeWidth="2"/>
+                        {isBlinking ? (
+                            <line x1="-18" y1="0" x2="18" y2="0" stroke={colors.stroke} strokeWidth="4" strokeLinecap="round" />
+                        ) : (
+                            <g transform={`translate(${pupilX}, ${pupilY})`}>
+                                <circle cx="0" cy="0" r="10" fill={colors.stroke} />
+                                <circle cx="3" cy="-3" r="3" fill="white" />
+                            </g>
+                        )}
+                     </g>
 
-                 {/* Right Eye */}
-                 <g transform="translate(130, 95)">
-                    <circle cx="0" cy="0" r="22" fill="white" stroke={colors.snout} strokeWidth="2"/>
-                    {isBlinking ? (
-                        <line x1="-18" y1="0" x2="18" y2="0" stroke={colors.stroke} strokeWidth="4" strokeLinecap="round" />
-                    ) : (
-                        <g transform={`translate(${pupilX}, ${pupilY})`}>
-                            <circle cx="0" cy="0" r="10" fill={colors.stroke} />
-                            <circle cx="3" cy="-3" r="3" fill="white" />
-                        </g>
-                    )}
-                 </g>
-            </g>
-
-            {/* --- ACCESSORIES --- */}
-
-            {/* Replace Santa Hat with Heart Headband if Cupid or requested */}
-            {accessory === 'santa-hat' && (
-                <g transform="translate(0, 0)">
-                    {/* Headband Arch */}
-                    <path d="M50 70 Q 100 30 150 70" fill="none" stroke="#FF4D6D" strokeWidth="4" strokeLinecap="round" />
-                    {/* Heart Antennas */}
-                    <g transform="translate(50, 60) rotate(-20)">
-                        <path d="M0 0 L0 -20" stroke="#FF4D6D" strokeWidth="2" />
-                        <path d="M0 -20 M-10 -30 Q-10 -40 0 -40 Q 10 -40 10 -30 L0 -20" fill="#FF4D6D" />
-                    </g>
-                    <g transform="translate(150, 60) rotate(20)">
-                        <path d="M0 0 L0 -20" stroke="#FF4D6D" strokeWidth="2" />
-                        <path d="M0 -20 M-10 -30 Q-10 -40 0 -40 Q 10 -40 10 -30 L0 -20" fill="#FF4D6D" />
-                    </g>
+                     {/* Right Eye */}
+                     <g transform="translate(130, 95)">
+                        <circle cx="0" cy="0" r="22" fill="white" stroke={colors.snout} strokeWidth="2"/>
+                        {isBlinking ? (
+                            <line x1="-18" y1="0" x2="18" y2="0" stroke={colors.stroke} strokeWidth="4" strokeLinecap="round" />
+                        ) : (
+                            <g transform={`translate(${pupilX}, ${pupilY})`}>
+                                <circle cx="0" cy="0" r="10" fill={colors.stroke} />
+                                <circle cx="3" cy="-3" r="3" fill="white" />
+                            </g>
+                        )}
+                     </g>
                 </g>
             )}
 
-            {accessory === 'glasses' && (
-                 <g transform="translate(0, 10)">
-                    <circle cx="70" cy="95" r="26" fill="none" stroke="#1F2937" strokeWidth="3" />
-                    <circle cx="130" cy="95" r="26" fill="none" stroke="#1F2937" strokeWidth="3" />
-                    <line x1="96" y1="95" x2="104" y2="95" stroke="#1F2937" strokeWidth="3" />
+            {/* --- ACCESSORIES --- */}
+
+            {/* Glasses (Cool mode) */}
+            {(accessory === 'glasses' || emotion === 'cool') && (
+                 <g transform="translate(0, 5)">
+                    {/* Frame */}
+                    <path d="M40 95 Q 70 95 100 90 Q 130 95 160 95" fill="none" stroke="#111" strokeWidth="4" />
+                    {/* Lenses */}
+                    <path d="M45 95 Q 45 125 70 125 Q 95 125 95 95 Z" fill="black" stroke="#22D3EE" strokeWidth="2" /> {/* Cyan rim */}
+                    <path d="M105 95 Q 105 125 130 125 Q 155 125 155 95 Z" fill="black" stroke="#22D3EE" strokeWidth="2" />
+                    {/* Reflections */}
+                    <path d="M55 100 L 85 115" stroke="white" strokeWidth="2" opacity="0.3" />
+                    <path d="M115 100 L 145 115" stroke="white" strokeWidth="2" opacity="0.3" />
                  </g>
             )}
         </svg>

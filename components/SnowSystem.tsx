@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useRef } from 'react';
 
 // --- Types & Context ---
@@ -81,27 +82,32 @@ export const SnowProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
-// --- Helper Draw Function (Heart Visuals) ---
-const drawHeart = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number, opacity: number, rotation: number) => {
+// --- Helper Draw Function (Gift/Tech Particles) ---
+const drawGiftParticle = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number, opacity: number, rotation: number, color: string, shape: 'square' | 'circle' | 'cross') => {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(rotation);
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle = color;
     
-    ctx.fillStyle = `rgba(255, 192, 203, ${opacity})`; // Pink
-    ctx.beginPath();
-    const topCurveHeight = size * 0.3;
-    ctx.moveTo(0, topCurveHeight);
-    // Cubic curves for heart shape
-    ctx.bezierCurveTo(0, 0, -size / 2, 0, -size / 2, topCurveHeight);
-    ctx.bezierCurveTo(-size / 2, size / 2, 0, size * 0.8, 0, size);
-    ctx.bezierCurveTo(0, size * 0.8, size / 2, size / 2, size / 2, topCurveHeight);
-    ctx.bezierCurveTo(size / 2, 0, 0, 0, 0, topCurveHeight);
-    ctx.fill();
+    if (shape === 'square') {
+        // Gift box shape
+        ctx.fillRect(-size/2, -size/2, size, size);
+    } else if (shape === 'cross') {
+        // Sparkle/Tech shape
+        ctx.fillRect(-size/2, -size/6, size, size/3);
+        ctx.fillRect(-size/6, -size/2, size/3, size);
+    } else {
+        // Bokeh circle
+        ctx.beginPath();
+        ctx.arc(0, 0, size/2, 0, Math.PI * 2);
+        ctx.fill();
+    }
 
     ctx.restore();
 }
 
-// --- Ambient Snow/Hearts Component ---
+// --- Ambient Confetti Component ---
 
 class AmbientParticle {
     x: number;
@@ -113,6 +119,8 @@ class AmbientParticle {
     rotation: number;
     rotationSpeed: number;
     opacity: number;
+    color: string;
+    shape: 'square' | 'circle' | 'cross';
 
     constructor(width: number, height: number) {
         this.x = Math.random() * width;
@@ -123,13 +131,20 @@ class AmbientParticle {
     reset(width: number, height: number, initial = false) {
         this.x = Math.random() * width;
         this.y = initial ? Math.random() * height : -20;
-        this.size = Math.random() * 8 + 4; // Larger for hearts
-        this.opacity = Math.random() * 0.4 + 0.1;
-        this.vy = Math.random() * 0.8 + 0.4;
+        this.size = Math.random() * 5 + 2; 
+        this.opacity = Math.random() * 0.5 + 0.1;
+        this.vy = Math.random() * 0.5 + 0.2; // Slower float
         this.oscillationSpeed = Math.random() * 0.02 + 0.01;
         this.oscillationAmp = Math.random() * 0.5 + 0.2;
         this.rotation = Math.random() * Math.PI * 2;
-        this.rotationSpeed = (Math.random() - 0.5) * 0.02;
+        this.rotationSpeed = (Math.random() - 0.5) * 0.05;
+        
+        // Cyber-Gift Palette
+        const colors = ['#D946EF', '#22D3EE', '#FBBF24', '#8B5CF6', '#FFFFFF'];
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+        
+        const shapes: ('square' | 'circle' | 'cross')[] = ['square', 'square', 'cross', 'circle'];
+        this.shape = shapes[Math.floor(Math.random() * shapes.length)];
     }
 
     update(width: number, height: number) {
@@ -145,7 +160,7 @@ class AmbientParticle {
     }
 
     draw(ctx: CanvasRenderingContext2D) {
-        drawHeart(ctx, this.x, this.y, this.size, this.opacity, this.rotation);
+        drawGiftParticle(ctx, this.x, this.y, this.size, this.opacity, this.rotation, this.color, this.shape);
     }
 }
 
@@ -166,8 +181,8 @@ export const AmbientSnow: React.FC = () => {
             canvas.height = window.innerHeight * dpr;
             ctx.scale(dpr, dpr);
             
-            // Reduced count for hearts to avoid clutter
-            particles.current = Array.from({ length: 30 }).map(() => 
+            // Particles count - more dense for confetti feeling
+            particles.current = Array.from({ length: 60 }).map(() => 
                 new AmbientParticle(window.innerWidth, window.innerHeight)
             );
         };

@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
   <head>
@@ -24,37 +25,37 @@
             },
             colors: {
               brand: {
-                // Valentine Global Overrides
-                blue: '#FF4D6D',   // Was Blue -> Main Pink
-                purple: '#C9184A', // Was Purple -> Deep Rose
-                dark: '#2A0A18',   // Was Dark Blue -> Dark Burgundy
+                // "Cyber Celebration" Palette
+                dark: '#090014',    // Deep Cosmic Purple (Base)
+                main: '#D946EF',    // Electric Fuchsia (Gifts/Excitement)
+                accent: '#22D3EE',  // Cyber Cyan (AI/Tech)
+                surface: '#1E1B4B', // Deep Indigo (Cards)
                 
-                // Explicit Palette
-                pink: '#FF4D6D',
-                rose: '#FF8FA3',
-                love: '#C9184A',
+                // Functional Colors
+                purple: '#A855F7',  // Primary interaction
+                blue: '#3B82F6',    // Info/Links
+                pink: '#EC4899',    // Highlights
+                yellow: '#FBBF24',  // Stars/Gold
+                
+                love: '#F43F5E'     // Red/Heart
               },
               surface: '#FFFFFF',
             },
             animation: {
-              'float': 'float 3s ease-in-out infinite',
-              'pop': 'pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-              'blob': 'blob 7s infinite',
+              'float': 'float 6s ease-in-out infinite',
+              'pop': 'pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+              'blob': 'blob 10s infinite',
               'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-              'wave': 'wave 2s infinite linear',
-              'snow': 'snow 10s linear infinite',
-              'hearts': 'hearts 15s linear infinite',
-              'twinkle': 'twinkle 2s ease-in-out infinite',
-              'scroll': 'scroll 40s linear infinite',
-              'swing': 'swing 6s ease-in-out infinite',
+              'spin-slow': 'spin 12s linear infinite',
+              'gradient-x': 'gradient-x 15s ease infinite',
             },
             keyframes: {
               float: {
                 '0%, 100%': { transform: 'translateY(0)' },
-                '50%': { transform: 'translateY(-10px)' },
+                '50%': { transform: 'translateY(-15px)' },
               },
               pop: {
-                '0%': { transform: 'scale(0.9)', opacity: 0 },
+                '0%': { transform: 'scale(0.95)', opacity: 0 },
                 '100%': { transform: 'scale(1)', opacity: 1 },
               },
               blob: {
@@ -63,33 +64,16 @@
                 '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
                 '100%': { transform: 'translate(0px, 0px) scale(1)' },
               },
-              wave: {
-                '0%, 100%': { transform: 'rotate(0deg)' },
-                '25%': { transform: 'rotate(-10deg)' },
-                '75%': { transform: 'rotate(10deg)' },
+              'gradient-x': {
+                '0%, 100%': {
+                    'background-size': '200% 200%',
+                    'background-position': 'left center'
+                },
+                '50%': {
+                    'background-size': '200% 200%',
+                    'background-position': 'right center'
+                },
               },
-              snow: {
-                '0%': { transform: 'translate3d(0, -10vh, 0)', opacity: 0 },
-                '10%': { opacity: 1 },
-                '100%': { transform: 'translate3d(20px, 110vh, 0)', opacity: 0 },
-              },
-              hearts: {
-                '0%': { transform: 'translateY(110vh) scale(0.5)', opacity: 0 },
-                '10%': { opacity: 0.8 },
-                '100%': { transform: 'translateY(-10vh) scale(1.2)', opacity: 0 },
-              },
-              twinkle: {
-                '0%, 100%': { opacity: 1, transform: 'scale(1)' },
-                '50%': { opacity: 0.5, transform: 'scale(0.8)' },
-              },
-              scroll: {
-                '0%': { transform: 'translateX(0)' },
-                '100%': { transform: 'translateX(-50%)' },
-              },
-              swing: {
-                '0%, 100%': { transform: 'rotate(-5deg)' },
-                '50%': { transform: 'rotate(5deg)' },
-              }
             }
           }
         }
@@ -99,9 +83,9 @@
       body {
         -webkit-tap-highlight-color: transparent;
         overscroll-behavior-y: none;
-        /* Valentine Gradient */
-        background: linear-gradient(180deg, #FF758F 0%, #FF4D6D 30%, #C9184A 60%, #800F2F 100%);
-        background-attachment: fixed;
+        /* Deep Cosmic Background */
+        background-color: #090014;
+        color: white;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         text-rendering: optimizeLegibility;
@@ -113,24 +97,21 @@
         -ms-overflow-style: none;
         scrollbar-width: none;
       }
-      .animate-cursor::after {
-        content: '|';
-        animation: cursor .75s step-end infinite;
+      /* Glassmorphism Utilities */
+      .glass {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
       }
-      @keyframes cursor {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0; }
+      .glass-card {
+        background: rgba(30, 27, 75, 0.6);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(168, 85, 247, 0.15);
       }
       .mask-gradient-right {
         mask-image: linear-gradient(to right, black 85%, transparent 100%);
         -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
-      }
-      .mask-gradient-x {
-        mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
-        -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
-      }
-      .hover-pause:hover, .hover-pause:active, .hover-pause:focus-within {
-        animation-play-state: paused !important;
       }
     </style>
   <script type="importmap">
@@ -143,12 +124,14 @@
     "react-dom": "https://esm.sh/react-dom@^19.2.3",
     "posthog-js": "https://esm.sh/posthog-js@^1.336.4",
     "posthog-js/": "https://esm.sh/posthog-js@^1.336.4/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.41.0"
+    "@google/genai": "https://esm.sh/@google/genai@^1.41.0",
+    "tailwind-merge": "https://esm.sh/tailwind-merge@^3.4.1",
+    "clsx": "https://esm.sh/clsx@^2.1.1"
   }
 }
 </script>
 </head>
-  <body class="min-h-screen text-slate-800 antialiased selection:bg-brand-pink selection:text-white">
+  <body class="min-h-screen text-slate-200 antialiased selection:bg-brand-accent selection:text-brand-dark">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
