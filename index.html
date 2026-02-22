@@ -81,6 +81,31 @@
       }
     </script>
     <style>
+      @keyframes marquee {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-33.33%); }
+      }
+      @keyframes marquee-reverse {
+        0% { transform: translateX(-33.33%); }
+        100% { transform: translateX(0); }
+      }
+      .animate-marquee {
+        animation: marquee 30s linear infinite;
+      }
+      .animate-marquee-reverse {
+        animation: marquee-reverse 30s linear infinite;
+      }
+
+      /* Hide number input arrows */
+      input::-webkit-outer-spin-button,
+      input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      input[type=number] {
+        -moz-appearance: textfield;
+      }
+      
       body {
         -webkit-tap-highlight-color: transparent;
         overscroll-behavior-y: none;

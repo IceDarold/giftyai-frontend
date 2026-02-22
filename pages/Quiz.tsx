@@ -42,12 +42,12 @@ const RELATIONSHIPS = [
 ];
 
 const OCCASIONS = [
-    { id: 'ДР', label: 'День Рождения', icon: Icons.Cake },
-    { id: 'Новый год', label: 'Новый год', icon: Icons.Star },
-    { id: 'Годовщина', label: 'Годовщина', icon: Icons.Heart },
-    { id: 'Просто так', label: 'Просто так', icon: Icons.Smile },
-    { id: 'Новоселье', label: 'Новоселье', icon: Icons.Home },
-    { id: 'Извинение', label: 'Извинение', icon: Icons.Gift }
+    { id: 'ДР', label: 'День Рождения', icon: '🎂', color: 'text-amber-500' },
+    { id: '23_feb', label: '23 февраля', icon: '🎖️', color: 'text-blue-600' },
+    { id: '8_march', label: '8 марта', icon: '💐', color: 'text-pink-500' },
+    { id: 'Годовщина', label: 'Годовщина', icon: '💍', color: 'text-red-500' },
+    { id: 'Просто так', label: 'Просто так', icon: '✨', color: 'text-brand-main' },
+    { id: 'Извинение', label: 'Извинение', icon: '🙏', color: 'text-indigo-500' }
 ];
 
 const GOALS = [
@@ -146,50 +146,41 @@ const StepTitle: React.FC<{ children: React.ReactNode; subtitle?: string }> = ({
 );
 
 const MemoryJoggers: React.FC = React.memo(() => {
-    const items = useMemo(() => {
+    const rows = useMemo(() => {
         const list = [...MEMORY_JOGGERS].sort(() => 0.5 - Math.random());
-        const cols = 5; 
-        const rows = Math.ceil(list.length / cols);
-        
-        return list.map((text, i) => {
-            const row = Math.floor(i / cols);
-            const col = i % cols;
-            const baseLeft = (col / cols) * 100;
-            const baseTop = (row / rows) * 100;
-            const jitterX = Math.random() * (100 / cols) * 0.7;
-            const jitterY = Math.random() * (100 / rows) * 0.7;
-
-            return {
-                text,
-                left: baseLeft + jitterX,
-                top: baseTop + jitterY,
-                delay: Math.random() * -30,
-                duration: 25 + Math.random() * 15,
-                opacity: 0.4 + Math.random() * 0.4,
-                scale: 0.85 + Math.random() * 0.35
-            };
-        });
+        const chunkSize = Math.ceil(list.length / 4);
+        return [
+            list.slice(0, chunkSize),
+            list.slice(chunkSize, chunkSize * 2),
+            list.slice(chunkSize * 2, chunkSize * 3),
+            list.slice(chunkSize * 3),
+        ];
     }, []);
 
     return (
-        <div className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0">
-            {items.map((item, i) => (
-                <div 
-                    key={i}
-                    className="absolute font-bold whitespace-nowrap animate-float transition-all duration-500"
-                    style={{
-                        left: `${item.left}%`,
-                        top: `${item.top}%`,
-                        color: `rgba(134, 200, 188, ${item.opacity * 0.4})`,
-                        fontSize: `${item.scale}rem`,
-                        animationDelay: `${item.delay}s`,
-                        animationDuration: `${item.duration}s`,
-                        textShadow: '0 2px 10px rgba(0,0,0,0.05)'
-                    }}
-                >
-                    {item.text}
-                </div>
-            ))}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0 flex flex-col justify-between py-4 opacity-20">
+            <div className="space-y-4">
+                {rows.slice(0, 2).map((row, i) => (
+                    <div key={i} className={`flex whitespace-nowrap gap-12 ${i % 2 === 0 ? 'animate-marquee' : 'animate-marquee-reverse'}`}>
+                        {[...row, ...row, ...row].map((text, j) => (
+                            <span key={j} className="text-xl font-black text-brand-accent uppercase tracking-tighter italic">
+                                {text}
+                            </span>
+                        ))}
+                    </div>
+                ))}
+            </div>
+            <div className="space-y-4">
+                {rows.slice(2).map((row, i) => (
+                    <div key={i} className={`flex whitespace-nowrap gap-12 ${i % 2 === 0 ? 'animate-marquee-reverse' : 'animate-marquee'}`}>
+                        {[...row, ...row, ...row].map((text, j) => (
+                            <span key={j} className="text-xl font-black text-brand-accent uppercase tracking-tighter italic">
+                                {text}
+                            </span>
+                        ))}
+                    </div>
+                ))}
+            </div>
         </div>
     );
 });
@@ -200,7 +191,8 @@ const OptionCard: React.FC<{
     desc?: string; 
     selected: boolean; 
     onClick: () => void;
-}> = ({ label, icon, desc, selected, onClick }) => (
+    color?: string;
+}> = ({ label, icon, desc, selected, onClick, color }) => (
     <button
         onClick={onClick}
         className={`group relative overflow-hidden transition-all duration-300 w-full text-left
@@ -214,8 +206,8 @@ const OptionCard: React.FC<{
     >
         {selected && <div className="absolute inset-0 bg-gradient-to-r from-brand-main/10 to-brand-accent/10 pointer-events-none" />}
         {icon && (
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${selected ? 'bg-brand-main/10 text-brand-main' : 'bg-gray-100 text-gray-400'}`}>
-                <SvgIcon>{icon}</SvgIcon>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${selected ? 'bg-brand-main/10 text-brand-main' : `bg-gray-100 ${color || 'text-gray-400'}`}`}>
+                {typeof icon === 'string' ? <span className="text-xl">{icon}</span> : <SvgIcon>{icon}</SvgIcon>}
             </div>
         )}
         <div className="relative z-10 flex-grow">
@@ -269,28 +261,68 @@ const ScrollPicker: React.FC<{
     unit?: string;
 }> = ({ items, selectedValue, onSelect, unit }) => {
     const scrollRef = useRef<HTMLDivElement>(null);
+    const isManualScrolling = useRef(false);
+
+    // Initial scroll to selected value
     useEffect(() => {
-        if (scrollRef.current) {
+        if (scrollRef.current && !isManualScrolling.current) {
             const index = items.findIndex(i => i.val === selectedValue);
             if (index !== -1) {
                 const el = scrollRef.current.children[index] as HTMLElement;
                 if (el) {
                     scrollRef.current.scrollTo({
                         left: el.offsetLeft - scrollRef.current.clientWidth / 2 + el.clientWidth / 2,
-                        behavior: 'smooth'
+                        behavior: 'auto'
                     });
                 }
             }
         }
-    }, [selectedValue, items]);
+    }, []);
+
+    const handleScroll = () => {
+        if (!scrollRef.current) return;
+        
+        const container = scrollRef.current;
+        const center = container.scrollLeft + container.clientWidth / 2;
+        
+        let closestIndex = 0;
+        let minDistance = Infinity;
+
+        Array.from(container.children).forEach((child, index) => {
+            const el = child as HTMLElement;
+            const elCenter = el.offsetLeft + el.clientWidth / 2;
+            const distance = Math.abs(center - elCenter);
+            if (distance < minDistance) {
+                minDistance = distance;
+                closestIndex = index;
+            }
+        });
+
+        const newValue = items[closestIndex].val;
+        if (newValue !== selectedValue) {
+            isManualScrolling.current = true;
+            onSelect(newValue);
+            // Reset the flag after a short delay to allow programmatic scrolls if needed elsewhere
+            setTimeout(() => { isManualScrolling.current = false; }, 100);
+        }
+    };
+
     return (
         <div className="relative w-full h-48 flex items-center justify-center my-4">
             <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-brand-surface via-brand-surface/90 to-transparent z-20 pointer-events-none"></div>
             <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-brand-surface via-brand-surface/90 to-transparent z-20 pointer-events-none"></div>
-            <div className="absolute w-32 h-32 border-[3px] border-brand-main rounded-3xl z-10 pointer-events-none shadow-[0_10px_30px_rgba(249,217,73,0.1)] bg-white/50 backdrop-blur-sm"></div>
-            <div ref={scrollRef} className="flex gap-8 overflow-x-auto no-scrollbar w-full px-[50%] snap-x snap-mandatory py-20 items-center">
+            <div className="absolute w-32 h-32 border-[3px] border-brand-main rounded-3xl z-10 pointer-events-none shadow-[0_10px_30px_rgba(249,217,73,0.1)] bg-white/20"></div>
+            <div 
+                ref={scrollRef} 
+                onScroll={handleScroll}
+                className="flex gap-8 overflow-x-auto no-scrollbar w-full px-[50%] snap-x snap-mandatory py-20 items-center"
+            >
                 {items.map((item) => (
-                    <button key={item.val} onClick={() => onSelect(item.val)} className={`shrink-0 w-24 text-center snap-center transition-all duration-300 transform flex flex-col items-center justify-center ${selectedValue === item.val ? 'scale-110 opacity-100' : 'scale-90 opacity-30 hover:opacity-60'}`}>
+                    <button 
+                        key={item.val} 
+                        onClick={() => onSelect(item.val)} 
+                        className={`shrink-0 w-24 text-center snap-center transition-all duration-300 transform flex flex-col items-center justify-center ${selectedValue === item.val ? 'scale-110 opacity-100 blur-none' : 'scale-90 opacity-30 blur-[2px] hover:opacity-60 hover:blur-none'}`}
+                    >
                         <span className="text-4xl md:text-5xl font-black text-brand-dark drop-shadow-sm">{item.label}</span>
                         {unit && <span className="text-xs font-bold uppercase tracking-widest mt-2 text-brand-dark/60">{unit}</span>}
                     </button>
@@ -316,12 +348,13 @@ export const Quiz: React.FC = () => {
     const [customRelationship, setCustomRelationship] = useState('');
     const [occasion, setOccasion] = useState('');
     const [customOccasion, setCustomOccasion] = useState('');
+    const [deadline, setDeadline] = useState<number>(3);
+    const [customDeadlineDate, setCustomDeadlineDate] = useState('');
     const [interestInput, setInterestInput] = useState('');
     const [tags, setTags] = useState<string[]>([]);
     const [goal, setGoal] = useState('');
     const [customGoal, setCustomGoal] = useState('');
     const [budget, setBudget] = useState(5000);
-    const [deadline, setDeadline] = useState<number | null>(null);
     const [effort, setEffort] = useState<'no_effort' | 'low' | 'medium' | 'high' | null>(null);
 
     const startTime = useRef(Date.now());
@@ -358,7 +391,9 @@ export const Quiz: React.FC = () => {
             occasion: customOccasion || occasion,
             vibe: 'Experimental', city: 'Москва',
             interests: tags.join(', '), budget: `${budget}`,
-            goal: customGoal || goal, deadline: deadline || 7, effortLevel: effort || 'low',
+            goal: customGoal || goal, 
+            deadline: customDeadlineDate || deadline || 7, 
+            effortLevel: effort || 'low',
             roleConfidence: 'sure', archetype: 'aesthetic', selfWorth: '',
             conversationTopics: tags.join(', '), topicDuration: 'long_term', painStyle: 'endurer', riskyTopics: false, painPoints: [], roles: [],
         };
@@ -446,7 +481,7 @@ export const Quiz: React.FC = () => {
                         <StepTitle subtitle="Какой праздник на носу?">Повод</StepTitle>
                         <div className="grid grid-cols-2 gap-3 mb-6">
                             {OCCASIONS.map(occ => (
-                                <OptionCard key={occ.id} label={occ.label} icon={occ.icon} selected={occasion === occ.id && !customOccasion} onClick={() => { setOccasion(occ.id); setCustomOccasion(''); next(); }} />
+                                <OptionCard key={occ.id} label={occ.label} icon={occ.icon} selected={occasion === occ.id && !customOccasion} onClick={() => { setOccasion(occ.id); setCustomOccasion(''); next(); }} color={occ.color} />
                             ))}
                         </div>
                         <FloatingInput value={customOccasion} onChange={handleCustomInput(setCustomOccasion, setOccasion)} placeholder="Другой повод..." onEnter={next} />
@@ -457,11 +492,40 @@ export const Quiz: React.FC = () => {
                 {step === 4 && (
                     <div className="w-full flex-grow flex flex-col">
                         <StepTitle subtitle="Чтобы успеть с доставкой.">Когда вручаем?</StepTitle>
-                        <div className="space-y-3">
+                        <div className="space-y-3 mb-6">
                             {DEADLINES.map(d => (
-                                <OptionCard key={d.id} label={d.label} icon={d.icon} selected={deadline === d.id} onClick={() => { setDeadline(d.id); next(); }} />
+                                <OptionCard key={d.id} label={d.label} icon={d.icon} selected={deadline === d.id && !customDeadlineDate} onClick={() => { setDeadline(d.id); setCustomDeadlineDate(''); next(); }} />
                             ))}
                         </div>
+                        
+                        <div className="relative group w-full">
+                            <div className="absolute inset-0 bg-brand-main/5 blur-xl rounded-2xl opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
+                            <div className={`relative bg-white border rounded-2xl p-4 flex items-center gap-4 transition-all ${customDeadlineDate ? 'border-brand-main shadow-lg' : 'border-gray-100'}`}>
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${customDeadlineDate ? 'bg-brand-main/10 text-brand-main' : 'bg-gray-100 text-gray-400'}`}>
+                                    <SvgIcon>{Icons.Calendar}</SvgIcon>
+                                </div>
+                                <div className="flex-grow">
+                                    <div className="text-[10px] font-black text-brand-dark/40 uppercase tracking-widest mb-1">Своя дата</div>
+                                    <input 
+                                        type="date" 
+                                        value={customDeadlineDate}
+                                        onChange={(e) => {
+                                            setCustomDeadlineDate(e.target.value);
+                                            setDeadline(-1);
+                                        }}
+                                        className="w-full bg-transparent border-none outline-none text-brand-dark font-bold text-lg"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {customDeadlineDate && (
+                            <div className="mt-auto pt-6">
+                                <button onClick={next} className="w-full py-4 bg-brand-main text-brand-dark rounded-2xl font-black text-lg shadow-lg hover:scale-[1.02] transition-all">
+                                    Далее
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -522,7 +586,48 @@ export const Quiz: React.FC = () => {
                 {step === 8 && (
                     <div className="w-full flex-grow flex flex-col justify-center text-center">
                         <StepTitle subtitle="На какую сумму ориентируемся?">Бюджет</StepTitle>
-                        <ScrollPicker items={BUDGET_STEPS} selectedValue={budget} onSelect={setBudget} unit="RUB" />
+                        
+                        <div className="my-12 px-4">
+                            <div className="relative mb-12">
+                                <div className="text-6xl font-black text-brand-dark mb-2 flex items-center justify-center gap-2">
+                                    <input 
+                                        type="number" 
+                                        value={budget}
+                                        onChange={(e) => setBudget(Number(e.target.value))}
+                                        className="w-48 bg-transparent border-none outline-none text-center focus:ring-0"
+                                    />
+                                    <span className="text-2xl text-brand-dark/30">₽</span>
+                                </div>
+                                <div className="text-xs font-bold text-brand-dark/40 uppercase tracking-widest">Можно ввести сумму вручную</div>
+                            </div>
+
+                            <div className="relative h-24 flex items-center px-4">
+                                <input 
+                                    type="range" 
+                                    min="500" 
+                                    max="100000" 
+                                    step="500"
+                                    value={budget}
+                                    onChange={(e) => setBudget(Number(e.target.value))}
+                                    className="w-full h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-brand-main"
+                                />
+                                <div className="absolute -bottom-6 left-4 text-[10px] font-bold text-brand-dark/30">500 ₽</div>
+                                <div className="absolute -bottom-6 right-4 text-[10px] font-bold text-brand-dark/30">100 000+ ₽</div>
+                            </div>
+
+                            <div className="flex gap-2 overflow-x-auto no-scrollbar py-4 mt-4">
+                                {[1000, 3000, 5000, 10000, 25000, 50000].map(val => (
+                                    <button 
+                                        key={val}
+                                        onClick={() => setBudget(val)}
+                                        className={`shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all ${budget === val ? 'bg-brand-main text-white shadow-md' : 'bg-white border border-gray-100 text-brand-dark/60'}`}
+                                    >
+                                        {val.toLocaleString()} ₽
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         <div className="mt-auto pt-8"><button onClick={next} className="w-full py-4 bg-white text-black rounded-2xl font-black text-lg shadow-lg hover:scale-[1.02] active:scale-95 transition-all">Подтвердить</button></div>
                     </div>
                 )}
@@ -534,7 +639,7 @@ export const Quiz: React.FC = () => {
                         <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xl mb-8">
                             <div className="space-y-4 text-sm">
                                 <div className="flex justify-between border-b border-gray-50 pb-3"><span className="text-brand-dark/50">Кто</span><span className="font-bold">{name}, {age} лет</span></div>
-                                <div className="flex justify-between border-b border-gray-50 pb-3"><span className="text-brand-dark/50">Повод</span><span className="font-bold">{customOccasion || occasion}</span></div>
+                                <div className="flex justify-between border-b border-gray-50 pb-3"><span className="text-brand-dark/50">Повод</span><span className="font-bold">{customOccasion || OCCASIONS.find(o => o.id === occasion)?.label || occasion}</span></div>
                                 <div className="flex justify-between border-b border-gray-50 pb-3"><span className="text-brand-dark/50">Интересы</span><span className="font-bold text-right max-w-[60%] text-brand-main">{tags.join(', ') || 'Не указаны'}</span></div>
                                 <div className="flex justify-between items-center pt-1"><span className="text-brand-dark/50">Бюджет</span><span className="font-black text-xl text-brand-main bg-brand-main/5 px-3 py-1 rounded-lg shadow-sm border border-brand-main/10">{budget.toLocaleString()} ₽</span></div>
                             </div>

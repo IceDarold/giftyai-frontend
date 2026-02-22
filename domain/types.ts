@@ -77,7 +77,7 @@ export interface QuizAnswers {
   painStyle: 'endurer' | 'optimizer';
   riskyTopics: boolean;
   effortLevel?: 'no_effort' | 'low' | 'medium' | 'high';
-  deadline?: number; 
+  deadline?: number | string; 
   goal?: string; 
   interests: string;
   budget: string;

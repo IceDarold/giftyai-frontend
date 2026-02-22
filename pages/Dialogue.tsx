@@ -92,9 +92,13 @@ export const Dialogue: React.FC = () => {
     
     const [session, setSession] = useState<RecommendationSession | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [activeTrackId, setActiveTrackId] = useState<string>('');
     const [phase, setPhase] = useState<'probe' | 'overview' | 'feed' | 'dead_end'>('probe');
-    const [mascotMood, setMascotMood] = useState<'happy' | 'thinking' | 'excited' | 'surprised'>('happy');
+    const [mascotMood, setMascotMood] = useState<'happy' | 'thinking' | 'excited' | 'surprised'>('thinking');
+
+    const [leadInfo, setLeadInfo] = useState('');
+    const [leadSubmitted, setLeadSubmitted] = useState(false);
 
     const initialized = useRef(false);
 
@@ -126,7 +130,11 @@ export const Dialogue: React.FC = () => {
                 const answers: QuizAnswers = stored ? JSON.parse(stored) : {};
                 const res = await api.gutg.init(answers);
                 updateInternalState(res);
-            } catch (e) { console.error(e); } finally { setLoading(false); }
+                setMascotMood('happy');
+            } catch (e) { 
+                console.error(e); 
+                setError('Спасибо, что заполнили наш опрос. Мы работаем изо всех сил, чтобы допилить сервис, оставайтесь с нами и приходи чуть позже. Следите за новостями в инстаграмме.');
+            } finally { setLoading(false); }
         };
         init();
     }, [navigate, useMockData, updateInternalState]);
@@ -147,17 +155,21 @@ export const Dialogue: React.FC = () => {
         setLoading(true);
         setMascotMood('thinking');
         
-        try {
-            let res: RecommendationSession;
-            if (useMockData) {
-                if (action === 'answer_probe') res = await MockServer.getGUTGSession('TRACKS');
-                else if (action === 'like_hypothesis') res = await MockServer.getGUTGSession('FEED');
-                else res = await MockServer.getGUTGSession();
-            } else {
-                res = await api.gutg.interact(session?.session_id || '', action, value);
-            }
-            updateInternalState(res);
-        } catch (e) { console.error(e); } finally { setLoading(false); }
+            try {
+                let res: RecommendationSession;
+                if (useMockData) {
+                    if (action === 'answer_probe') res = await MockServer.getGUTGSession('TRACKS');
+                    else if (action === 'like_hypothesis') res = await MockServer.getGUTGSession('FEED');
+                    else res = await MockServer.getGUTGSession();
+                } else {
+                    res = await api.gutg.interact(session?.session_id || '', action, value);
+                }
+                updateInternalState(res);
+                setMascotMood('happy');
+            } catch (e) { 
+                console.error(e);
+                setError('Спасибо, что заполнили наш опрос. Мы работаем изо всех сил, чтобы допилить сервис, оставайтесь с нами и приходи чуть позже. Следите за новостями в инстаграмме.');
+            } finally { setLoading(false); }
     };
 
     const activeTrack = useMemo(() => 
@@ -192,8 +204,49 @@ export const Dialogue: React.FC = () => {
             {/* Content Area */}
             <div className="flex-grow pt-32 px-4 relative z-10 w-full max-w-2xl mx-auto">
                 
+                {error && (
+                    <div className="w-full flex flex-col items-center justify-center py-20 animate-fade-in text-center">
+                        <div className="mb-10 relative">
+                            <div className="absolute inset-0 bg-brand-main/10 blur-3xl rounded-full scale-150"></div>
+                            <Mascot emotion="happy" variant="default" className="w-24 h-24 relative z-10" />
+                        </div>
+                        <h2 className="text-xl font-bold text-brand-dark mb-6 leading-relaxed px-4">
+                            Спасибо, что заполнили наш опрос. Мы работаем непокладая рук, чтобы искать для вас лучшие подарки ❤️
+                            <br /><br />
+                            Наш запуск уже совсем скоро.
+                        </h2>
+                        
+                        {!leadSubmitted ? (
+                            <div className="w-full bg-white p-8 rounded-[2rem] shadow-xl border border-gray-100">
+                                <p className="text-sm font-bold text-brand-dark/60 mb-6 uppercase tracking-widest">Оставьте свой контакт, чтобы мы могли подарить вам бесплатные бонусы на подарки, как первым клиентам!</p>
+                                <div className="flex flex-col gap-4">
+                                    <input 
+                                        type="text" 
+                                        value={leadInfo}
+                                        onChange={(e) => setLeadInfo(e.target.value)}
+                                        placeholder="TG / Телефон / Email" 
+                                        className="w-full px-6 py-4 rounded-2xl border border-gray-200 focus:border-brand-main outline-none transition-all font-bold"
+                                    />
+                                    <button 
+                                        onClick={() => { if(leadInfo) setLeadSubmitted(true); }}
+                                        className="w-full py-4 bg-brand-main text-brand-dark rounded-2xl font-black uppercase tracking-widest shadow-lg hover:scale-[1.02] active:scale-95 transition-all"
+                                    >
+                                        Получить токены
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="bg-green-50 text-green-700 p-6 rounded-2xl font-bold animate-pop">
+                                ✨ Спасибо! Мы свяжемся с вами, когда все будет готово.
+                            </div>
+                        )}
+                        
+                        <button onClick={() => navigate('/')} className="mt-12 text-brand-main font-black uppercase tracking-widest text-xs hover:underline">Вернуться на главную</button>
+                    </div>
+                )}
+
                 {/* --- PHASE: PROBE --- */}
-                {phase === 'probe' && !loading && session?.current_probe && (
+                {!error && phase === 'probe' && !loading && session?.current_probe && (
                     <div className="w-full flex flex-col items-center justify-center py-20 animate-fade-in">
                         <div className="mb-10 relative">
                             <div className="absolute inset-0 bg-brand-main/10 blur-3xl rounded-full scale-150"></div>
@@ -221,7 +274,7 @@ export const Dialogue: React.FC = () => {
                 )}
 
                 {/* --- PHASE: OVERVIEW (The Inspiration Grid) --- */}
-                {phase === 'overview' && (
+                {!error && phase === 'overview' && (
                     <div className={`transition-all duration-1000 ${loading ? 'opacity-0 scale-95 blur-xl' : 'opacity-100 scale-100 blur-0'}`}>
                         
                         {/* Theme Pills */}
@@ -277,7 +330,7 @@ export const Dialogue: React.FC = () => {
                 )}
 
                 {/* --- PHASE: FEED --- */}
-                {phase === 'feed' && (
+                {!error && phase === 'feed' && (
                     <div className="w-full animate-fade-in-up pb-32">
                         <div className="flex justify-between items-center mb-10 pt-4">
                             <button 
@@ -301,7 +354,7 @@ export const Dialogue: React.FC = () => {
                 )}
 
                 {/* --- PHASE: DEAD END --- */}
-                {phase === 'dead_end' && (
+                {!error && phase === 'dead_end' && (
                     <div className="w-full min-h-[60vh] flex flex-col items-center justify-center text-center animate-pop">
                         <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center text-6xl mb-8 border border-gray-100">🕵️‍♂️</div>
                         <h2 className="text-4xl font-black text-brand-dark mb-4 tracking-tighter uppercase italic">Пустота</h2>
