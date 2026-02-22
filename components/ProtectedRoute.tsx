@@ -10,9 +10,9 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-brand-dark">
-        <Mascot className="w-24 h-24 mb-4" emotion="thinking" />
-        <div className="w-8 h-8 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
-        <p className="text-white/60 text-sm mt-4 font-bold uppercase tracking-widest">Проверка магии...</p>
+        <Mascot className="w-24 h-24 mb-4" emotion="thinking" accessory="none" />
+        <div className="w-8 h-8 border-4 border-brand-main/20 border-t-brand-main rounded-full animate-spin"></div>
+        <p className="text-slate-400 text-sm mt-4 font-bold uppercase tracking-widest">Проверка магии...</p>
       </div>
     );
   }

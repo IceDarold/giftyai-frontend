@@ -20,11 +20,11 @@ const SearchIcon = () => (
   </svg>
 );
 
-const BoltIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>;
-const SparklesIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>;
-const PaletteIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.343 1.414 1.414-1.657 1.343m0 2.657l1.657 1.343 1.414-1.414-1.657-1.343" /></svg>;
-const HeartIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>;
-const GiftIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>;
+const BoltIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>;
+const SparklesIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>;
+const PaletteIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.343 1.414 1.414-1.657 1.343m0 2.657l1.657 1.343 1.414-1.414-1.657-1.343" /></svg>;
+const HeartIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>;
+const GiftIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>;
 
 // --- Decorative Components (Cyber Celebration) ---
 
@@ -32,24 +32,24 @@ const MagicSearchBar: React.FC<{ onClick: () => void }> = ({ onClick }) => (
   <div className="w-full max-w-2xl mx-auto px-4 mb-10 relative z-20">
       <div 
         onClick={onClick}
-        className="relative glass rounded-full p-2 pl-6 pr-2 flex items-center gap-4 shadow-[0_0_50px_rgba(34,211,238,0.2)] cursor-pointer group hover:bg-white/10 transition-all ring-1 ring-white/10 hover:ring-brand-accent/60"
+        className="relative bg-white rounded-full p-2 pl-6 pr-2 flex items-center gap-4 shadow-[0_10px_30px_rgba(0,0,0,0.05)] cursor-pointer group hover:shadow-[0_15px_40px_rgba(0,0,0,0.1)] transition-all ring-1 ring-gray-100 hover:ring-brand-main/30"
       >
           {/* Badge */}
-          <div className="absolute -top-3 right-8 bg-brand-accent text-brand-dark text-[9px] font-black px-2 py-0.5 rounded-md shadow-lg uppercase tracking-widest transform rotate-3 border border-white/20">
+          <div className="absolute -top-3 right-8 bg-brand-main text-white text-[9px] font-black px-2 py-0.5 rounded-md shadow-lg uppercase tracking-widest transform rotate-3 border border-white/20">
               AI Powered
           </div>
 
           <div className="flex-grow flex flex-col justify-center h-full">
-              <span className="text-brand-accent/80 text-xs font-bold uppercase tracking-widest mb-0.5 group-hover:text-white transition-colors">
+              <span className="text-brand-main/60 text-xs font-bold uppercase tracking-widest mb-0.5 group-hover:text-brand-main transition-colors">
                   Спроси Gifty...
               </span>
-              <span className="text-white text-lg font-bold truncate">
+              <span className="text-brand-dark text-lg font-bold truncate">
                   "Подарок для фаната технологий"
               </span>
           </div>
 
           {/* Right Button */}
-          <div className="w-12 h-12 bg-white text-brand-dark rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.4)] group-hover:scale-110 transition-transform">
+          <div className="w-12 h-12 bg-brand-main text-brand-dark rounded-full flex items-center justify-center shadow-[0_5px_15px_rgba(249,217,73,0.3)] group-hover:scale-110 transition-transform">
               <SearchIcon />
           </div>
       </div>
@@ -57,13 +57,13 @@ const MagicSearchBar: React.FC<{ onClick: () => void }> = ({ onClick }) => (
 );
 
 const CategoryPills: React.FC<{ onSelect: (tag: string) => void }> = ({ onSelect }) => {
-  // Vibrant, Tech-Gift Palette
+  // Fresh Nature Palette
   const categories = [
-    { id: 'tech', label: 'ГАДЖЕТЫ', icon: <BoltIcon />, color: 'text-cyan-400 border-cyan-500/40 bg-cyan-900/20 hover:bg-cyan-500/20' },
-    { id: 'home', label: 'ЭСТЕТИКА', icon: <SparklesIcon />, color: 'text-purple-400 border-purple-500/40 bg-purple-900/20 hover:bg-purple-500/20' },
-    { id: 'art', label: 'ТВОРЧЕСТВО', icon: <PaletteIcon />, color: 'text-pink-400 border-pink-500/40 bg-pink-900/20 hover:bg-pink-500/20' },
-    { id: 'sport', label: 'WELLNESS', icon: <HeartIcon />, color: 'text-emerald-400 border-emerald-500/40 bg-emerald-900/20 hover:bg-emerald-500/20' },
-    { id: 'fun', label: 'ФАН', icon: <GiftIcon />, color: 'text-yellow-400 border-yellow-500/40 bg-yellow-900/20 hover:bg-yellow-500/20' },
+    { id: 'tech', label: 'ГАДЖЕТЫ', icon: <BoltIcon />, color: 'text-yellow-600 border-yellow-100 bg-yellow-50 hover:bg-yellow-100' },
+    { id: 'home', label: 'ЭСТЕТИКА', icon: <SparklesIcon />, color: 'text-green-600 border-green-100 bg-green-50 hover:bg-green-100' },
+    { id: 'art', label: 'ТВОРЧЕСТВО', icon: <PaletteIcon />, color: 'text-blue-600 border-blue-100 bg-blue-50 hover:bg-blue-100' },
+    { id: 'sport', label: 'WELLNESS', icon: <HeartIcon />, color: 'text-teal-600 border-teal-100 bg-teal-50 hover:bg-teal-100' },
+    { id: 'fun', label: 'ФАН', icon: <GiftIcon />, color: 'text-sky-600 border-sky-100 bg-sky-50 hover:bg-sky-100' },
   ];
 
   return (
@@ -72,7 +72,7 @@ const CategoryPills: React.FC<{ onSelect: (tag: string) => void }> = ({ onSelect
         <button
           key={cat.id}
           onClick={() => onSelect(cat.label)}
-          className={`shrink-0 px-5 py-3 rounded-[1.2rem] font-black text-[10px] uppercase tracking-widest transition-all backdrop-blur-md border ${cat.color} hover:scale-105 active:scale-95 snap-start shadow-lg flex items-center gap-2`}
+          className={`shrink-0 px-5 py-3 rounded-[1.2rem] font-black text-[10px] uppercase tracking-widest transition-all border ${cat.color} hover:scale-105 active:scale-95 snap-start shadow-sm flex items-center gap-2`}
         >
           {cat.icon}
           {cat.label}
@@ -97,14 +97,14 @@ const HorizontalSection: React.FC<{
     <div id={id} className="mb-24 relative z-10 scroll-mt-32 group/section">
       <div className="px-6 mb-8 flex items-end justify-between">
          <div>
-             <h2 className="text-2xl md:text-3xl font-black text-white leading-tight tracking-tight mb-2">
+             <h2 className="text-2xl md:text-3xl font-black text-brand-dark leading-tight tracking-tight mb-2">
                 {title}
              </h2>
-             {subtitle && <p className="text-white/50 text-sm font-medium">{subtitle}</p>}
+             {subtitle && <p className="text-brand-dark/50 text-sm font-medium">{subtitle}</p>}
          </div>
          <div className="hidden md:flex gap-2">
-             <button onClick={() => scrollRef.current?.scrollBy({left: -300, behavior: 'smooth'})} className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors">←</button>
-             <button onClick={() => scrollRef.current?.scrollBy({left: 300, behavior: 'smooth'})} className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors">→</button>
+             <button onClick={() => scrollRef.current?.scrollBy({left: -300, behavior: 'smooth'})} className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors">←</button>
+             <button onClick={() => scrollRef.current?.scrollBy({left: 300, behavior: 'smooth'})} className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors">→</button>
          </div>
       </div>
       
@@ -162,62 +162,45 @@ export const Home: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen relative overflow-x-hidden pb-12 bg-brand-dark">
+    <div className="min-h-screen relative overflow-x-hidden pb-12 bg-brand-surface">
       
-      {/* --- SHOOTING STARS & TWINKLING STARS BACKGROUND (CYBER EDITION) --- */}
+      {/* --- DECORATIVE BACKGROUND (FRESH EDITION) --- */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(34,211,238,0.15)_0%,rgba(9,0,20,0)_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,217,73,0.05)_0%,rgba(251,251,251,0)_60%)]" />
         
-        {/* Twinkling Small Stars */}
+        {/* Twinkling Small Stars (Subtle for light mode) */}
         <StarsBackground 
-            starDensity={0.00025} 
+            starDensity={0.0001} 
             allStarsTwinkle={true} 
-            twinkleProbability={0.8} 
-            minTwinkleSpeed={0.3} 
-            maxTwinkleSpeed={1.2}
-            className="opacity-80"
+            twinkleProbability={0.5} 
+            minTwinkleSpeed={0.5} 
+            maxTwinkleSpeed={1.5}
+            className="opacity-20"
+            starColor="#F9D949"
         />
 
-        {/* Layer 1: Cyber Cyan (Data) */}
+        {/* Layer 1: Soft Yellow/Green */}
         <ShootingStars
-          starColor="#22D3EE"
-          trailColor="#0891B2"
-          minSpeed={20}
-          maxSpeed={40}
-          minDelay={800}
-          maxDelay={2500}
-        />
-        {/* Layer 2: Electric Pink (Gifts) */}
-        <ShootingStars
-          starColor="#E879F9"
-          trailColor="#C026D3"
+          starColor="#F9D949"
+          trailColor="#86C8BC"
           minSpeed={15}
-          maxSpeed={35}
-          minDelay={1500}
-          maxDelay={3500}
-        />
-        {/* Layer 3: Golden Sparks (Magic) */}
-        <ShootingStars
-          starColor="#FBBF24"
-          trailColor="#D97706"
-          minSpeed={25}
-          maxSpeed={50}
-          minDelay={2000}
-          maxDelay={5000}
+          maxSpeed={30}
+          minDelay={1200}
+          maxDelay={3000}
         />
       </div>
       
       {/* Header */}
       <div className="fixed top-6 left-6 z-50">
-          <div className="glass rounded-full px-5 py-2 hover:scale-105 transition-transform cursor-pointer shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+          <div className="bg-white/80 backdrop-blur-md rounded-full px-5 py-2 hover:scale-105 transition-transform cursor-pointer shadow-[0_5px_15px_rgba(0,0,0,0.05)] border border-gray-100">
             <Logo onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})} />
           </div>
       </div>
       <div className="fixed top-6 right-6 z-50">
          {user ? (
-             <Link to="/profile" className="glass px-5 py-2 rounded-full text-white font-bold text-xs uppercase tracking-wider hover:bg-white/10 transition-colors border-brand-accent/30">Профиль</Link>
+             <Link to="/profile" className="bg-white/80 backdrop-blur-md px-5 py-2 rounded-full text-brand-dark font-bold text-xs uppercase tracking-wider hover:bg-white transition-colors border border-gray-100 shadow-sm">Профиль</Link>
          ) : (
-             <Link to="/login" className="bg-white text-brand-dark px-6 py-2.5 rounded-full font-black text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-105 transition-transform">Войти</Link>
+             <Link to="/login" className="bg-brand-main text-brand-dark px-6 py-2.5 rounded-full font-black text-xs uppercase tracking-wider shadow-[0_5px_15px_rgba(249,217,73,0.3)] hover:scale-105 transition-transform">Войти</Link>
          )}
       </div>
 
@@ -227,21 +210,21 @@ export const Home: React.FC = () => {
         <div className="text-center mb-16 px-4">
             <div className="relative inline-block mb-6">
                 <Mascot 
-                    className="w-32 h-32 md:w-48 md:h-48 mx-auto drop-shadow-[0_0_35px_rgba(217,70,239,0.4)] transition-all duration-500 hover:scale-105" 
+                    className="w-32 h-32 md:w-48 md:h-48 mx-auto drop-shadow-[0_10px_30px_rgba(249,217,73,0.2)] transition-all duration-500 hover:scale-105" 
                     eyesX={0} 
                     eyesY={0} 
                     variant="default"
-                    accessory="glasses"
-                    emotion="cool" 
+                    accessory="none"
+                    emotion="happy" 
                 />
             </div>
             
-            <h1 className="text-5xl md:text-8xl font-black text-white mb-6 leading-[0.9] tracking-tighter">
+            <h1 className="text-5xl md:text-8xl font-black text-brand-dark mb-6 leading-[0.9] tracking-tighter">
                 AI THAT KNOWS <br/>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-accent via-white to-brand-main animate-gradient-x">THE PERFECT GIFT.</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-main via-brand-accent to-brand-main animate-gradient-x">THE PERFECT GIFT.</span>
             </h1>
             
-            <p className="text-white/70 text-sm md:text-lg max-w-md mx-auto mb-10 font-medium leading-relaxed tracking-wide">
+            <p className="text-brand-dark/60 text-sm md:text-lg max-w-md mx-auto mb-10 font-medium leading-relaxed tracking-wide">
                 Технологии встречаются с щедростью. <br/>
                 Найди то, что вызовет настоящий восторг.
             </p>
@@ -252,7 +235,7 @@ export const Home: React.FC = () => {
 
         {/* CONTENT SECTIONS */}
         <HorizontalSection 
-            title={<span>Smart Selection <span className="text-brand-accent">.01</span></span>} 
+            title={<span>Smart Selection <span className="text-brand-main">.01</span></span>} 
             subtitle="Подарки, подобранные алгоритмом" 
             gifts={aestheticGifts} 
             onGiftClick={openGift} 
@@ -260,21 +243,21 @@ export const Home: React.FC = () => {
 
         <div className="px-6 mt-12 pb-24 relative z-10">
             <div className="flex items-center justify-between mb-8">
-                <h2 className="text-3xl font-black text-white tracking-tight">Trending Now</h2>
-                <div className="text-[10px] font-bold uppercase tracking-widest text-brand-main border border-brand-main/30 px-3 py-1 rounded-full shadow-[0_0_15px_rgba(217,70,239,0.3)]">New Drop</div>
+                <h2 className="text-3xl font-black text-brand-dark tracking-tight">Trending Now</h2>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-brand-main border border-brand-main/20 px-3 py-1 rounded-full shadow-sm bg-brand-main/5">New Drop</div>
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {/* Promo Card */}
-                <div onClick={() => startQuiz('home_promo_card')} className="col-span-2 relative overflow-hidden rounded-[2.5rem] p-8 min-h-[340px] bg-gradient-to-br from-brand-main/20 via-[#1E1B4B] to-brand-dark cursor-pointer group border border-white/10 flex flex-col justify-center items-center text-center shadow-2xl">
-                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30"></div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-brand-main/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                <div onClick={() => startQuiz('home_promo_card')} className="col-span-2 relative overflow-hidden rounded-[2.5rem] p-8 min-h-[340px] bg-gradient-to-br from-brand-main/10 via-white to-brand-surface cursor-pointer group border border-gray-100 flex flex-col justify-center items-center text-center shadow-xl">
+                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10"></div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-brand-main/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
                     
                     <div className="relative z-20">
-                        <div className="text-7xl mb-4 group-hover:scale-110 transition-transform duration-500 drop-shadow-[0_0_25px_rgba(255,255,255,0.5)]">🔮</div>
-                        <h3 className="text-white font-black text-4xl leading-[0.9] mb-4 tracking-tighter">Magic <br/>Match</h3>
-                        <p className="text-white/60 font-bold text-sm mb-8 uppercase tracking-widest">Пройди тест на совместимость</p>
-                        <button className="bg-white text-brand-dark px-8 py-4 rounded-full font-black text-sm uppercase tracking-widest hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,255,255,0.4)]">
+                        <div className="text-7xl mb-4 group-hover:scale-110 transition-transform duration-500 drop-shadow-[0_5px_15px_rgba(0,0,0,0.1)]">🔮</div>
+                        <h3 className="text-brand-dark font-black text-4xl leading-[0.9] mb-4 tracking-tighter">Magic <br/>Match</h3>
+                        <p className="text-brand-dark/40 font-bold text-sm mb-8 uppercase tracking-widest">Пройди тест на совместимость</p>
+                        <button className="bg-brand-main text-brand-dark px-8 py-4 rounded-full font-black text-sm uppercase tracking-widest hover:scale-105 transition-transform shadow-[0_10px_25px_rgba(249,217,73,0.3)]">
                             Start
                         </button>
                     </div>

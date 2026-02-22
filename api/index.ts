@@ -92,8 +92,12 @@ export const api = {
           return apiFetch('/profile/me', { method: 'PATCH', body: JSON.stringify(data) });
       },
       getWishlist: async (): Promise<Gift[]> => {
-          const dtos = await apiFetch('/profile/wishlist');
-          return dtos.map(mapGiftDTOToGift);
+          try {
+              const dtos = await apiFetch('/profile/wishlist');
+              return dtos.map(mapGiftDTOToGift);
+          } catch (e) {
+              return (await MockServer.getWishlistGifts()).map(mapGiftDTOToGift);
+          }
       },
       addToWishlist: async (gift: Partial<Gift>): Promise<void> => {
           // Mapping frontend Gift to backend expected body
@@ -117,14 +121,22 @@ export const api = {
   },
   social: {
       getFriends: async (): Promise<Friend[]> => {
-          return apiFetch('/social/friends');
+          try {
+              return await apiFetch('/social/friends');
+          } catch (e) {
+              return await MockServer.getFriends();
+          }
       },
       addFriend: async (email: string): Promise<void> => {
           return apiFetch('/social/friends/add', { method: 'POST', body: JSON.stringify({ friend_email: email }) });
       },
       getFriendWishlist: async (userId: string): Promise<Gift[]> => {
-          const dtos = await apiFetch(`/social/profile/${userId}/wishlist`);
-          return dtos.map(mapGiftDTOToGift);
+          try {
+              const dtos = await apiFetch(`/social/profile/${userId}/wishlist`);
+              return dtos.map(mapGiftDTOToGift);
+          } catch (e) {
+              return (await MockServer.getFriendWishlist(userId)).map(mapGiftDTOToGift);
+          }
       }
   },
   gifts: {

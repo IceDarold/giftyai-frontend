@@ -25,19 +25,20 @@
             },
             colors: {
               brand: {
-                // "Cyber Celebration" Palette
-                dark: '#090014',    // Deep Cosmic Purple (Base)
-                main: '#D946EF',    // Electric Fuchsia (Gifts/Excitement)
-                accent: '#22D3EE',  // Cyber Cyan (AI/Tech)
-                surface: '#1E1B4B', // Deep Indigo (Cards)
+                // "Fresh Nature" Palette
+                dark: '#3A4750',    // Soft Slate (Text/Contrast)
+                main: '#F9D949',    // Soft Sunny Yellow (Primary)
+                accent: '#86C8BC',  // Soft Mint Green (Secondary)
+                surface: '#FBFBFB', // Clean White (Background)
                 
                 // Functional Colors
-                purple: '#A855F7',  // Primary interaction
-                blue: '#3B82F6',    // Info/Links
-                pink: '#EC4899',    // Highlights
-                yellow: '#FBBF24',  // Stars/Gold
+                purple: '#B4AEE8',  // Soft Lavender
+                blue: '#A0C3D2',    // Soft Sky Blue
+                pink: '#F2BED1',    // Soft Peach/Pink
+                yellow: '#F9D949',  // Sunny Yellow
+                green: '#86C8BC',   // Mint Green
                 
-                love: '#F43F5E'     // Red/Heart
+                love: '#F2BED1'     // Soft Pink
               },
               surface: '#FFFFFF',
             },
@@ -83,9 +84,9 @@
       body {
         -webkit-tap-highlight-color: transparent;
         overscroll-behavior-y: none;
-        /* Deep Cosmic Background */
-        background-color: #090014;
-        color: white;
+        /* Clean White Background */
+        background-color: #FBFBFB;
+        color: #3A4750;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         text-rendering: optimizeLegibility;
@@ -131,7 +132,7 @@
 }
 </script>
 </head>
-  <body class="min-h-screen text-slate-200 antialiased selection:bg-brand-accent selection:text-brand-dark">
+  <body class="min-h-screen text-brand-dark antialiased selection:bg-brand-accent selection:text-white">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

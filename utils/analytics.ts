@@ -34,11 +34,14 @@ export const track = (event: string, properties?: Record<string, any>) => {
 
 export const analytics = {
   pageView: (pageName: string, url: string) => {
-    track('page_viewed', {
+    const props = {
       page_name: pageName,
       page_url: url,
+      $current_url: url,
       referrer: document.referrer || 'direct'
-    });
+    };
+    track('$pageview', props);
+    track('page_viewed', props);
   },
 
   quizStarted: (entryPoint: string) => {

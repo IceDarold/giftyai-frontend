@@ -370,7 +370,7 @@ export const Results: React.FC = () => {
                                                     >
                                                         <span className="text-[9px] font-black uppercase opacity-60 mb-0.5">{t.topic_name}</span>
                                                         <span className="text-sm font-black truncate w-full">{t.title}</span>
-                                                        {isActive && <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2 h-2 bg-brand-pink rounded-full shadow-[0_0_10px_#FF4D6D]"></div>}
+                                                        {isActive && <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2 h-2 bg-brand-pink rounded-full shadow-[0_0_10px_#F9A8D4]"></div>}
                                                     </button>
                                                     
                                                     {isActive && (

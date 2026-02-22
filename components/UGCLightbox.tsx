@@ -55,7 +55,7 @@ export const UGCLightbox: React.FC<Props> = ({ images, initialIndex, onClose }) 
 
   return (
     <div 
-        className="fixed inset-0 z-[110] bg-black/95 flex items-center justify-center animate-pop touch-none" 
+        className="fixed inset-0 z-[110] bg-slate-900/90 backdrop-blur-sm flex items-center justify-center animate-pop touch-none" 
         onClick={onClose}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}

@@ -38,7 +38,7 @@ const DevLoginModal = ({ onClose, onLogin }: { onClose: () => void, onLogin: (p:
                         <button type="button" onClick={onClose} className="flex-1 bg-white/5 text-gray-400 py-2.5 rounded-xl text-xs font-bold hover:bg-white/10 transition-colors">
                             Отмена
                         </button>
-                        <button type="submit" className="flex-1 bg-white text-black py-2.5 rounded-xl text-xs font-bold hover:bg-gray-200 transition-colors shadow-lg">
+                        <button type="submit" className="flex-1 bg-brand-main text-white py-2.5 rounded-xl text-xs font-bold hover:brightness-110 transition-all shadow-lg">
                             Войти
                         </button>
                     </div>
@@ -61,10 +61,10 @@ export const Footer: React.FC<FooterProps> = ({ variant = 'default' }) => {
   const isLight = variant === 'light';
   
   // Dynamic Styles
-  const textColor = isLight ? 'text-slate-400' : 'text-indigo-200/60';
-  const hoverColor = isLight ? 'hover:text-brand-blue' : 'hover:text-white';
-  const dividerColor = isLight ? 'via-slate-200' : 'via-indigo-200/10'; // More subtle divider
-  const copyrightColor = isLight ? 'text-slate-400/60' : 'text-indigo-200/40';
+  const textColor = isLight ? 'text-gray-400' : 'text-brand-dark/60';
+  const hoverColor = isLight ? 'hover:text-brand-main' : 'hover:text-brand-main';
+  const dividerColor = isLight ? 'via-gray-200' : 'via-gray-200'; // More subtle divider
+  const copyrightColor = isLight ? 'text-gray-400/60' : 'text-brand-dark/40';
 
   const handleDevTrigger = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -118,7 +118,7 @@ export const Footer: React.FC<FooterProps> = ({ variant = 'default' }) => {
                         </button>
                         <button 
                             onClick={() => navigate('/experiments')}
-                            className="px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 hover:bg-purple-500 hover:text-white font-bold text-[10px] uppercase tracking-wider transition-all flex items-center gap-1 border border-purple-500/30"
+                            className="px-3 py-1 rounded-full bg-brand-main/10 text-brand-main hover:bg-brand-main hover:text-white font-bold text-[10px] uppercase tracking-wider transition-all flex items-center gap-1 border border-brand-main/20"
                             title="Experimental Interfaces"
                         >
                             🧪 Lab

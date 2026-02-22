@@ -20,16 +20,16 @@ export const Layout: React.FC<LayoutProps> = ({
   const isLoginPage = location.pathname === '/login';
 
   const linkClass = ({ isActive }: { isActive: boolean }) => 
-    `flex flex-col items-center justify-center h-full w-full transition-all duration-300 relative group ${isActive ? 'text-brand-accent' : 'text-slate-400 hover:text-slate-200'}`;
+    `flex flex-col items-center justify-center h-full w-full transition-all duration-300 relative group ${isActive ? 'text-brand-main' : 'text-gray-400 hover:text-brand-main'}`;
 
   const iconClass = (isActive: boolean) => 
-    `h-6 w-6 transition-transform duration-300 ${isActive ? 'scale-110 drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]' : 'group-hover:scale-105'}`;
+    `h-6 w-6 transition-transform duration-300 ${isActive ? 'scale-110 drop-shadow-[0_0_8px_rgba(224,30,55,0.3)]' : 'group-hover:scale-105'}`;
 
   // If nav is hidden (e.g. quiz), reduce bottom padding
   const bottomPadding = showNav ? 'pb-32' : 'pb-8';
 
   return (
-    <div className={`min-h-screen flex flex-col w-full relative overflow-x-hidden ${isLoginPage ? 'bg-brand-dark' : 'bg-brand-dark'}`}>
+    <div className={`min-h-screen flex flex-col w-full relative overflow-x-hidden ${isLoginPage ? 'bg-brand-surface' : 'bg-brand-surface'}`}>
       
       <main className={`flex-grow relative z-10 flex flex-col ${bottomPadding} ${mainClassName}`}>
         <div className="flex-grow w-full">
@@ -44,13 +44,13 @@ export const Layout: React.FC<LayoutProps> = ({
 
       {showNav && (
         <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center pointer-events-none px-4">
-          <nav className="w-full max-w-[380px] bg-brand-surface/95 backdrop-blur-2xl border border-white/10 pointer-events-auto rounded-[2.5rem] shadow-[0_20px_40px_-5px_rgba(0,0,0,0.6)] relative">
+          <nav className="w-full max-w-[380px] bg-white/90 backdrop-blur-2xl border border-gray-200 pointer-events-auto rounded-[2.5rem] shadow-[0_20px_40px_-5px_rgba(0,0,0,0.1)] relative">
              
              {/* Central Floating Action Button */}
              <div className="absolute left-1/2 -translate-x-1/2 -top-6 w-16 h-16 pointer-events-auto z-20">
                  <NavLink 
                     to="/quiz" 
-                    className={({ isActive }) => `flex items-center justify-center w-full h-full bg-white text-brand-dark rounded-full shadow-[0_0_25px_rgba(255,255,255,0.25)] transition-all duration-300 border-[6px] border-brand-dark hover:scale-105 active:scale-95 ${isActive ? 'bg-brand-accent' : ''}`}
+                    className={({ isActive }) => `flex items-center justify-center w-full h-full bg-brand-main text-white rounded-full shadow-[0_0_25px_rgba(224,30,55,0.25)] transition-all duration-300 border-[6px] border-brand-surface hover:scale-105 active:scale-95 ${isActive ? 'bg-brand-accent' : ''}`}
                  >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 10V3L4 14h7v7l9-11h-7z" />

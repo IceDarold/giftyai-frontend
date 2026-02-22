@@ -79,6 +79,54 @@ export const MockServer = {
     return stored ? JSON.parse(stored) : [];
   },
 
+  async getWishlistGifts(): Promise<GiftDTO[]> {
+    const ids = await this.getWishlist();
+    if (ids.length === 0) {
+        // Return some default mock gifts if wishlist is empty for demo purposes
+        return MOCK_DB_GIFTS.slice(0, 3).map(toDTO);
+    }
+    return MOCK_DB_GIFTS.filter(g => ids.includes(g.id)).map(toDTO);
+  },
+
+  async getFriends(): Promise<any[]> {
+    await delay(400);
+    return [
+        {
+            id: 'f1',
+            friend: {
+                id: 'u2',
+                name: 'Елена Кузнецова',
+                avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80',
+                birth_date: '1995-05-15'
+            }
+        },
+        {
+            id: 'f2',
+            friend: {
+                id: 'u3',
+                name: 'Иван Петров',
+                avatar_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
+                birth_date: '1990-12-20'
+            }
+        },
+        {
+            id: 'f3',
+            friend: {
+                id: 'u4',
+                name: 'Мария Сидорова',
+                avatar_url: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&q=80',
+                birth_date: '1988-03-10'
+            }
+        }
+    ];
+  },
+
+  async getFriendWishlist(userId: string): Promise<GiftDTO[]> {
+    await delay(500);
+    // Return random gifts for friends
+    return MOCK_DB_GIFTS.slice(5, 10).map(toDTO);
+  },
+
   async addToWishlist(giftId: string): Promise<void> {
     const stored = localStorage.getItem('gifty_wishlist');
     const list: string[] = stored ? JSON.parse(stored) : [];

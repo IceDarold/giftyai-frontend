@@ -38,14 +38,14 @@ const DevBadge = () => {
     return (
         <div className="fixed top-24 right-4 z-[9999] flex flex-col items-end gap-2 pointer-events-none">
             <div 
-                className="bg-green-500 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-[0_0_20px_rgba(34,197,94,0.5)] flex items-center gap-2 animate-pulse-slow border border-white/20 pointer-events-auto cursor-help"
+                className="bg-brand-accent text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg flex items-center gap-2 animate-pulse-slow border border-white/20 pointer-events-auto cursor-help"
                 onClick={() => setInfoOpen(true)}
             >
                 <span className="w-2 h-2 bg-white rounded-full animate-ping"></span>
                 DEV MODE ACTIVE
             </div>
             {useMockData && (
-                <div className="bg-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-md shadow-lg border border-white/20 animate-pop">
+                <div className="bg-brand-yellow text-slate-900 text-[9px] font-black px-2 py-0.5 rounded-md shadow-lg border border-white/20 animate-pop">
                     MOCK DATA ENABLED
                 </div>
             )}
@@ -57,32 +57,32 @@ export const DevInfoModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
     const { useMockData, setUseMockData } = useDevMode();
     
     return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in" onClick={onClose}>
-            <div className="bg-[#0F172A] border-2 border-green-500/50 w-full max-w-lg rounded-3xl p-8 shadow-[0_0_50px_rgba(34,197,94,0.2)] relative overflow-hidden animate-pop" onClick={e => e.stopPropagation()}>
-                <h2 className="text-3xl font-black text-white mb-2 tracking-tight flex items-center gap-3"><span className="text-green-400">⚡️</span> Dev Panel</h2>
-                <p className="text-green-400/60 font-mono text-[10px] uppercase tracking-widest mb-6 border-b border-white/10 pb-4">Configuration & System</p>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-fade-in" onClick={onClose}>
+            <div className="bg-white border-2 border-brand-accent/50 w-full max-w-lg rounded-3xl p-8 shadow-2xl relative overflow-hidden animate-pop" onClick={e => e.stopPropagation()}>
+                <h2 className="text-3xl font-black text-slate-900 mb-2 tracking-tight flex items-center gap-3"><span className="text-brand-accent">⚡️</span> Dev Panel</h2>
+                <p className="text-brand-accent/60 font-mono text-[10px] uppercase tracking-widest mb-6 border-b border-slate-100 pb-4">Configuration & System</p>
                 
-                <div className="bg-white/5 rounded-2xl p-5 mb-8 border border-white/10">
+                <div className="bg-slate-50 rounded-2xl p-5 mb-8 border border-slate-100">
                     <div className="flex items-center justify-between mb-2">
                         <div>
-                            <h3 className="text-white font-bold text-sm">Использовать моковые данные</h3>
-                            <p className="text-white/40 text-xs mt-0.5">Принудительно отключает запросы к API.</p>
+                            <h3 className="text-slate-900 font-bold text-sm">Использовать моковые данные</h3>
+                            <p className="text-slate-500 text-xs mt-0.5">Принудительно отключает запросы к API.</p>
                         </div>
                         <button 
                             onClick={() => setUseMockData(!useMockData)}
-                            className={`w-12 h-6 rounded-full transition-all relative ${useMockData ? 'bg-green-500' : 'bg-gray-700'}`}
+                            className={`w-12 h-6 rounded-full transition-all relative ${useMockData ? 'bg-brand-accent' : 'bg-slate-200'}`}
                         >
-                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${useMockData ? 'left-7' : 'left-1'}`} />
+                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${useMockData ? 'left-7' : 'left-1'}`} />
                         </button>
                     </div>
                 </div>
 
                 <div className="space-y-6">
-                    <div className="flex gap-4"><div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-xl">🚀</div><div><h3 className="text-white font-bold text-sm">Fast Track</h3><p className="text-gray-400 text-xs">В результатах теперь работает полный сценарий подбора.</p></div></div>
-                    <div className="flex gap-4"><div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center text-xl">🌐</div><div><h3 className="text-white font-bold text-sm">Network Logs</h3><p className="text-gray-400 text-xs">Консоль снизу показывает все "вызовы" бэкенда.</p></div></div>
+                    <div className="flex gap-4"><div className="w-10 h-10 rounded-lg bg-brand-main/10 flex items-center justify-center text-xl">🚀</div><div><h3 className="text-slate-900 font-bold text-sm">Fast Track</h3><p className="text-slate-500 text-xs">В результатах теперь работает полный сценарий подбора.</p></div></div>
+                    <div className="flex gap-4"><div className="w-10 h-10 rounded-lg bg-brand-accent/10 flex items-center justify-center text-xl">🌐</div><div><h3 className="text-slate-900 font-bold text-sm">Network Logs</h3><p className="text-slate-500 text-xs">Консоль снизу показывает все "вызовы" бэкенда.</p></div></div>
                 </div>
                 
-                <button onClick={onClose} className="w-full mt-8 bg-white text-black font-black py-4 rounded-2xl transition-all shadow-lg active:scale-95">Закрыть</button>
+                <button onClick={onClose} className="w-full mt-8 bg-brand-main text-white font-black py-4 rounded-2xl transition-all shadow-lg active:scale-95">Закрыть</button>
             </div>
         </div>,
         document.body

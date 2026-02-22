@@ -139,8 +139,8 @@ class AmbientParticle {
         this.rotation = Math.random() * Math.PI * 2;
         this.rotationSpeed = (Math.random() - 0.5) * 0.05;
         
-        // Cyber-Gift Palette
-        const colors = ['#D946EF', '#22D3EE', '#FBBF24', '#8B5CF6', '#FFFFFF'];
+        // Friendly & Bright Palette
+        const colors = ['#FF6B6B', '#4FD1C5', '#FCD34D', '#8B5CF6', '#F472B6'];
         this.color = colors[Math.floor(Math.random() * colors.length)];
         
         const shapes: ('square' | 'circle' | 'cross')[] = ['square', 'square', 'cross', 'circle'];

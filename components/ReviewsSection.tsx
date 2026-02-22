@@ -20,9 +20,9 @@ export const ReviewsSection: React.FC<Props> = ({ reviews }) => {
   const visibleItems = expanded ? reviews.items : reviews.items.slice(0, 2);
 
   const renderStars = (rating: number) => (
-    <div className="flex gap-0.5 text-yellow-400">
+    <div className="flex gap-0.5 text-brand-yellow">
       {[...Array(5)].map((_, i) => (
-        <svg key={i} xmlns="http://www.w3.org/2000/svg" className={`h-3 w-3 ${i < rating ? 'fill-current' : 'text-gray-200 fill-current'}`} viewBox="0 0 20 20">
+        <svg key={i} xmlns="http://www.w3.org/2000/svg" className={`h-3 w-3 ${i < rating ? 'fill-current' : 'text-slate-200 fill-current'}`} viewBox="0 0 20 20">
           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
         </svg>
       ))}
@@ -40,7 +40,7 @@ export const ReviewsSection: React.FC<Props> = ({ reviews }) => {
       {reviews.highlights && (
         <div className="flex flex-wrap gap-2 mb-6">
              {reviews.highlights.map(h => (
-               <span key={h} className="bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-xl text-xs font-bold border border-indigo-100">
+               <span key={h} className="bg-brand-main/5 text-brand-main px-3 py-1.5 rounded-xl text-xs font-bold border border-brand-main/10">
                  👍 {h}
                </span>
              ))}
@@ -86,7 +86,7 @@ export const ReviewsSection: React.FC<Props> = ({ reviews }) => {
       {reviews.items.length > 2 && (
         <button 
           onClick={() => setExpanded(!expanded)}
-          className="w-full mt-4 py-3 text-sm font-bold text-gray-500 hover:text-brand-blue bg-white border border-gray-200 rounded-2xl transition-all active:scale-[0.98]"
+          className="w-full mt-4 py-3 text-sm font-bold text-slate-500 hover:text-brand-main bg-white border border-slate-200 rounded-2xl transition-all active:scale-[0.98]"
         >
           {expanded ? 'Свернуть' : `Показать все (${reviews.items.length})`}
         </button>
