@@ -49,19 +49,19 @@ const FriendsWishlistModal: React.FC<{ friendId: string; friendName: string; onC
 
     return (
         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center pointer-events-none">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm pointer-events-auto" onClick={onClose} />
-            <div className="bg-[#F8F9FE] w-full max-w-2xl h-[90vh] sm:rounded-[3rem] rounded-t-[3rem] relative z-10 flex flex-col pointer-events-auto shadow-2xl animate-slide-up overflow-hidden">
-                <div className="p-6 border-b border-gray-100 bg-white flex justify-between items-center">
-                    <h3 className="text-xl font-black text-brand-dark">Вишлист {friendName}</h3>
-                    <button onClick={onClose} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200">✕</button>
+            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm pointer-events-auto" onClick={onClose} />
+            <div className="bg-brand-dark w-full max-w-2xl h-[90vh] sm:rounded-[3rem] rounded-t-[3rem] relative z-10 flex flex-col pointer-events-auto shadow-2xl animate-slide-up overflow-hidden">
+                <div className="p-6 border-b border-slate-100 bg-white flex justify-between items-center">
+                    <h3 className="text-xl font-black text-slate-900">Вишлист {friendName}</h3>
+                    <button onClick={onClose} className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200">✕</button>
                 </div>
                 <div className="flex-grow overflow-y-auto p-6">
                     {loading ? (
-                        <div className="text-center py-20 text-gray-400">Загрузка желаний...</div>
+                        <div className="text-center py-20 text-slate-400">Загрузка желаний...</div>
                     ) : gifts.length === 0 ? (
                         <div className="text-center py-20">
                             <div className="text-4xl mb-4">📭</div>
-                            <p className="text-gray-500 font-medium">Список пока пуст</p>
+                            <p className="text-slate-500 font-medium">Список пока пуст</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-2 gap-4">
@@ -158,29 +158,29 @@ export const Profile: React.FC = () => {
     if (!user) return null;
 
     return (
-        <div className="min-h-screen bg-[#F8F9FE] pb-0 pt-20">
+        <div className="min-h-screen bg-brand-dark pb-0 pt-20">
             {/* Header */}
-            <div className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-xl border-b border-gray-100 z-50 flex items-center justify-between px-6">
-                <button onClick={() => navigate('/')} className="text-sm font-bold text-gray-500 hover:text-black transition-colors">← Назад</button>
-                <div className="font-black text-lg tracking-tight">Профиль</div>
-                <button onClick={() => logout()} className="text-sm font-bold text-red-400 hover:text-red-500 transition-colors">Выйти</button>
+            <div className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-xl border-b border-slate-100 z-50 flex items-center justify-between px-6">
+                <button onClick={() => navigate('/')} className="text-sm font-bold text-slate-500 hover:text-slate-900 transition-colors">← Назад</button>
+                <div className="font-black text-lg tracking-tight text-slate-900">Профиль</div>
+                <button onClick={() => logout()} className="text-sm font-bold text-brand-main hover:brightness-110 transition-colors">Выйти</button>
             </div>
 
             <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-8 pb-32">
                 
                 {/* 1. PROFILE CARD */}
-                <div className="bg-white rounded-[2.5rem] p-6 shadow-xl shadow-brand-blue/5 border border-white relative overflow-hidden group">
-                    <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-brand-blue/10 to-brand-purple/10"></div>
+                <div className="bg-white rounded-[2.5rem] p-6 shadow-xl shadow-brand-main/5 border border-white relative overflow-hidden group">
+                    <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-brand-main/5 to-brand-purple/5"></div>
                     
                     <div className="relative flex flex-col sm:flex-row items-start sm:items-end gap-6 mt-4">
                         {/* Avatar */}
                         <div className="relative shrink-0">
-                            <div className="w-28 h-28 rounded-full border-4 border-white shadow-lg overflow-hidden bg-gray-100">
+                            <div className="w-28 h-28 rounded-full border-4 border-white shadow-lg overflow-hidden bg-slate-100">
                                 <img src={user.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80"} alt="Avatar" className="w-full h-full object-cover" />
                             </div>
                             <button 
                                 onClick={() => setIsEditing(!isEditing)}
-                                className="absolute bottom-1 right-1 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center text-gray-600 hover:text-brand-blue transition-colors border border-gray-100"
+                                className="absolute bottom-1 right-1 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center text-slate-600 hover:text-brand-main transition-colors border border-slate-100"
                             >
                                 <EditIcon />
                             </button>
@@ -196,36 +196,36 @@ export const Profile: React.FC = () => {
                                                 type="text" 
                                                 value={name}
                                                 onChange={e => setName(e.target.value)}
-                                                className="text-2xl font-black text-brand-dark bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 w-full outline-none focus:border-brand-blue"
+                                                className="text-2xl font-black text-slate-900 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 w-full outline-none focus:border-brand-main"
                                                 placeholder="Имя"
                                             />
                                             <div className="flex gap-2 items-center">
-                                                <span className="text-xs font-bold text-gray-400 uppercase">ДР:</span>
+                                                <span className="text-xs font-bold text-slate-400 uppercase">ДР:</span>
                                                 <input 
                                                     type="date"
                                                     value={birthDate}
                                                     onChange={e => setBirthDate(e.target.value)}
-                                                    className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-1 text-sm font-bold outline-none"
+                                                    className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1 text-sm font-bold outline-none"
                                                 />
                                             </div>
                                             <textarea 
                                                 value={bio}
                                                 onChange={e => setBio(e.target.value)}
-                                                className="w-full text-sm text-gray-600 bg-gray-50 border border-gray-200 p-2 rounded-lg outline-none resize-none h-20"
+                                                className="w-full text-sm text-slate-600 bg-slate-50 border border-slate-200 p-2 rounded-lg outline-none resize-none h-20"
                                                 placeholder="Пару слов о себе..."
                                             />
                                         </div>
                                     ) : (
                                         <>
-                                            <h1 className="text-3xl font-black text-brand-dark mb-1 flex items-center gap-2">
+                                            <h1 className="text-3xl font-black text-slate-900 mb-1 flex items-center gap-2">
                                                 {user.name}
                                                 {daysUntilBirthday !== null && (
-                                                    <span className="text-[10px] bg-brand-pink/10 text-brand-pink px-2 py-1 rounded-full font-bold uppercase tracking-wide">
+                                                    <span className="text-[10px] bg-brand-love/10 text-brand-love px-2 py-1 rounded-full font-bold uppercase tracking-wide">
                                                         ДР через {daysUntilBirthday} дн.
                                                     </span>
                                                 )}
                                             </h1>
-                                            <p className="text-sm font-medium text-gray-500 max-w-md leading-relaxed">
+                                            <p className="text-sm font-medium text-slate-500 max-w-md leading-relaxed">
                                                 {user.bio || 'Здесь пока нет описания, но человек наверняка хороший.'}
                                             </p>
                                         </>
@@ -234,10 +234,10 @@ export const Profile: React.FC = () => {
                                 
                                 {isEditing && (
                                     <div className="flex flex-col gap-2 ml-4">
-                                        <button onClick={handleSaveProfile} className="bg-brand-blue text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg hover:bg-blue-600 transition-colors">
+                                        <button onClick={handleSaveProfile} className="bg-brand-main text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg hover:brightness-110 transition-colors">
                                             Сохранить
                                         </button>
-                                        <button onClick={() => setIsEditing(false)} className="text-gray-400 hover:text-gray-600 text-xs font-bold py-1">
+                                        <button onClick={() => setIsEditing(false)} className="text-slate-400 hover:text-slate-600 text-xs font-bold py-1">
                                             Отмена
                                         </button>
                                     </div>
@@ -247,15 +247,15 @@ export const Profile: React.FC = () => {
                     </div>
 
                     {/* Stats & Integrations */}
-                    <div className="mt-8 pt-6 border-t border-gray-100 flex flex-wrap gap-4 items-center justify-between">
+                    <div className="mt-8 pt-6 border-t border-slate-100 flex flex-wrap gap-4 items-center justify-between">
                         <div className="flex gap-6">
                             <div className="text-center">
-                                <div className="text-xl font-black text-brand-dark">{myWishlist.length}</div>
-                                <div className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Желаний</div>
+                                <div className="text-xl font-black text-slate-900">{myWishlist.length}</div>
+                                <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Желаний</div>
                             </div>
                             <div className="text-center">
-                                <div className="text-xl font-black text-brand-dark">{friends.length}</div>
-                                <div className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Друга</div>
+                                <div className="text-xl font-black text-slate-900">{friends.length}</div>
+                                <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Друга</div>
                             </div>
                         </div>
 
@@ -263,8 +263,8 @@ export const Profile: React.FC = () => {
                             onClick={handleConnectTelegram}
                             className={`flex items-center gap-3 px-5 py-3 rounded-2xl transition-all font-bold text-sm shadow-sm ${
                                 user.telegram_connected 
-                                ? 'bg-blue-50 text-blue-600 border border-blue-100' 
-                                : 'bg-[#2AABEE] text-white hover:bg-[#229ED9] shadow-blue-200'
+                                ? 'bg-brand-accent/10 text-brand-accent border border-brand-accent/20' 
+                                : 'bg-brand-accent text-white hover:brightness-110 shadow-brand-accent/20'
                             }`}
                         >
                             <TelegramIcon />
@@ -277,8 +277,8 @@ export const Profile: React.FC = () => {
                 {/* 2. FRIENDS SECTION */}
                 <div>
                     <div className="flex items-center justify-between px-2 mb-4">
-                        <h2 className="text-xl font-black text-brand-dark">Мои люди</h2>
-                        <button className="text-brand-blue text-xs font-bold bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">
+                        <h2 className="text-xl font-black text-slate-900">Мои люди</h2>
+                        <button className="text-brand-main text-xs font-bold bg-brand-main/5 px-3 py-1.5 rounded-lg hover:bg-brand-main/10 transition-colors">
                             + Добавить
                         </button>
                     </div>
@@ -293,21 +293,21 @@ export const Profile: React.FC = () => {
                                 const f = item.friend;
                                 const fDays = calculateDaysUntilBirthday(f.birth_date);
                                 return (
-                                    <div key={f.id} className="min-w-[150px] bg-white p-4 rounded-3xl shadow-sm border border-gray-100 flex flex-col items-center text-center relative group transition-all hover:-translate-y-1">
+                                    <div key={f.id} className="min-w-[150px] bg-white p-4 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center text-center relative group transition-all hover:-translate-y-1">
                                         <div className="relative mb-3">
                                             <img src={f.avatar_url || "https://via.placeholder.com/150"} alt={f.name || 'Friend'} className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm" />
                                         </div>
-                                        <h3 className="font-bold text-gray-900 text-sm mb-0.5 truncate max-w-full px-2">{f.name}</h3>
+                                        <h3 className="font-bold text-slate-900 text-sm mb-0.5 truncate max-w-full px-2">{f.name}</h3>
                                         
                                         {fDays !== null && (
-                                            <div className={`text-[9px] font-bold px-2 py-0.5 rounded-md mb-3 ${fDays < 14 ? 'bg-red-50 text-red-500' : 'text-gray-400'}`}>
+                                            <div className={`text-[9px] font-bold px-2 py-0.5 rounded-md mb-3 ${fDays < 14 ? 'bg-brand-love/10 text-brand-love' : 'text-slate-400'}`}>
                                                 {fDays === 0 ? 'Сегодня!' : `${fDays} дн.`}
                                             </div>
                                         )}
                                         
                                         <button 
                                             onClick={() => setSelectedFriend({ id: f.id, name: f.name || 'Друг' })}
-                                            className="w-full mt-auto bg-brand-blue/10 text-brand-blue hover:bg-brand-blue hover:text-white transition-colors text-[10px] font-bold py-2 rounded-xl"
+                                            className="w-full mt-auto bg-brand-main/10 text-brand-main hover:bg-brand-main hover:text-white transition-colors text-[10px] font-bold py-2 rounded-xl"
                                         >
                                             Посмотреть вишлист
                                         </button>
@@ -317,7 +317,7 @@ export const Profile: React.FC = () => {
                             
                             {/* Empty state if no friends */}
                             {friends.length === 0 && (
-                                <div className="p-6 text-gray-400 text-sm font-medium w-full text-center border-2 border-dashed border-gray-200 rounded-3xl">
+                                <div className="p-6 text-slate-400 text-sm font-medium w-full text-center border-2 border-dashed border-slate-200 rounded-3xl">
                                     У вас пока нет друзей в списке
                                 </div>
                             )}
@@ -327,15 +327,15 @@ export const Profile: React.FC = () => {
 
                 {/* 3. WISHLIST GRID */}
                 <div>
-                    <h2 className="text-xl font-black text-brand-dark mb-4 px-2">Мой Вишлист</h2>
+                    <h2 className="text-xl font-black text-slate-900 mb-4 px-2">Мой Вишлист</h2>
                     
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {/* Add Button (Trigger Search/Quiz) */}
-                        <button onClick={() => navigate('/wishlist')} className="aspect-[4/5] rounded-[2rem] border-2 border-dashed border-gray-200 hover:border-brand-blue/50 hover:bg-brand-blue/5 flex flex-col items-center justify-center gap-3 transition-all group bg-white/50">
-                            <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center text-gray-400 group-hover:text-brand-blue group-hover:scale-110 transition-all">
+                        <button onClick={() => navigate('/wishlist')} className="aspect-[4/5] rounded-[2rem] border-2 border-dashed border-slate-200 hover:border-brand-main/50 hover:bg-brand-main/5 flex flex-col items-center justify-center gap-3 transition-all group bg-white/50">
+                            <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-400 group-hover:text-brand-main group-hover:scale-110 transition-all">
                                 <PlusIcon />
                             </div>
-                            <span className="text-sm font-bold text-gray-400 group-hover:text-brand-blue">Управление</span>
+                            <span className="text-sm font-bold text-slate-400 group-hover:text-brand-main">Управление</span>
                         </button>
 
                         {/* Items */}

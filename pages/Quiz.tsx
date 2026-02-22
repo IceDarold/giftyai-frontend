@@ -124,9 +124,9 @@ const ProgressBar: React.FC<{ current: number; total: number; onJump?: (i: numbe
                 onClick={() => onJump?.(i)}
                 className={`h-1.5 rounded-full transition-all duration-500 ease-out ${
                     i <= current 
-                    ? 'flex-1 bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]' 
-                    : 'w-2 bg-white/10'
-                } ${onJump ? 'cursor-pointer hover:bg-white/40' : 'cursor-default'}`}
+                    ? 'flex-1 bg-brand-main shadow-[0_0_10px_rgba(249,217,73,0.2)]' 
+                    : 'w-2 bg-gray-200'
+                } ${onJump ? 'cursor-pointer hover:bg-brand-main/40' : 'cursor-default'}`}
             />
         ))}
     </div>
@@ -134,11 +134,11 @@ const ProgressBar: React.FC<{ current: number; total: number; onJump?: (i: numbe
 
 const StepTitle: React.FC<{ children: React.ReactNode; subtitle?: string }> = ({ children, subtitle }) => (
     <div className="text-center mb-10 animate-fade-in-up relative z-10">
-        <h2 className="text-3xl md:text-4xl font-black text-white mb-3 tracking-tight drop-shadow-lg leading-tight">
+        <h2 className="text-3xl md:text-4xl font-black text-brand-dark mb-3 tracking-tight drop-shadow-sm leading-tight">
             {children}
         </h2>
         {subtitle && (
-            <p className="text-white/60 text-lg font-medium max-w-sm mx-auto leading-snug">
+            <p className="text-brand-dark/60 text-lg font-medium max-w-sm mx-auto leading-snug">
                 {subtitle}
             </p>
         )}
@@ -180,11 +180,11 @@ const MemoryJoggers: React.FC = React.memo(() => {
                     style={{
                         left: `${item.left}%`,
                         top: `${item.top}%`,
-                        color: `rgba(255, 255, 255, ${item.opacity})`,
+                        color: `rgba(134, 200, 188, ${item.opacity * 0.4})`,
                         fontSize: `${item.scale}rem`,
                         animationDelay: `${item.delay}s`,
                         animationDuration: `${item.duration}s`,
-                        textShadow: '0 2px 10px rgba(0,0,0,0.2)'
+                        textShadow: '0 2px 10px rgba(0,0,0,0.05)'
                     }}
                 >
                     {item.text}
@@ -207,27 +207,27 @@ const OptionCard: React.FC<{
             flex items-center gap-4 p-5
             rounded-2xl border backdrop-blur-md
             ${selected 
-                ? 'bg-white text-brand-dark border-white shadow-[0_0_30px_rgba(255,255,255,0.3)] scale-[1.02]' 
-                : 'bg-white/5 text-white border-white/10 hover:bg-white/10 hover:border-white/30 active:scale-95'
+                ? 'bg-white text-brand-dark border-brand-main shadow-[0_10px_30px_rgba(249,217,73,0.1)] scale-[1.02]' 
+                : 'bg-white/50 text-brand-dark border-gray-100 hover:bg-white hover:border-brand-main/30 active:scale-95'
             }
         `}
     >
-        {selected && <div className="absolute inset-0 bg-gradient-to-r from-brand-blue/20 to-brand-purple/20 pointer-events-none" />}
+        {selected && <div className="absolute inset-0 bg-gradient-to-r from-brand-main/10 to-brand-accent/10 pointer-events-none" />}
         {icon && (
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${selected ? 'bg-brand-blue/10 text-brand-blue' : 'bg-white/10 text-white/70'}`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${selected ? 'bg-brand-main/10 text-brand-main' : 'bg-gray-100 text-gray-400'}`}>
                 <SvgIcon>{icon}</SvgIcon>
             </div>
         )}
         <div className="relative z-10 flex-grow">
             <div className="font-bold text-lg leading-tight">{label}</div>
             {desc && (
-                <div className={`text-xs font-medium mt-1 ${selected ? 'text-gray-500' : 'text-white/40'}`}>
+                <div className={`text-xs font-medium mt-1 ${selected ? 'text-brand-dark/50' : 'text-brand-dark/30'}`}>
                     {desc}
                 </div>
             )}
         </div>
         {selected && (
-            <div className="text-brand-purple animate-pop">
+            <div className="text-brand-main animate-pop">
                 <svg className="w-6 h-6 fill-current" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
             </div>
         )}
@@ -242,8 +242,8 @@ const FloatingInput: React.FC<{
     onEnter?: () => void;
 }> = ({ value, onChange, placeholder, autoFocus, onEnter }) => (
     <div className="relative group w-full z-20">
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-blue to-brand-purple opacity-0 group-focus-within:opacity-20 blur-xl transition-opacity rounded-2xl"></div>
-        <div className="relative bg-white/10 border border-white/20 backdrop-blur-xl rounded-2xl flex items-center p-1 focus-within:border-white/50 focus-within:bg-white/20 transition-all">
+        <div className="absolute inset-0 bg-gradient-to-r from-brand-main to-brand-accent opacity-0 group-focus-within:opacity-10 blur-xl transition-opacity rounded-2xl"></div>
+        <div className="relative bg-white border border-gray-100 shadow-sm rounded-2xl flex items-center p-1 focus-within:border-brand-main/50 transition-all">
             <input 
                 type="text"
                 autoFocus={autoFocus}
@@ -251,10 +251,10 @@ const FloatingInput: React.FC<{
                 onChange={(e) => onChange(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && onEnter && onEnter()}
                 placeholder={placeholder}
-                className="w-full bg-transparent border-none outline-none text-white font-bold text-lg px-6 py-4 placeholder-white/30"
+                className="w-full bg-transparent border-none outline-none text-brand-dark font-bold text-lg px-6 py-4 placeholder-gray-300"
             />
             {value && (
-                <button onClick={onEnter} className="mr-2 p-2 bg-white text-brand-dark rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-transform">
+                <button onClick={onEnter} className="mr-2 p-2 bg-brand-main text-white rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-transform">
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 12h14M12 5l7 7-7 7" /></svg>
                 </button>
             )}
@@ -285,14 +285,14 @@ const ScrollPicker: React.FC<{
     }, [selectedValue, items]);
     return (
         <div className="relative w-full h-48 flex items-center justify-center my-4">
-            <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-brand-dark via-brand-dark/90 to-transparent z-20 pointer-events-none"></div>
-            <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-brand-dark via-brand-dark/90 to-transparent z-20 pointer-events-none"></div>
-            <div className="absolute w-32 h-32 border-[3px] border-brand-blue rounded-3xl z-10 pointer-events-none shadow-[0_0_40px_rgba(255,77,109,0.3)] bg-white/5 backdrop-blur-sm"></div>
+            <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-brand-surface via-brand-surface/90 to-transparent z-20 pointer-events-none"></div>
+            <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-brand-surface via-brand-surface/90 to-transparent z-20 pointer-events-none"></div>
+            <div className="absolute w-32 h-32 border-[3px] border-brand-main rounded-3xl z-10 pointer-events-none shadow-[0_10px_30px_rgba(249,217,73,0.1)] bg-white/50 backdrop-blur-sm"></div>
             <div ref={scrollRef} className="flex gap-8 overflow-x-auto no-scrollbar w-full px-[50%] snap-x snap-mandatory py-20 items-center">
                 {items.map((item) => (
                     <button key={item.val} onClick={() => onSelect(item.val)} className={`shrink-0 w-24 text-center snap-center transition-all duration-300 transform flex flex-col items-center justify-center ${selectedValue === item.val ? 'scale-110 opacity-100' : 'scale-90 opacity-30 hover:opacity-60'}`}>
-                        <span className="text-4xl md:text-5xl font-black text-white drop-shadow-md">{item.label}</span>
-                        {unit && <span className="text-xs font-bold uppercase tracking-widest mt-2">{unit}</span>}
+                        <span className="text-4xl md:text-5xl font-black text-brand-dark drop-shadow-sm">{item.label}</span>
+                        {unit && <span className="text-xs font-bold uppercase tracking-widest mt-2 text-brand-dark/60">{unit}</span>}
                     </button>
                 ))}
             </div>
@@ -373,22 +373,22 @@ export const Quiz: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-brand-dark relative overflow-hidden font-sans flex flex-col text-white selection:bg-brand-blue selection:text-white pb-24">
+        <div className="min-h-screen bg-brand-surface relative overflow-hidden font-sans flex flex-col text-brand-dark selection:bg-brand-main selection:text-white pb-24">
             
             {/* Background Ambience */}
             <div className="fixed inset-0 z-0 pointer-events-none">
-                <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#0F172A] via-[#2A0A18] to-[#4A041D]"></div>
-                <div className="absolute top-[-20%] left-[-20%] w-[80vw] h-[80vw] bg-brand-blue/20 rounded-full blur-[120px] animate-blob"></div>
-                <div className="absolute bottom-[-20%] right-[-20%] w-[80vw] h-[80vw] bg-brand-purple/20 rounded-full blur-[120px] animate-blob animation-delay-2000"></div>
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10"></div>
+                <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-brand-surface via-red-50 to-pink-50"></div>
+                <div className="absolute top-[-20%] left-[-20%] w-[80vw] h-[80vw] bg-brand-main/5 rounded-full blur-[120px] animate-blob"></div>
+                <div className="absolute bottom-[-20%] right-[-20%] w-[80vw] h-[80vw] bg-brand-accent/5 rounded-full blur-[120px] animate-blob animation-delay-2000"></div>
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-5"></div>
             </div>
 
             {/* Header */}
             <div className="relative z-50 px-6 py-6 flex justify-between items-center max-w-2xl mx-auto w-full">
-                <button onClick={step === 0 ? () => navigate('/') : back} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md flex items-center justify-center text-white transition-all active:scale-90">
+                <button onClick={step === 0 ? () => navigate('/') : back} className="w-10 h-10 rounded-full bg-white border border-gray-100 shadow-sm hover:bg-gray-50 flex items-center justify-center text-brand-dark transition-all active:scale-90">
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
                 </button>
-                <div className="scale-75 origin-center opacity-80"><Logo variant="white" onClick={() => navigate('/')} /></div>
+                <div className="scale-75 origin-center opacity-80"><Logo variant="color" onClick={() => navigate('/')} /></div>
                 <div className="w-10" /> 
             </div>
 
@@ -408,13 +408,13 @@ export const Quiz: React.FC = () => {
                             <FloatingInput value={name} onChange={setName} placeholder="Имя (Саша, Женя...)" autoFocus />
                             <div className="grid grid-cols-3 gap-3">
                                 {['male', 'female', 'unisex'].map(id => (
-                                    <button key={id} onClick={() => setGender(id as any)} className={`flex flex-col items-center justify-center p-4 rounded-2xl border transition-all duration-300 ${gender === id ? 'bg-white text-brand-dark border-white shadow-lg scale-105' : 'bg-white/5 text-white/70 border-white/10 hover:bg-white/10'}`}>
+                                    <button key={id} onClick={() => setGender(id as any)} className={`flex flex-col items-center justify-center p-4 rounded-2xl border transition-all duration-300 ${gender === id ? 'bg-brand-main text-white border-brand-main shadow-lg scale-105' : 'bg-white text-brand-dark border-gray-100 hover:bg-gray-50'}`}>
                                         <span className="font-bold text-sm">{id === 'male' ? 'Он' : id === 'female' ? 'Она' : 'Неважно'}</span>
                                     </button>
                                 ))}
                             </div>
                         </div>
-                        <div className="mt-auto pt-8"><button disabled={!name} onClick={next} className="w-full py-4 bg-gradient-to-r from-brand-blue to-brand-purple text-white rounded-2xl font-black text-lg shadow-[0_10px_30px_rgba(255,77,109,0.4)] hover:shadow-[0_15px_40px_rgba(255,77,109,0.6)] disabled:opacity-50 disabled:shadow-none transition-all active:scale-95">Далее →</button></div>
+                        <div className="mt-auto pt-8"><button disabled={!name} onClick={next} className="w-full py-4 bg-gradient-to-r from-brand-main to-brand-accent text-brand-dark rounded-2xl font-black text-lg shadow-[0_10px_30px_rgba(249,217,73,0.3)] hover:shadow-[0_15px_40px_rgba(249,217,73,0.4)] disabled:opacity-50 disabled:shadow-none transition-all active:scale-95">Далее →</button></div>
                     </div>
                 )}
 
@@ -472,21 +472,21 @@ export const Quiz: React.FC = () => {
                         <StepTitle subtitle="Самое важное. Чем увлекается? О чем говорит?">Интересы</StepTitle>
                         <div className="flex flex-wrap gap-2 mb-4 min-h-[40px] relative z-10">
                             {tags.map((tag, idx) => (
-                                <span key={idx} className="bg-white text-brand-dark px-3 py-1.5 rounded-xl font-bold text-sm flex items-center gap-2 animate-pop">
+                                <span key={idx} className="bg-brand-main text-white px-3 py-1.5 rounded-xl font-bold text-sm flex items-center gap-2 animate-pop shadow-sm">
                                     {tag}
-                                    <button onClick={() => handleRemoveTag(tag)} className="text-gray-400 hover:text-red-500">×</button>
+                                    <button onClick={() => handleRemoveTag(tag)} className="text-white/60 hover:text-white">×</button>
                                 </span>
                             ))}
                         </div>
                         <div className="relative group w-full z-20">
-                            <div className="absolute inset-0 bg-gradient-to-r from-brand-blue to-brand-purple opacity-0 group-focus-within:opacity-20 blur-xl transition-opacity rounded-2xl"></div>
-                            <div className="relative bg-white/10 border border-white/20 backdrop-blur-xl rounded-2xl flex items-center p-1 focus-within:border-white/50 focus-within:bg-white/20 transition-all">
-                                <input type="text" autoFocus value={interestInput} onChange={(e) => setInterestInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddTag()} placeholder="Введите интерес..." className="w-full bg-transparent border-none outline-none text-white font-bold text-lg px-6 py-4 placeholder-white/30" />
-                                <button onClick={handleAddTag} disabled={!interestInput.trim()} className="mr-2 p-3 bg-white text-brand-dark rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-transform disabled:opacity-50"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg></button>
+                            <div className="absolute inset-0 bg-gradient-to-r from-brand-main to-brand-accent opacity-0 group-focus-within:opacity-10 blur-xl transition-opacity rounded-2xl"></div>
+                            <div className="relative bg-white border border-gray-100 shadow-sm rounded-2xl flex items-center p-1 focus-within:border-brand-main/50 transition-all">
+                                <input type="text" autoFocus value={interestInput} onChange={(e) => setInterestInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddTag()} placeholder="Введите интерес..." className="w-full bg-transparent border-none outline-none text-brand-dark font-bold text-lg px-6 py-4 placeholder-gray-300" />
+                                <button onClick={handleAddTag} disabled={!interestInput.trim()} className="mr-2 p-3 bg-brand-main text-white rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-transform disabled:opacity-50"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg></button>
                             </div>
                         </div>
-                        <p className="text-white/40 text-xs mt-3 ml-2 relative z-10">Например: Йога, Кофе, Star Wars, Котики...</p>
-                        <div className="mt-auto pt-6 relative z-10"><button onClick={next} className="w-full py-4 bg-white text-black rounded-2xl font-black text-lg shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:scale-[1.02] active:scale-95 transition-all">{tags.length > 0 ? 'Готово, идем дальше' : 'Пропустить'}</button></div>
+                        <p className="text-brand-dark/40 text-xs mt-3 ml-2 relative z-10">Например: Йога, Кофе, Star Wars, Котики...</p>
+                        <div className="mt-auto pt-6 relative z-10"><button onClick={next} className="w-full py-4 bg-brand-main text-brand-dark rounded-2xl font-black text-lg shadow-[0_10px_30px_rgba(249,217,73,0.2)] hover:scale-[1.02] active:scale-95 transition-all">{tags.length > 0 ? 'Готово, идем дальше' : 'Пропустить'}</button></div>
                     </div>
                 )}
 
@@ -509,7 +509,7 @@ export const Quiz: React.FC = () => {
                         <StepTitle subtitle="Честно оцените свои силы.">Вложения</StepTitle>
                         <div className="grid grid-cols-1 gap-3">
                             {EFFORTS.map(e => (
-                                <button key={e.id} onClick={() => { setEffort(e.id as any); next(); }} className={`p-6 rounded-2xl border text-left transition-all ${effort === e.id ? 'bg-white text-brand-dark border-white shadow-lg' : 'bg-white/5 border-white/10 hover:bg-white/10 text-white'}`}>
+                                <button key={e.id} onClick={() => { setEffort(e.id as any); next(); }} className={`p-6 rounded-2xl border text-left transition-all ${effort === e.id ? 'bg-brand-main text-white border-brand-main shadow-lg' : 'bg-white border-gray-100 hover:bg-gray-50 text-brand-dark'}`}>
                                     <div className="font-bold text-lg mb-1">{e.label}</div>
                                     <div className="text-sm opacity-60">{e.desc}</div>
                                 </button>
@@ -531,17 +531,17 @@ export const Quiz: React.FC = () => {
                 {step === 9 && (
                     <div className="w-full flex-grow flex flex-col">
                         <StepTitle subtitle="Проверьте, всё ли верно?">Перед стартом</StepTitle>
-                        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-6 shadow-xl mb-8">
+                        <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xl mb-8">
                             <div className="space-y-4 text-sm">
-                                <div className="flex justify-between border-b border-white/10 pb-3"><span className="text-white/50">Кто</span><span className="font-bold">{name}, {age} лет</span></div>
-                                <div className="flex justify-between border-b border-white/10 pb-3"><span className="text-white/50">Повод</span><span className="font-bold">{customOccasion || occasion}</span></div>
-                                <div className="flex justify-between border-b border-white/10 pb-3"><span className="text-white/50">Интересы</span><span className="font-bold text-right max-w-[60%]">{tags.join(', ') || 'Не указаны'}</span></div>
-                                <div className="flex justify-between items-center pt-1"><span className="text-white/50">Бюджет</span><span className="font-black text-xl text-brand-blue bg-white px-3 py-1 rounded-lg shadow-sm">{budget.toLocaleString()} ₽</span></div>
+                                <div className="flex justify-between border-b border-gray-50 pb-3"><span className="text-brand-dark/50">Кто</span><span className="font-bold">{name}, {age} лет</span></div>
+                                <div className="flex justify-between border-b border-gray-50 pb-3"><span className="text-brand-dark/50">Повод</span><span className="font-bold">{customOccasion || occasion}</span></div>
+                                <div className="flex justify-between border-b border-gray-50 pb-3"><span className="text-brand-dark/50">Интересы</span><span className="font-bold text-right max-w-[60%] text-brand-main">{tags.join(', ') || 'Не указаны'}</span></div>
+                                <div className="flex justify-between items-center pt-1"><span className="text-brand-dark/50">Бюджет</span><span className="font-black text-xl text-brand-main bg-brand-main/5 px-3 py-1 rounded-lg shadow-sm border border-brand-main/10">{budget.toLocaleString()} ₽</span></div>
                             </div>
                         </div>
                         <div className="mt-auto space-y-3">
-                            <button onClick={finish} className="w-full py-5 bg-gradient-to-r from-brand-blue to-brand-purple text-white rounded-2xl font-black text-xl uppercase tracking-widest shadow-[0_0_40px_rgba(255,77,109,0.4)] hover:scale-102 transition-transform animate-pulse-slow">🚀 Поехали!</button>
-                            <button onClick={() => setStep(0)} className="w-full py-4 text-white/50 font-bold hover:text-white transition-colors">Изменить данные</button>
+                            <button onClick={finish} className="w-full py-5 bg-gradient-to-r from-brand-main to-brand-accent text-brand-dark rounded-2xl font-black text-xl uppercase tracking-widest shadow-[0_10px_30px_rgba(249,217,73,0.3)] hover:scale-102 transition-transform animate-pulse-slow">🚀 Поехали!</button>
+                            <button onClick={() => setStep(0)} className="w-full py-4 text-brand-dark/50 font-bold hover:text-brand-dark transition-colors">Изменить данные</button>
                         </div>
                     </div>
                 )}

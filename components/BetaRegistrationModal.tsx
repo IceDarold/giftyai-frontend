@@ -110,7 +110,7 @@ export const BetaRegistrationModal: React.FC<Props> = ({ onClose }) => {
                 <div className="flex flex-col items-center text-center animate-pop">
                      <div className="relative mb-6">
                         <div className="absolute inset-0 bg-yellow-400 blur-[40px] opacity-30 rounded-full"></div>
-                        <Mascot emotion="cool" accessory="glasses" className="w-32 h-32 relative z-10" />
+                        <Mascot emotion="happy" accessory="none" className="w-32 h-32 relative z-10" />
                      </div>
                      
                      <div className="bg-brand-blue/10 text-brand-blue font-bold px-3 py-1 rounded-lg text-xs uppercase tracking-widest mb-3">

@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Logo } from '../components/Logo';
 import { api } from '../api';
 import { useAuth } from '../components/AuthContext';
 import { Mascot } from '../components/Mascot';
@@ -34,137 +33,121 @@ export const Login: React.FC = () => {
       
       setLoading(true);
 
-      // --- MOCK LOGIN LOGIC FOR TESTING ---
-      // Supports both 'admin123' and full email for convenience
+      // --- MOCK LOGIN LOGIC ---
       if ((email === 'admin123' || email === 'admin123@test.test') && password === 'admin123') {
           localStorage.setItem('gifty_auth_token', 'demo_admin');
-          await refresh(); // Force AuthContext to reload user
+          await refresh(); 
           setLoading(false);
           return;
       }
-      // ------------------------------------
+      // ------------------------
 
-      // Simulate API delay for prototype interaction
       setTimeout(() => {
           setLoading(false);
-          // In a real app: await api.auth.login(email, password);
-          alert('Для теста используйте логин: admin123, пароль: admin123');
+          alert('Для теста: логин admin123, пароль admin123');
       }, 1000);
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden bg-[#0F172A] selection:bg-brand-pink selection:text-white">
+    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden bg-brand-dark text-slate-800">
       
-      {/* Dynamic Background */}
+      {/* Background Gradients */}
       <div className="fixed inset-0 pointer-events-none">
-          <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-gradient-to-b from-brand-blue/20 to-brand-purple/20 rounded-full blur-[120px] animate-pulse-slow"></div>
-          <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-[#0F172A] via-[#0F172A]/80 to-transparent"></div>
+          <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-brand-main/5 rounded-full blur-[120px]"></div>
+          <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-brand-accent/5 rounded-full blur-[100px]"></div>
       </div>
 
-      <div className="w-full max-w-sm px-6 relative z-10 flex flex-col items-center">
+      <div className="w-full max-w-[340px] px-4 relative z-10 flex flex-col items-center">
         
-        {/* Brand Area */}
-        <div className="mb-10 text-center scale-110">
-            <Mascot className="w-40 h-40 mx-auto mb-6 drop-shadow-2xl" emotion="happy" variant="cupid" />
-            <Logo className="justify-center scale-125 mb-3" variant="white" />
-            <p className="text-white/60 font-medium text-sm tracking-wide">
+        {/* Mascot & Logo */}
+        <div className="mb-12 text-center flex flex-col items-center">
+            <div className="mb-6 scale-110">
+                <Mascot className="w-32 h-32 drop-shadow-2xl" emotion="happy" variant="default" accessory="none" />
+            </div>
+            <h1 className="text-4xl font-black tracking-tight mb-2 text-slate-900">Gifty AI</h1>
+            <p className="text-slate-500 font-medium text-sm">
                 Ваш AI-помощник в мире подарков
             </p>
         </div>
 
-        {/* Priority Auth: GOOGLE */}
-        <div className="w-full space-y-4 mb-6">
-            <button
-                onClick={() => handleLogin('google')}
-                className="group relative w-full flex items-center justify-center gap-4 bg-white hover:bg-gray-50 text-slate-900 p-4 rounded-[1.5rem] font-black text-lg transition-all duration-300 shadow-[0_0_40px_rgba(255,255,255,0.15)] hover:shadow-[0_0_60px_rgba(255,255,255,0.3)] hover:scale-[1.02] active:scale-[0.98]"
-            >
-                <img src="https://authjs.dev/img/providers/google.svg" alt="Google" className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                <span>Войти через Google</span>
-            </button>
+        {/* Primary: Google */}
+        <button
+            onClick={() => handleLogin('google')}
+            className="w-full bg-white text-slate-800 h-14 rounded-2xl font-bold text-base flex items-center justify-center gap-3 hover:scale-[1.02] transition-transform shadow-lg mb-6 relative overflow-hidden group border border-slate-100"
+        >
+            <img src="https://authjs.dev/img/providers/google.svg" alt="" className="w-5 h-5" />
+            <span>Войти через Google</span>
+        </button>
+
+        {/* Divider */}
+        <div className="flex items-center w-full gap-4 mb-6 opacity-30">
+            <div className="h-px bg-slate-400 flex-1"></div>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">или</span>
+            <div className="h-px bg-slate-400 flex-1"></div>
         </div>
 
-        {/* Secondary Options Divider */}
-        <div className="w-full flex items-center gap-4 mb-6 opacity-30">
-            <div className="h-px bg-white flex-1"></div>
-            <span className="text-xs font-bold text-white uppercase tracking-widest">или</span>
-            <div className="h-px bg-white flex-1"></div>
-        </div>
-
-        {/* Secondary Buttons */}
-        <div className="flex gap-4 w-full justify-center mb-6">
+        {/* Secondary: Yandex & VK */}
+        <div className="flex gap-3 w-full mb-8">
             <button
                 onClick={() => handleLogin('yandex')}
-                className="flex-1 flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 p-3 rounded-2xl font-bold text-white text-sm transition-all hover:border-white/30"
+                className="flex-1 bg-white hover:bg-slate-50 h-12 rounded-xl flex items-center justify-center gap-2 transition-colors border border-slate-200 shadow-sm"
             >
-                <img src="https://authjs.dev/img/providers/yandex.svg" alt="Yandex" className="w-5 h-5 invert" />
-                <span>Яндекс</span>
+                <img src="https://authjs.dev/img/providers/yandex.svg" alt="" className="w-4 h-4" />
+                <span className="font-bold text-sm text-slate-700">Яндекс</span>
             </button>
             <button
                 onClick={() => handleLogin('vk')}
-                className="flex-1 flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 p-3 rounded-2xl font-bold text-white text-sm transition-all hover:border-white/30"
+                className="flex-1 bg-white hover:bg-slate-50 h-12 rounded-xl flex items-center justify-center gap-2 transition-colors border border-slate-200 shadow-sm"
             >
-                <img src="https://authjs.dev/img/providers/vk.svg" alt="VK" className="w-5 h-5" />
-                <span>ВК</span>
+                <img src="https://authjs.dev/img/providers/vk.svg" alt="" className="w-5 h-5" />
+                <span className="font-bold text-sm text-slate-700">VK</span>
             </button>
         </div>
 
-        {/* Email Login Section */}
-        <div className="w-full transition-all duration-300">
+        {/* Email Fallback */}
+        <div className="w-full">
             {!showEmail ? (
                 <button 
                     onClick={() => setShowEmail(true)}
-                    className="w-full py-2 text-center text-white/40 hover:text-white text-sm font-bold transition-colors flex items-center justify-center gap-2 group"
+                    className="w-full text-center text-slate-400 hover:text-slate-600 text-sm font-bold transition-colors flex items-center justify-center gap-1 group"
                 >
-                    <span>Войти по почте</span>
-                    <span className="group-hover:translate-y-0.5 transition-transform">↓</span>
+                    Войти по почте <span className="group-hover:translate-y-0.5 transition-transform">↓</span>
                 </button>
             ) : (
-                <form onSubmit={handleEmailSubmit} className="space-y-3 animate-pop bg-white/5 p-4 rounded-3xl border border-white/10 backdrop-blur-md">
-                    <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-white/40 uppercase ml-2">Email или Логин</label>
-                        <input 
-                            type="text" 
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
-                            className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 outline-none focus:border-brand-pink/50 transition-all font-bold text-sm"
-                            placeholder="admin123"
-                            required
-                        />
-                    </div>
-                    <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-white/40 uppercase ml-2">Пароль</label>
-                        <input 
-                            type="password" 
-                            value={password}
-                            onChange={e => setPassword(e.target.value)}
-                            className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 outline-none focus:border-brand-pink/50 transition-all font-bold text-sm"
-                            placeholder="••••••••"
-                            required
-                        />
-                    </div>
+                <form onSubmit={handleEmailSubmit} className="space-y-3 animate-fade-in bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <input 
+                        type="text" 
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 placeholder-slate-400 text-sm font-bold outline-none focus:border-brand-main transition-colors"
+                        placeholder="Логин"
+                    />
+                    <input 
+                        type="password" 
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-900 placeholder-slate-400 text-sm font-bold outline-none focus:border-brand-main transition-colors"
+                        placeholder="Пароль"
+                    />
                     <button 
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-white text-brand-dark hover:bg-gray-200 py-3 rounded-xl font-black text-sm shadow-lg transition-all active:scale-95 disabled:opacity-50 mt-2"
+                        className="w-full bg-brand-main hover:brightness-110 text-white py-2 rounded-lg font-bold text-sm transition-colors shadow-md"
                     >
-                        {loading ? 'Вход...' : 'Войти'}
-                    </button>
-                    <button 
-                        type="button"
-                        onClick={() => setShowEmail(false)}
-                        className="w-full text-center text-white/30 hover:text-white text-[10px] font-bold uppercase tracking-widest mt-2"
-                    >
-                        Отмена
+                        {loading ? '...' : 'Войти'}
                     </button>
                 </form>
             )}
         </div>
 
-        {/* Footer */}
-        <p className="mt-8 text-[10px] text-white/30 text-center max-w-xs leading-relaxed">
-            Продолжая, вы принимаете <br/>
-            <a href="#" className="underline hover:text-white transition-colors">Условия использования</a> и <a href="#" className="underline hover:text-white transition-colors">Политику конфиденциальности</a>
-        </p>
+        {/* Footer Text */}
+        <div className="mt-auto pt-10 text-center">
+            <p className="text-[10px] text-slate-400 max-w-[200px] mx-auto leading-relaxed">
+                Продолжая, вы принимаете <br/>
+                <a href="#" className="hover:text-slate-600 underline">Условия использования</a> и <a href="#" className="hover:text-slate-600 underline">Политику конфиденциальности</a>
+            </p>
+        </div>
+
       </div>
     </div>
   );

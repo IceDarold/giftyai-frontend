@@ -38,16 +38,16 @@ export const Collections: React.FC = () => {
         })));
     };
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center text-white font-bold">Загрузка коллекций...</div>;
+    if (loading) return <div className="min-h-screen flex items-center justify-center text-slate-400 font-bold">Загрузка коллекций...</div>;
 
     return (
-        <div className="min-h-screen bg-[#0B0033] pt-24 pb-32 px-6">
-            <div className="fixed top-6 left-6 z-50"><Logo variant="white" onClick={() => navigate('/')} /></div>
+        <div className="min-h-screen bg-brand-dark pt-24 pb-32 px-6">
+            <div className="fixed top-6 left-6 z-50"><Logo variant="default" onClick={() => navigate('/')} /></div>
             
             <div className="max-w-6xl mx-auto">
                 <header className="mb-20 text-center">
-                    <h1 className="text-6xl md:text-8xl font-black text-white tracking-[-0.08em] mb-6">Коллекции</h1>
-                    <p className="text-white/40 text-[11px] font-black uppercase tracking-[0.5em]">Curated by Gifty AI</p>
+                    <h1 className="text-6xl md:text-8xl font-black text-slate-900 tracking-[-0.08em] mb-6">Коллекции</h1>
+                    <p className="text-slate-400 text-[11px] font-black uppercase tracking-[0.5em]">Curated by Gifty AI</p>
                 </header>
 
                 <div className="space-y-32">
@@ -57,8 +57,8 @@ export const Collections: React.FC = () => {
                                 <h2 className={`text-5xl md:text-7xl font-black tracking-[-0.06em] text-transparent bg-clip-text bg-gradient-to-r ${col.gradient}`}>
                                     {col.title}
                                 </h2>
-                                <div className="h-px flex-grow bg-white/10 hidden md:block mx-8 mb-4"></div>
-                                <span className="text-white/30 font-black text-sm uppercase tracking-widest">{col.gifts.length} предметов</span>
+                                <div className="h-px flex-grow bg-slate-200 hidden md:block mx-8 mb-4"></div>
+                                <span className="text-slate-400 font-black text-sm uppercase tracking-widest">{col.gifts.length} предметов</span>
                             </div>
                             
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">

@@ -14,10 +14,10 @@ export const Logo: React.FC<LogoProps> = ({ className = '', variant = 'color', o
     >
       {variant === 'color' ? (
         <>
-            <span className="font-sans font-[900] text-[1.8rem] tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-[#E01E37] to-[#FF4D6D] drop-shadow-sm">
+            <span className="font-sans font-[900] text-[1.8rem] tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-[#F9D949] to-[#86C8BC] drop-shadow-sm">
                 Gifty
             </span>
-            <span className="font-sans font-[900] text-[1.8rem] tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-[#C9184A] to-[#FF8FA3] ml-[2px]">
+            <span className="font-sans font-[900] text-[1.8rem] tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-[#86C8BC] to-[#A0C3D2] ml-[2px]">
                 AI
             </span>
         </>
